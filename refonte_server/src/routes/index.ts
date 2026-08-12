@@ -1,0 +1,30 @@
+import { Router } from 'express';
+import { authRouter } from '../modules/auth/auth.routes';
+import { usersRouter } from '../modules/users/users.routes';
+import { booksRouter } from '../modules/books/books.routes';
+import { chaptersRouter } from '../modules/chapters/chapters.routes';
+import { authorsRouter } from '../modules/authors/authors.routes';
+import { categoriesRouter } from '../modules/categories/categories.routes';
+import { cartRouter } from '../modules/cart/cart.routes';
+import { achatsRouter } from '../modules/achats/achats.routes';
+import { commentsRouter } from '../modules/comments/comments.routes';
+import { statsRouter } from '../modules/stats/stats.routes';
+import { likesRouter } from '../modules/likes/likes.routes';
+import { uploadsRouter } from '../modules/uploads/uploads.routes';
+import { bookPartsRouter } from '../modules/book-parts/book-parts.routes';
+
+export const router = Router();
+
+router.use('/auth', authRouter);
+router.use('/users', usersRouter);
+router.use('/books', booksRouter);
+router.use('/chapters', chaptersRouter);
+router.use('/authors', authorsRouter);
+router.use('/categories', categoriesRouter);
+router.use('/cart', cartRouter);
+router.use('/achats', achatsRouter);
+router.use('/comments', commentsRouter);
+router.use('/stats', statsRouter);
+router.use('/likes', likesRouter);
+router.use('/uploads', uploadsRouter);
+router.use('/book-parts', bookPartsRouter);

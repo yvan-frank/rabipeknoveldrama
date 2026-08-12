@@ -1,0 +1,17 @@
+node_modules/
+*.log
+.DS_Store
+.env
+.env.local
+yarn.lock
+package-lock.json
+yarn-error.log
+yarn-debug.log
+pnpm-debug.log
+pnpm-lock.yaml
+next-env.d.ts
+public/uploads/*
+!public/uploads/.gitkeep
+.next
+.idea
+.github

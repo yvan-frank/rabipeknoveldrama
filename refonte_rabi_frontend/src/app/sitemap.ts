@@ -1,0 +1,4 @@
+import type { MetadataRoute } from 'next';
+import { serverFetch } from '@/lib/api';
+const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://rabipeknovel.com';
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> { const pages = ['','/livres','/a-propos-de-nous','/rabipek-drama','/conditions-generales-de-vente','/politique-confidentialite','/mentions-legales'].map((path) => ({ url: `${site}${path}`, lastModified: new Date(), changeFrequency: path === '/livres' ? 'daily' as const : 'monthly' as const, priority: path === '' ? 1 : 0.7 })); try { const result = await serverFetch<{ items: Array<{ slug: string; datePub: string }> }>('/books?page=1&pageSize=100'); return [...pages, ...result.items.map((book) => ({ url: `${site}/livres/${book.slug}`, lastModified: new Date(book.datePub), changeFrequency: 'weekly' as const, priority: 0.8 }))]; } catch { return pages; } }

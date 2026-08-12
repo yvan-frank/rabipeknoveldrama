@@ -1,0 +1,572 @@
+// Schéma Prisma pour la refonte de rabipek_server.
+//
+// Ce schéma modélise le domaine "librairie numérique" en repartant du dump
+// `rabipek.sql` existant, mais en corrigeant les manques d'intégrité référentielle
+// identifiés lors de l'audit (FK manquantes sur cart/likes/commentaires/readbook/shares,
+// tables *_extension sans vraie relation 1-1, users.active en varchar, etc.).
+//
+// Tables legacy volontairement NON reprises ici (dette technique à clore, pas à migrer telles quelles) :
+//   - `olduser`   -> remplacé par un champ `deletedAt` sur User (soft delete standard)
+//   - `sessions`  -> supprimé, on garde uniquement le JWT stateless (cf. décision d'archi)
+//
+// Avant la première migration en prod : exécuter un script d'audit des orphelins
+// sur la base existante (books.id_author sans author, cart.id_book sans book, etc.)
+// et les nettoyer, sinon `prisma migrate` échouera à la création des contraintes FK.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Utilisateurs & auteurs
+// ---------------------------------------------------------------------------
+
+model User {
+  id             Int      @id @default(autoincrement()) @map("id_user")
+  name           String?  @db.VarChar(150)
+  email          String   @unique @db.VarChar(150)
+  passwordHash   String   @map("password") @db.VarChar(255)
+  ipAddress      String?  @map("ip_address") @db.VarChar(50)
+  isAdmin        Boolean  @default(false) @map("is_admin")
+  isActive       Boolean  @default(false) @map("is_active")
+  affiliateCode  String?  @map("affiliate_code") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  carts           Cart[]
+  achats          Achat[]
+  comments        Comment[]
+  chapterComments ChapterComment[]
+  likes           Like[]
+  shares          Share[]
+  readBooks       ReadBook[]
+  affiliate       Affiliate?
+
+  @@map("users")
+}
+
+model Author {
+  id                 Int      @id @default(autoincrement()) @map("id_author")
+  name               String?  @db.VarChar(255)
+  civility           String?  @db.VarChar(20)
+  designation        String?  @db.VarChar(255)
+  email              String   @unique @db.VarChar(255)
+  passwordHash       String   @map("password") @db.VarChar(255)
+  isEmailVerified    Boolean  @default(false) @map("is_email_verified")
+  isAccountVerified  Boolean  @default(false) @map("is_account_verified")
+  telephone          String?  @db.VarChar(255)
+  address            String?  @db.VarChar(255)
+  image              String?  @db.Text
+  cover              String?  @db.Text
+  about              String?  @db.Text
+  // Genres déclarés à l'inscription (enquête onboarding auteur) — liste
+  // d'IDs de Category, informative uniquement pour l'instant (pas de
+  // relation many-to-many dédiée, pas encore exploitée ailleurs).
+  genres             Json?    @map("genres")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime? @updatedAt @map("modified_at")
+
+  extension   AuthorExtension?
+  books       Book[]
+  blogPosts   BlogPost[]
+
+  @@map("author")
+}
+
+// Relation 1-1 stricte (contrairement au legacy) : authorId est unique.
+model AuthorExtension {
+  id           Int      @id @default(autoincrement()) @map("id_author_ext")
+  authorId     Int      @unique @map("author_id")
+  country      String?  @db.VarChar(50)
+  address      String?  @db.VarChar(50)
+  // Type de pièce d'identité (CNI, passeport, autre) — distinct de `documentId`
+  // (le numéro du document) et de `documents` (le fichier scanné uploadé).
+  documentType String?  @map("document_type") @db.VarChar(20)
+  documentId   String?  @map("document_id") @db.VarChar(50)
+  fullName     String?  @map("full_name") @db.VarChar(50)
+  documents    String?  @db.Text
+  socialLinks  Json?    @map("social_links")
+  // KYC : rempli quand l'auteur a accepté la politique de confidentialité —
+  // avec les autres champs ci-dessus, sert à déterminer si le KYC est complet
+  // (cf. authors.service.ts, isKycComplete). Pas de champ booléen dédié :
+  // dérivé des données elles-mêmes pour éviter un flag qui se désynchronise.
+  privacyAcceptedAt DateTime? @map("privacy_accepted_at")
+  // Vérification par un administrateur (distincte de la complétude ci-dessus,
+  // qui n'est que déclarative) — c'est CE champ qui conditionne l'accès aux
+  // actions d'écriture (cf. requireAuthorKyc). Remis à null à chaque nouvelle
+  // soumission : une donnée modifiée doit repasser en revue.
+  kycVerifiedAt DateTime? @map("kyc_verified_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("modified_at")
+
+  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("author_extension")
+}
+
+// Réglages globaux de la plateforme. La ligne unique (id = 1) est créée à la
+// première lecture afin que le comportement par défaut reste sécurisé : le
+// KYC est obligatoire tant qu'un administrateur n'active pas le bypass.
+model PlatformSetting {
+  id                     Int      @id
+  authorKycBypassEnabled Boolean  @default(false) @map("author_kyc_bypass_enabled")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue
+// ---------------------------------------------------------------------------
+
+model Category {
+  id          Int    @id @default(autoincrement()) @map("id_category")
+  name        String @unique @map("category_name") @db.VarChar(255)
+  description String @db.VarChar(255)
+
+  books Book[]
+
+  @@map("category")
+}
+
+model Book {
+  id              Int      @id @default(autoincrement()) @map("id_book")
+  // URL publique SEO (ex. "mira-partie-i"), généré depuis le titre à la
+  // création et jamais modifié ensuite (changer le slug d'un livre déjà
+  // indexé casserait les liens existants). Distinct de `bookLink`, un champ
+  // legacy jamais exploité pour le routage jusqu'ici.
+  slug            String   @unique @db.VarChar(255)
+  title           String   @db.VarChar(255)
+  datePub         DateTime @map("date_pub")
+  cover           String   @db.Text
+  filePath        String?  @map("file_path") @db.VarChar(255)
+  price           Int
+  pageNumber      Int      @map("page_number")
+  // Facultatif : un livre peut être géré entièrement via la lecture intégrée
+  // (chapitres), sans fichier téléchargeable externe.
+  bookLink        String?  @map("book_link") @db.Text
+  resume          String   @db.Text
+  isFree          Boolean  @default(true) @map("is_free")
+  readBeforePay   Boolean  @default(false) @map("read_before_pay")
+  // Nombre de chapitres (à partir du n°1) lisibles sans achat. Au-delà,
+  // l'accès requiert l'authentification puis l'achat du livre (cf. module
+  // chapters). Sans effet si `isFree` est vrai (tout le livre est gratuit).
+  freeChapterCount Int     @default(3) @map("free_chapter_count")
+  isPromotion     Boolean  @default(false) @map("is_promotion")
+  promotionPrice  Int      @default(0) @map("promotion_price")
+  // Public visé : true = réservé aux 18 ans et plus (déclenche la demande de
+  // confirmation d'âge sur la page détail publique, cf. AgeGate côté frontend).
+  isAdultOnly     Boolean  @default(false) @map("is_adult_only")
+  isPublished     Boolean  @default(true) @map("is_published")
+  isBlocked       Boolean  @default(false) @map("is_blocked")
+  suspendedAt     DateTime? @map("suspended_at")
+  categoryId      Int      @map("id_category")
+  authorId        Int      @map("id_author")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("modified_at")
+
+  category  Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author    Author   @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  extension BookExtension?
+  parts     BookPart[]
+  chapters  Chapter[]
+  carts     Cart[]
+  achats    Achat[]
+  comments  Comment[]
+  likes     Like[]
+  shares    Share[]
+  readBooks ReadBook[]
+  viewStats ViewBooks?
+  viewsByCountry  ViewsByCountry[]
+  viewsByPlatform ViewsByPlatform[]
+  viewsPerDay     ViewPerDay[]
+  viewEvents      BookViewEvent[]
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@map("books")
+}
+
+model BookExtension {
+  id           Int      @id @default(autoincrement()) @map("id_book_extension")
+  bookId       Int      @unique @map("book_id")
+  introduction String?  @db.Text
+  topics       String?  @db.Text
+  conclusion   String?  @db.Text
+  language     String?  @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("modified_at")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@map("books_extension")
+}
+
+// Une partie est l'unité commerciale d'un livre découpé. Le prix du livre est
+// conservé pour les titres historiques sans partie ; les nouveaux accès
+// payants se font au niveau de cette entité.
+model BookPart {
+  id               Int      @id @default(autoincrement()) @map("id_book_part")
+  bookId           Int      @map("book_id")
+  title            String   @db.VarChar(255)
+  partNumber       Int      @map("part_number")
+  description      String?  @db.Text
+  price            Int      @default(0)
+  isFree           Boolean  @default(false) @map("is_free")
+  freeChapterCount Int      @default(0) @map("free_chapter_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  book     Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapters Chapter[]
+  carts    Cart[]
+  achats   Achat[]
+
+  @@unique([bookId, partNumber])
+  @@index([bookId])
+  @@map("book_parts")
+}
+
+model Chapter {
+  id            Int    @id @default(autoincrement()) @map("id_chapter")
+  title         String @map("chapter_title") @db.VarChar(255)
+  content       String @db.LongText
+  chapterNumber Int    @map("chapter_number")
+  bookId        Int    @map("id_book")
+  partId        Int?   @map("part_id")
+
+  book      Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  part      BookPart? @relation(fields: [partId], references: [id], onDelete: SetNull)
+  extension ChapterExtension?
+  comments  ChapterComment[]
+
+  @@unique([bookId, chapterNumber])
+  @@index([partId])
+  @@map("chapters")
+}
+
+model ChapterExtension {
+  id           Int      @id @default(autoincrement()) @map("id_chapter_extension")
+  chapterId    Int      @unique @map("chapter_id")
+  introduction String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("modified_at")
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@map("chapters_extension")
+}
+
+// ---------------------------------------------------------------------------
+// Panier / achats / affiliation
+// ---------------------------------------------------------------------------
+
+model Cart {
+  id        Int      @id @default(autoincrement()) @map("id_cart")
+  quantity  Int?     @map("qty")
+  bookId    Int      @map("id_book")
+  partId    Int?     @map("part_id")
+  userId    Int      @map("id_user")
+  createdAt DateTime? @default(now()) @map("created")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  part BookPart? @relation(fields: [partId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([bookId])
+  @@index([partId])
+  @@index([userId])
+  @@unique([userId, partId])
+  @@map("cart")
+}
+
+model Achat {
+  id             Int      @id @default(autoincrement()) @map("id_achat")
+  date           DateTime @default(now()) @map("date_achat")
+  price          Int
+  isFree         Boolean  @default(true) @map("is_free")
+  userId         Int      @map("id_user")
+  bookId         Int      @map("id_book")
+  partId         Int?     @map("part_id")
+  metadata       Json?
+  bookData       Json?    @map("bookdata")
+  paymentMethod  String?  @map("payment_method") @db.VarChar(255)
+  affiliateCode  String?  @map("affiliate_code") @db.VarChar(20)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  part BookPart? @relation(fields: [partId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([bookId])
+  @@index([partId])
+  @@map("achat")
+}
+
+model Affiliate {
+  id            Int      @id @default(autoincrement())
+  userId        Int?     @unique @map("user_id")
+  affiliateCode String   @unique @map("affiliate_code") @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("affiliate")
+}
+
+model AffiliateCodeUsage {
+  id            Int      @id @default(autoincrement())
+  userId        Int?     @map("user_id")
+  bookId        Int?     @map("book_id")
+  affiliateCode String?  @map("affiliate_code") @db.VarChar(20)
+  commission    String?  @db.VarChar(20)
+  clicks        Int      @default(0) @map("clics")
+  action        String?  @db.VarChar(50)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("affiliate_code_usage")
+}
+
+// ---------------------------------------------------------------------------
+// Engagement (commentaires, likes, partages, lecture)
+// ---------------------------------------------------------------------------
+
+model Comment {
+  id        Int      @id @default(autoincrement()) @map("id_comment")
+  message   String   @db.Text
+  rating    Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  bookId    Int      @map("id_book")
+  userId    Int      @map("id_user")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies BookReviewReply[]
+
+  @@unique([bookId, userId])
+  @@map("commentaires")
+}
+
+model BookReviewReply {
+  id          Int      @id @default(autoincrement())
+  commentId   Int      @unique @map("comment_id")
+  responderId Int      @map("responder_id")
+  content     String   @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([responderId])
+  @@map("book_review_replies")
+}
+
+model ChapterComment {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  chapterId Int      @map("chapter_id")
+  // Réponse à un autre commentaire si renseigné (fil de discussion) — un
+  // seul niveau de profondeur exploité côté UI pour l'instant, mais rien
+  // n'empêche des réponses à des réponses au niveau du modèle.
+  parentId  Int?     @map("parent_id")
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  parent  ChapterComment?  @relation("ChapterCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies ChapterComment[] @relation("ChapterCommentReplies")
+
+  @@index([userId])
+  @@index([chapterId])
+  @@index([parentId])
+  @@map("comments_chapter")
+}
+
+model Like {
+  id        Int      @id @default(autoincrement()) @map("id_like")
+  likedAt   DateTime @default(now()) @map("date_like")
+  bookId    Int      @map("id_book")
+  userId    Int      @map("id_user")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, userId])
+  @@map("likes")
+}
+
+model Share {
+  id        Int      @id @default(autoincrement()) @map("id_share")
+  sharedAt  DateTime @default(now()) @map("share_date")
+  platform  String   @map("plateform") @db.VarChar(255)
+  bookId    Int      @map("id_book")
+  userId    Int      @map("id_user")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([bookId])
+  @@index([userId])
+  @@map("shares")
+}
+
+model ReadBook {
+  id           Int      @id @default(autoincrement()) @map("id_read")
+  readAt       DateTime @default(now()) @map("read_date")
+  chapterRead  Int      @map("chapter_read")
+  userId       Int      @map("id_user")
+  bookId       Int      @map("id_book")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+  @@map("readbook")
+}
+
+// ---------------------------------------------------------------------------
+// Statistiques de vues (consolidées : la table de faits `ViewPerDay` est la
+// source de vérité, les deux autres sont des agrégats dérivés)
+// ---------------------------------------------------------------------------
+
+model ViewBooks {
+  id        Int @id @default(autoincrement()) @map("id_view")
+  bookId    Int  @unique @map("book_id")
+  viewCount Int  @default(0) @map("view_number")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@map("viewbooks")
+}
+
+model ViewsByCountry {
+  id          Int      @id @default(autoincrement())
+  bookId      Int      @map("book_id")
+  country     String   @db.VarChar(255)
+  totalViews  Int      @default(0) @map("total_views")
+  lastUpdated DateTime @updatedAt @map("last_updated")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, country])
+  @@map("views_books_by_country")
+}
+
+model ViewsByPlatform {
+  id          Int      @id @default(autoincrement())
+  bookId      Int      @map("book_id")
+  platform    String   @db.VarChar(255)
+  totalViews  Int      @default(0) @map("total_views")
+  lastUpdated DateTime @updatedAt @map("last_updated")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, platform])
+  @@map("views_books_by_platform")
+}
+
+model ViewPerDay {
+  id        Int      @id @default(autoincrement())
+  bookId    Int      @map("book_id")
+  viewDate  DateTime @map("view_date") @db.Date
+  views     Int      @default(1)
+  ip        String?  @db.VarChar(50)
+  platform  String?  @db.VarChar(50)
+  userAgent String?  @map("user_agent") @db.Text
+  userId    Int?     @map("user_id")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, viewDate])
+  @@map("views_book_per_day")
+}
+
+// Événements unitaires anonymisés : source de vérité pour les statistiques.
+// L'adresse IP n'est jamais stockée ; visitorHash est un HMAC non réversible.
+model BookViewEvent {
+  id          Int      @id @default(autoincrement())
+  bookId      Int      @map("book_id")
+  userId      Int?     @map("user_id")
+  visitorHash String   @map("visitor_hash") @db.Char(64)
+  country     String?  @db.VarChar(2)
+  platform    String?  @db.VarChar(20)
+  viewedAt    DateTime @default(now()) @map("viewed_at")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId, viewedAt])
+  @@index([bookId, visitorHash, viewedAt])
+  @@index([userId, viewedAt])
+  @@map("book_view_events")
+}
+
+// ---------------------------------------------------------------------------
+// Blog & divers
+// ---------------------------------------------------------------------------
+
+model BlogPost {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(255)
+  content   String   @db.Text
+  authorId  Int      @map("author_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  author   Author        @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  comments BlogComment[]
+  media    Media[]
+
+  @@map("blog_posts")
+}
+
+model BlogComment {
+  id         Int      @id @default(autoincrement())
+  blogPostId Int      @map("blog_post_id")
+  userId     Int      @map("user_id")
+  content    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  blogPost BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("blog_comments")
+}
+
+model Media {
+  id         Int      @id @default(autoincrement())
+  blogPostId Int      @map("blog_post_id")
+  mediaType  MediaType @map("media_type")
+  mediaUrl   String   @map("media_url") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  blogPost BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+
+  @@map("media")
+}
+
+enum MediaType {
+  image
+  video
+}
+
+model BookSubmitted {
+  id           Int      @id @default(autoincrement())
+  emailAddress String   @map("email_address") @db.VarChar(50)
+  authorName   String   @map("author_name") @db.VarChar(50)
+  telephone    String   @db.VarChar(50)
+  description  String?  @db.Text
+  fileName     String   @map("file_name") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("book_submitted")
+}
