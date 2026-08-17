@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Maintenance en cours | RabipekNovel</title>
+    <meta
+      name="description"
+      content="RabipekNovel revient bientôt avec une expérience encore meilleure."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="maintenance-page">
+      <div class="background" aria-hidden="true"></div>
+
+      <section class="maintenance-card">
+        <header class="topbar">
+          <a class="brand" href="#" aria-label="RabipekNovel">
+            <span class="brand-icon" aria-hidden="true">▣</span>
+            <span>Rabipek<span>Novel</span></span>
+          </a>
+          <span class="status"><i></i>Mise à jour en cours</span>
+        </header>
+
+        <div class="content">
+          <div class="intro">
+            <p class="eyebrow">🔧 &nbsp; En maintenance</p>
+            <h1>Nous peaufinons votre prochaine <em>lecture.</em></h1>
+            <p class="description">
+              RabipekNovel se refait une beauté pour vous offrir une expérience de lecture encore plus fluide, inspirante et immersive.
+            </p>
+            <a class="contact" href="mailto:contact@rabipeknovel.com">✉&nbsp; Une question ? Écrivez-nous <span>↗</span></a>
+          </div>
+
+          <aside class="countdown-panel">
+            <p class="countdown-title">Retour estimé dans</p>
+            <div class="countdown" aria-label="Temps restant avant le retour de RabipekNovel">
+              <div><strong id="days">--</strong><span>Jours</span></div>
+              <div><strong id="hours">--</strong><span>Heures</span></div>
+              <div><strong id="minutes">--</strong><span>Minutes</span></div>
+              <div><strong id="seconds">--</strong><span>Secondes</span></div>
+            </div>
+            <p class="thanks"><i></i>Merci de votre patience</p>
+          </aside>
+        </div>
+
+        <footer>
+          <span>© <span id="year"></span> RabipekNovel. Toutes les histoires comptent.</span>
+          <span>Une nouvelle page se prépare.</span>
+        </footer>
+      </section>
+    </main>
+
+    <script>
+      // Date de réouverture commune à tous les visiteurs.
+      // Modifiez uniquement cette valeur pour déplacer le compte à rebours.
+      const launchDate = new Date('2026-09-14T12:00:00+02:00');
+
+      const elements = {
+        days: document.getElementById('days'),
+        hours: document.getElementById('hours'),
+        minutes: document.getElementById('minutes'),
+        seconds: document.getElementById('seconds'),
+      };
+
+      function updateCountdown() {
+        const remaining = Math.max(0, launchDate.getTime() - Date.now());
+        const values = {
+          days: Math.floor(remaining / 86400000),
+          hours: Math.floor((remaining / 3600000) % 24),
+          minutes: Math.floor((remaining / 60000) % 60),
+          seconds: Math.floor((remaining / 1000) % 60),
+        };
+
+        Object.entries(values).forEach(([unit, value]) => {
+          elements[unit].textContent = String(value).padStart(2, '0');
+        });
+      }
+
+      document.getElementById('year').textContent = new Date().getFullYear();
+      updateCountdown();
+      window.setInterval(updateCountdown, 1000);
+    </script>
+  </body>
+</html>
