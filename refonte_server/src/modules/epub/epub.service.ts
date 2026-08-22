@@ -1,7 +1,6 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { createWriteStream, existsSync } from 'node:fs';
-import { mkdir, readFile, rename, rm, stat, unlink } from 'node:fs/promises';
-import path from 'node:path';
+import { readFile, stat, unlink } from 'node:fs/promises';
 import archiver from 'archiver';
 import { load } from 'cheerio';
 import { EpubStatus } from '@prisma/client';
@@ -12,8 +11,8 @@ import { assertAuthorOwnership } from '../../utils/ownership';
 import { decryptChapterContent } from '../../utils/chapter-content-encryption';
 import type { AuthUser } from '../auth/auth.types';
 import { validateEpub } from './epub-validator.service';
+import { openEpubFile, persistEpubFile, removeAllEpubFiles, reserveEpubBuildPath } from './epub-storage';
 
-const EPUB_STORAGE_DIR = path.join(process.cwd(), 'private', 'epub');
 const MAX_COVER_BYTES = 10 * 1024 * 1024;
 
 function xml(value: string) {
@@ -96,10 +95,9 @@ async function prepareChapterContent(html: string, chapterNumber: number, langua
   return { content: asXhtml(root.html() ?? '').replace(/xml:lang="fr" lang="fr"/, `xml:lang="${xml(language)}" lang="${xml(language)}"`), assets };
 }
 
-async function writeEpub(destination: string, entries: Array<{ name: string; content: string | Buffer; store?: boolean }>) {
-  await mkdir(path.dirname(destination), { recursive: true });
-  const temporaryDestination = `${destination}.${randomUUID()}.tmp`;
-  const output = createWriteStream(temporaryDestination);
+async function buildEpubArchive(entries: Array<{ name: string; content: string | Buffer; store?: boolean }>): Promise<string> {
+  const buildFilePath = await reserveEpubBuildPath();
+  const output = createWriteStream(buildFilePath);
   const archive = archiver('zip', { zlib: { level: 9 } });
 
   await new Promise<void>((resolve, reject) => {
@@ -111,7 +109,7 @@ async function writeEpub(destination: string, entries: Array<{ name: string; con
     void archive.finalize();
   });
 
-  await rename(temporaryDestination, destination);
+  return buildFilePath;
 }
 
 type EpubSource = Awaited<ReturnType<typeof loadEpubSource>>;
@@ -169,7 +167,7 @@ export async function generateEpubEdition(editionId: number) {
   if (!edition || edition.status !== EpubStatus.QUEUED) return;
 
   await prisma.epubEdition.update({ where: { id: editionId }, data: { status: EpubStatus.PROCESSING, errorMessage: null } });
-  let outputPath: string | null = null;
+  let buildFilePath: string | null = null;
 
   try {
     const book = await loadEpubSource(edition.bookId);
@@ -206,12 +204,14 @@ export async function generateEpubEdition(editionId: number) {
       { name: `OEBPS/images/cover.${cover.extension}`, content: cover.content },
     ];
 
+    buildFilePath = await buildEpubArchive(entries);
+    await validateEpub(buildFilePath);
+    const file = await stat(buildFilePath);
+    const checksum = createHash('sha256').update(await readFile(buildFilePath)).digest('hex');
+
     const storageKey = `${book.id}/edition-${edition.id}.epub`;
-    outputPath = path.join(EPUB_STORAGE_DIR, storageKey);
-    await writeEpub(outputPath, entries);
-    await validateEpub(outputPath);
-    const file = await stat(outputPath);
-    const checksum = createHash('sha256').update(await readFile(outputPath)).digest('hex');
+    await persistEpubFile(buildFilePath, storageKey);
+    buildFilePath = null; // déplacé/téléversé vers le stockage durable, plus de fichier temporaire à nettoyer
 
     await prisma.$transaction([
       prisma.epubAsset.deleteMany({ where: { epubEditionId: edition.id } }),
@@ -220,7 +220,7 @@ export async function generateEpubEdition(editionId: number) {
       prisma.epubEdition.update({ where: { id: edition.id }, data: { status: EpubStatus.READY, storageKey, fileSizeBytes: file.size, checksum, generatedAt: new Date(), errorMessage: null } }),
     ]);
   } catch (error) {
-    if (outputPath && existsSync(outputPath)) await unlink(outputPath);
+    if (buildFilePath && existsSync(buildFilePath)) await unlink(buildFilePath);
     const message = error instanceof Error ? error.message : 'Erreur inconnue lors de la génération EPUB';
     await prisma.epubEdition.update({ where: { id: editionId }, data: { status: EpubStatus.FAILED, errorMessage: message.slice(0, 4_000) } });
   }
@@ -245,9 +245,9 @@ export async function getEpubDownload(editionId: number, viewer: AuthUser) {
     }
   }
 
-  const filePath = path.join(EPUB_STORAGE_DIR, edition.storageKey);
-  if (!existsSync(filePath)) throw ApiError.notFound('Fichier EPUB introuvable');
-  return { filePath, filename: filenameForBook(edition.book.title) };
+  const file = await openEpubFile(edition.storageKey);
+  if (!file) throw ApiError.notFound('Fichier EPUB introuvable');
+  return { ...file, filename: filenameForBook(edition.book.title) };
 }
 
 export async function resumeQueuedEpubGenerations() {
@@ -257,5 +257,5 @@ export async function resumeQueuedEpubGenerations() {
 }
 
 export async function removeEpubStorage() {
-  await rm(EPUB_STORAGE_DIR, { recursive: true, force: true });
+  await removeAllEpubFiles();
 }

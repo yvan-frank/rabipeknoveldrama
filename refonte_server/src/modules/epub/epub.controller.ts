@@ -18,5 +18,9 @@ export async function listEpubEditionsHandler(req: Request, res: Response) {
 export async function downloadEpubEditionHandler(req: Request, res: Response) {
   const { id } = req.params as unknown as { id: number };
   const file = await epubService.getEpubDownload(id, req.user!);
-  res.download(file.filePath, file.filename, { headers: { 'Content-Type': 'application/epub+zip' } });
+  res.setHeader('Content-Type', 'application/epub+zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${file.filename.replace(/[^\x20-\x7e]/g, '')}"`);
+  if (file.contentLength) res.setHeader('Content-Length', String(file.contentLength));
+  file.stream.on('error', () => res.destroy());
+  file.stream.pipe(res);
 }
