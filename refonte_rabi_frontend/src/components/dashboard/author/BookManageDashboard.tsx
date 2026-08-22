@@ -13,6 +13,7 @@ import { DeleteBookModal } from './DeleteBookModal';
 import { DeleteChapterModal } from './DeleteChapterModal';
 import { BookPartsManager } from './BookPartsManager';
 import { BookGrantPanel } from './BookGrantPanel';
+import { EpubEditionsPanel } from './EpubEditionsPanel';
 import { toBookApiPayload, type BookFormValues, type ChapterFormValues } from '@/lib/schemas/book';
 import type { ApiResponse, BookManageDetail, Category, ChapterManageDetail, ChapterSummary } from '@/types/api';
 
@@ -146,6 +147,8 @@ export function BookManageDashboard({ bookId }: BookManageDashboardProps) {
       <BookPartsManager bookId={bookId} parts={book.parts ?? []} />
 
       <BookGrantPanel bookId={bookId} bookTitle={book.title} />
+
+      <EpubEditionsPanel bookId={bookId} chapterCount={book.chapters.length} />
 
       <ChaptersManager bookId={bookId} chapters={book.chapters ?? []} parts={book.parts ?? []} />
     </div>

@@ -212,3 +212,16 @@ export interface ChapterManageDetail {
   extension: { introduction: string | null } | null;
   book: { id: number; title: string; authorId: number };
 }
+
+export type EpubEditionStatus = 'QUEUED' | 'PROCESSING' | 'READY' | 'FAILED';
+
+export interface EpubEdition {
+  id: number;
+  version: number;
+  status: EpubEditionStatus;
+  isCurrent: boolean;
+  fileSizeBytes: number | null;
+  errorMessage: string | null;
+  generatedAt: string | null;
+  createdAt: string;
+}

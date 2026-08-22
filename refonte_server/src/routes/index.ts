@@ -12,12 +12,15 @@ import { statsRouter } from '../modules/stats/stats.routes';
 import { likesRouter } from '../modules/likes/likes.routes';
 import { uploadsRouter } from '../modules/uploads/uploads.routes';
 import { bookPartsRouter } from '../modules/book-parts/book-parts.routes';
+import { bookEpubEditionsRouter, epubEditionsRouter } from '../modules/epub/epub.routes';
 
 export const router = Router();
 
 router.use('/auth', authRouter);
 router.use('/users', usersRouter);
 router.use('/books', booksRouter);
+router.use('/books', bookEpubEditionsRouter);
+router.use('/epub-editions', epubEditionsRouter);
 router.use('/chapters', chaptersRouter);
 router.use('/authors', authorsRouter);
 router.use('/categories', categoriesRouter);

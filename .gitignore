@@ -12,6 +12,7 @@ pnpm-lock.yaml
 next-env.d.ts
 public/uploads/*
 !public/uploads/.gitkeep
+refonte_server/private/
 .next
 .idea
 .github

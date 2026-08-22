@@ -40,6 +40,15 @@ npx tsx prisma/encrypt-chapter-content.ts
 Conservez cette clé dans un gestionnaire de secrets : sa perte rend les
 chapitres chiffrés irrécupérables.
 
+### Génération EPUB
+
+Les EPUB sont générés depuis les chapitres et stockés dans `private/epub`, qui
+doit être conservé sur un volume persistant ou remplacé par un stockage objet
+en production. Pour incorporer des images externes de manière sûre, renseignez
+leurs domaines dans `EPUB_EXTERNAL_IMAGE_HOSTS`. Activez
+`EPUBCHECK_REQUIRED=true` avec `EPUBCHECK_JAR_PATH` pour imposer la validation
+officielle EPUBCheck au déploiement.
+
 Avec Docker :
 
 ```bash
