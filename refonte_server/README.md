@@ -42,12 +42,26 @@ chapitres chiffrés irrécupérables.
 
 ### Génération EPUB
 
-Les EPUB sont générés depuis les chapitres et stockés dans `private/epub`, qui
-doit être conservé sur un volume persistant ou remplacé par un stockage objet
-en production. Pour incorporer des images externes de manière sûre, renseignez
-leurs domaines dans `EPUB_EXTERNAL_IMAGE_HOSTS`. Activez
-`EPUBCHECK_REQUIRED=true` avec `EPUBCHECK_JAR_PATH` pour imposer la validation
-officielle EPUBCheck au déploiement.
+Les EPUB sont générés depuis les chapitres puis persistés via un backend de
+stockage configurable (`EPUB_STORAGE_DRIVER`) :
+
+- `local` (par défaut, pratique en dev) : écrit dans `EPUB_STORAGE_DIR`
+  (`private/epub` par défaut) sur le disque du serveur. **Doit être monté sur
+  un volume persistant en production**, sinon les fichiers sont perdus au
+  redéploiement/scaling.
+- `s3` : envoie vers un stockage objet durable compatible S3 (AWS S3, MinIO,
+  Cloudflare R2, DigitalOcean Spaces...), configuré via `EPUB_S3_BUCKET`,
+  `EPUB_S3_REGION`, `EPUB_S3_ENDPOINT` (fournisseurs non-AWS uniquement),
+  `EPUB_S3_ACCESS_KEY_ID`/`EPUB_S3_SECRET_ACCESS_KEY` et
+  `EPUB_S3_FORCE_PATH_STYLE` (MinIO). C'est le mode recommandé en production :
+  il survit aux redéploiements et permet de scaler l'API horizontalement sans
+  volume partagé. Si les identifiants sont omis, le SDK AWS retombe sur la
+  chaîne de credentials par défaut (rôle IAM, etc.).
+
+Pour incorporer des images externes de manière sûre, renseignez leurs domaines
+dans `EPUB_EXTERNAL_IMAGE_HOSTS`. Activez `EPUBCHECK_REQUIRED=true` avec
+`EPUBCHECK_JAR_PATH` pour imposer la validation officielle EPUBCheck au
+déploiement.
 
 Avec Docker :
 

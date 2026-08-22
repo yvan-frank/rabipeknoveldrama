@@ -21,6 +21,7 @@
     "content:encrypt-existing": "tsx prisma/encrypt-chapter-content.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1116.0",
     "@prisma/client": "^6.3.0",
     "archiver": "^7.0.1",
     "bcrypt": "^5.1.1",
