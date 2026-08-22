@@ -187,6 +187,7 @@ model Book {
   viewsByPlatform ViewsByPlatform[]
   viewsPerDay     ViewPerDay[]
   viewEvents      BookViewEvent[]
+  epubEditions    EpubEdition[]
 
   @@index([categoryId])
   @@index([authorId])
@@ -261,6 +262,56 @@ model ChapterExtension {
   chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
   @@map("chapters_extension")
+}
+
+// Une édition EPUB est un artefact dérivé et versionné du livre : Book et
+// Chapter restent les sources de vérité. Une nouvelle édition est créée au
+// lieu d'écraser un fichier déjà distribué aux lecteurs.
+model EpubEdition {
+  id             Int        @id @default(autoincrement())
+  bookId         Int        @map("book_id")
+  version        Int
+  status         EpubStatus @default(QUEUED)
+  storageKey     String?    @map("storage_key") @db.VarChar(500)
+  fileSizeBytes  Int?       @map("file_size_bytes")
+  checksum       String?    @db.VarChar(64)
+  sourceRevision String     @map("source_revision") @db.VarChar(64)
+  errorMessage   String?    @map("error_message") @db.Text
+  generatedAt    DateTime?  @map("generated_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  book   Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  assets EpubAsset[]
+
+  @@unique([bookId, version])
+  @@index([bookId, status])
+  @@map("epub_editions")
+}
+
+// Inventaire des ressources effectivement embarquées : utile pour diagnostiquer
+// une génération, invalider un cache et préparer plus tard l'audio EPUB 3.
+model EpubAsset {
+  id            Int      @id @default(autoincrement())
+  epubEditionId Int      @map("epub_edition_id")
+  sourceUrl     String?  @map("source_url") @db.Text
+  archivePath   String   @map("archive_path") @db.VarChar(500)
+  storageKey    String?  @map("storage_key") @db.VarChar(500)
+  mediaType     String   @map("media_type") @db.VarChar(100)
+  checksum      String?  @db.VarChar(64)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  edition EpubEdition @relation(fields: [epubEditionId], references: [id], onDelete: Cascade)
+
+  @@unique([epubEditionId, archivePath])
+  @@map("epub_assets")
+}
+
+enum EpubStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
 }
 
 // ---------------------------------------------------------------------------

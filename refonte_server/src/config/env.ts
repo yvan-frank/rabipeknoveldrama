@@ -15,6 +15,18 @@ const envSchema = z.object({
   // instance avant migration, mais obligatoire dès qu'un chapitre est lu ou
   // enregistré (contrôle dans chapter-content-encryption.ts).
   CONTENT_ENCRYPTION_KEY: z.string().optional(),
+  // Chemin du JAR EPUBCheck dans l'image de déploiement. La validation
+  // structurelle interne reste active sans lui ; en production, activez
+  // EPUBCHECK_REQUIRED pour rendre ce contrôle externe obligatoire.
+  EPUBCHECK_JAR_PATH: z.string().min(1).optional(),
+  EPUBCHECK_REQUIRED: z.coerce.boolean().default(false),
+  // Domaines externes explicitement autorisés pour les couvertures et images
+  // incorporées dans les EPUB. Évite qu'un contenu auteur serve à joindre des
+  // services internes via le worker de génération (SSRF).
+  EPUB_EXTERNAL_IMAGE_HOSTS: z
+    .string()
+    .default('')
+    .transform((value) => value.split(',').map((host) => host.trim().toLowerCase()).filter(Boolean)),
 
   CORS_ORIGINS: z
     .string()
