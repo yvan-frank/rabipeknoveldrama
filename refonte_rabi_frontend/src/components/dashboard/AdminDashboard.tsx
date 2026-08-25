@@ -16,6 +16,7 @@ import {
   Heart,
   LayoutDashboard,
   LogOut,
+  Mail,
   MessageCircle,
   Moon,
   Settings,
@@ -31,10 +32,11 @@ import { useTheme } from '@/hooks/useTheme';
 import { AdminKycSection } from './admin/AdminKycSection';
 import { AdminBookGrantSection } from './admin/AdminBookGrantSection';
 import { AdminCatalogueSection } from './admin/AdminCatalogueSection';
+import { AdminSupportSection } from './admin/AdminSupportSection';
 import { LogoutConfirmModal } from '@/components/ui/LogoutConfirmModal';
 import type { ApiResponse } from '@/types/api';
 
-type Section = 'pilotage' | 'utilisateurs' | 'catalogue' | 'transactions' | 'book-grants' | 'moderation' | 'kyc' | 'parametres';
+type Section = 'pilotage' | 'utilisateurs' | 'catalogue' | 'transactions' | 'book-grants' | 'moderation' | 'support' | 'kyc' | 'parametres';
 
 interface AdminData {
   revenue: number;
@@ -69,6 +71,7 @@ const navItems: Array<{ id: Section; label: string; icon: typeof LayoutDashboard
   { id: 'transactions', label: 'Transactions', icon: BadgeEuro },
   { id: 'book-grants', label: 'Attribuer un livre', icon: Gift },
   { id: 'moderation', label: 'Modération', icon: MessageCircle },
+  { id: 'support', label: 'Support', icon: Mail },
   { id: 'kyc', label: 'Vérification KYC', icon: ShieldCheck },
   { id: 'parametres', label: 'Paramètres', icon: Settings },
 ];
@@ -211,6 +214,8 @@ export function AdminDashboard() {
         </Panel>
       );
     }
+
+    if (section === 'support') return <AdminSupportSection />;
 
     if (section === 'kyc') return <AdminKycSection />;
 
