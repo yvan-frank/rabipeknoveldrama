@@ -33,6 +33,11 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Config Firebase (clés/identifiants) — jamais dans le dépôt, cf. le build
+# local et les credentials EAS pour où le fournir à la place.
+google-services.json
+GoogleService-Info.plist
+
 # typescript
 *.tsbuildinfo
 
