@@ -13,8 +13,8 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
-        tabBarLabelStyle: { fontFamily: fontFamily.sansSemiBold, fontSize: 11 },
+        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
+        tabBarLabelStyle: { fontFamily: fontFamily.sansSemiBold, fontSize: 9 },
         // Les changements d'onglet étaient instantanés (aucune transition par
         // défaut sur bottom-tabs) — "shift" glisse+fondu légèrement la scène
         // sortante/entrante plutôt qu'une simple coupure.

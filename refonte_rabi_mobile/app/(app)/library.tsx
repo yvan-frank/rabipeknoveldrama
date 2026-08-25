@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../src/components/Button';
+import { LibraryRowSkeletonList } from '../../src/components/LibraryRowSkeleton';
 import { useAuthStore } from '../../src/auth/auth-store';
 import { extractApiErrorMessage } from '../../src/api/client';
 import { fetchDashboard, overallProgress, type LibraryEntry } from '../../src/api/library';
@@ -76,7 +77,7 @@ export default function LibraryScreen() {
           contentContainerStyle={{ padding: spacing.lg, flexGrow: 1 }}
           ListEmptyComponent={
             dashboardQuery.isLoading ? (
-              <ActivityIndicator color={colors.accent} />
+              <LibraryRowSkeletonList />
             ) : dashboardQuery.isError ? (
               <Text style={[typography.body, { color: colors.danger }]}>
                 {extractApiErrorMessage(dashboardQuery.error, 'Impossible de charger votre bibliothèque')}

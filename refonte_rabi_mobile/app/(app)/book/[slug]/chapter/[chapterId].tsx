@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Animated, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { usePreventScreenCapture } from 'expo-screen-capture';
+import { StatusBar } from 'expo-status-bar';
+import { ActivityIndicator, Animated, AppState, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { BottomSheet } from '../../../../../src/components/BottomSheet';
 import { Button } from '../../../../../src/components/Button';
 import { ChapterCommentsSection } from '../../../../../src/components/ChapterCommentsSection';
 import { ReaderTutorialOverlay } from '../../../../../src/components/ReaderTutorialOverlay';
+import { useAuthStore } from '../../../../../src/auth/auth-store';
 import { extractApiErrorMessage } from '../../../../../src/api/client';
+import { addReadingTime } from '../../../../../src/api/points';
 import { fetchBookBySlug } from '../../../../../src/api/books';
 import { fetchChapter, fetchReadingProgress, saveReadingProgress } from '../../../../../src/api/chapters';
 import { flattenChapters, type ChapterEntry } from '../../../../../src/lib/chapter-access';
@@ -30,6 +33,9 @@ import { useTheme } from '../../../../../src/theme/useTheme';
 
 const THEME_LABELS: Record<ReaderThemeName, string> = { light: 'Clair', dark: 'Sombre', paper: 'Papier', sepia: 'Sépia' };
 const PROGRESS_SAVE_DEBOUNCE_MS = 1200;
+// Cadence d'envoi du temps de lecture cumulé (cf. tâches bonus "Lire 15/30
+// min", POST /points/reading-time) — par petits paquets plutôt qu'en continu.
+const READING_TIME_REPORT_INTERVAL_S = 20;
 
 // -- Construction du HTML du lecteur -----------------------------------------
 // Deux modes : "paginated" (feuilleter) et "scroll" (défiler classique). Le
@@ -58,29 +64,13 @@ function buildEndBlockHtml(nextEntry: ChapterEntry | null | undefined) {
   </div>`;
 }
 
-// Pont "sélection de texte" partagé par les deux modes : on laisse le moteur
-// de la WebView gérer la sélection native (poignées, surbrillance système),
-// on se contente d'observer et de faire remonter le texte sélectionné — la
-// barre d'actions (Copier/Partager) est rendue côté RN, pas dans la WebView.
-function selectionBridgeScript() {
-  return `
-    var lastSelText = '';
-    var selTimer = null;
-    document.addEventListener('selectionchange', function () {
-      clearTimeout(selTimer);
-      selTimer = setTimeout(function () {
-        var text = (window.getSelection() || {}).toString() || '';
-        if (text === lastSelText) return;
-        lastSelText = text;
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'selection', text: text }));
-      }, 120);
-    });
-  `;
-}
-
 function baseStyles(options: { fontFamily: string; fontSize: number; lineHeight: number; background: string; color: string; accent: string }) {
   return `
     html, body { margin: 0; padding: 0; background: ${options.background}; }
+    /* Contenu payant : sélection désactivée pour empêcher la copie (cf.
+       usePreventScreenCapture côté RN pour la capture d'écran). -webkit-touch-callout
+       coupe aussi le menu contextuel iOS (Copier/Rechercher) au appui long. */
+    * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     body {
       font-family: ${options.fontFamily};
       font-size: ${options.fontSize}px;
@@ -327,8 +317,6 @@ function buildPaginatedHtml(content: string, options: {
       goToPage(centerPage);
     });
 
-    ${selectionBridgeScript()}
-
     viewport.addEventListener('touchstart', function (event) {
       if (event.target.closest && event.target.closest('.next-btn')) return;
       // Une sélection en cours : on laisse le toucher aux poignées natives
@@ -446,7 +434,6 @@ function buildScrollHtml(content: string, options: {
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'tap' }));
     });
 
-    ${selectionBridgeScript()}
   </script>
 </body></html>`;
 }
@@ -588,28 +575,52 @@ export default function ChapterReaderScreen() {
   const hasSeenReaderTutorial = useReaderOnboardingStore((s) => s.hasSeenReaderTutorial);
   const markReaderTutorialSeen = useReaderOnboardingStore((s) => s.markReaderTutorialSeen);
 
-  // Sélection de texte : la WebView remonte le texte sélectionné via
-  // postMessage (cf. selectionBridgeScript), la barre d'actions (Copier/
-  // Partager) est rendue côté RN — plus simple et fiable que de reconstruire
-  // un presse-papier/partage depuis le JS injecté.
-  const webViewRef = useRef<WebView>(null);
-  const [selectedText, setSelectedText] = useState('');
+  // Contenu payant : ni capture d'écran/enregistrement (cf. usePreventScreenCapture
+  // ci-dessous) ni sélection de texte/copie (CSS user-select: none injecté dans
+  // la WebView, cf. baseStyles) — l'ancienne barre d'actions Copier/Partager sur
+  // sélection n'a donc plus lieu d'être.
+  usePreventScreenCapture('chapter-reader');
 
-  function clearWebViewSelection() {
-    webViewRef.current?.injectJavaScript('window.getSelection() && window.getSelection().removeAllRanges(); true;');
-  }
+  // Comptabilise le temps de lecture actif pour les tâches bonus "Lire 15/30
+  // min" (cf. GET/POST /points/reading-time) — un minuteur local accumule les
+  // secondes tant que cet écran est monté ET l'app au premier plan (une pub
+  // regardée en arrière-plan ou l'écran verrouillé ne doit rien compter),
+  // rapportées par paquets de READING_TIME_REPORT_INTERVAL_S plutôt qu'en
+  // continu. /points/* exige une session : rien à rapporter pour un visiteur.
+  const isAuthenticated = useAuthStore((state) => state.status === 'authenticated');
+  const pendingReadingSecondsRef = useRef(0);
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-  async function handleCopySelection() {
-    await Clipboard.setStringAsync(selectedText);
-    setSelectedText('');
-    clearWebViewSelection();
-  }
+    let appActive = AppState.currentState === 'active';
+    const appStateSub = AppState.addEventListener('change', (next) => {
+      appActive = next === 'active';
+    });
 
-  async function handleShareSelection() {
-    await Share.share({ message: selectedText });
-    setSelectedText('');
-    clearWebViewSelection();
-  }
+    const tick = setInterval(() => {
+      if (!appActive) return;
+      pendingReadingSecondsRef.current += 1;
+      if (pendingReadingSecondsRef.current >= READING_TIME_REPORT_INTERVAL_S) {
+        const seconds = pendingReadingSecondsRef.current;
+        pendingReadingSecondsRef.current = 0;
+        addReadingTime(seconds).catch(() => {
+          // Échec silencieux (ex. hors-ligne) : pas grave de perdre un
+          // incrément de 20s, le suivant suivra sans intervention.
+        });
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(tick);
+      appStateSub.remove();
+      // Reste (< 20s) au moment de quitter le chapitre : plutôt que de le
+      // perdre, un dernier envoi partiel.
+      if (pendingReadingSecondsRef.current > 0) {
+        addReadingTime(pendingReadingSecondsRef.current).catch(() => undefined);
+        pendingReadingSecondsRef.current = 0;
+      }
+    };
+  }, [isAuthenticated]);
 
   const numericChapterId = Number(chapterId);
 
@@ -690,12 +701,9 @@ export default function ChapterReaderScreen() {
         current?: number;
         total?: number;
         percent?: number;
-        text?: string;
       };
       if (payload.type === 'tap') {
         setChromeVisible((visible) => !visible);
-      } else if (payload.type === 'selection') {
-        setSelectedText(payload.text ?? '');
       } else if (payload.type === 'next') {
         handleNext();
       } else if (payload.type === 'page' && payload.current && payload.total && chapterQuery.data) {
@@ -744,9 +752,12 @@ export default function ChapterReaderScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: readerColors.background }}>
       <Stack.Screen options={{ headerShown: false }} />
+      {/* readerTheme (paper/sépia/clair/sombre) est indépendant du thème
+          global de l'app (cf. readerPalette) — la barre de statut doit suivre
+          CE fond-ci tant que cet écran est affiché, pas le thème app. */}
+      <StatusBar style={readerTheme === 'dark' ? 'light' : 'dark'} />
 
       <WebView
-        ref={webViewRef}
         key={`${chapter.id}-${layoutMode}-${readerTheme}`}
         originWhitelist={['*']}
         scrollEnabled={layoutMode === 'scroll'}
@@ -759,22 +770,6 @@ export default function ChapterReaderScreen() {
           WebView mais sous le header/bottom bar. */}
       {DIM_OPACITIES[dimIndex] ? (
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#000', opacity: dimOpacityFromIndex(dimIndex) }]} />
-      ) : null}
-
-      {/* Barre d'actions sur sélection : flottante, indépendante du chrome
-          immersif (utile même header/bottom bar masqués). */}
-      {selectedText ? (
-        <View style={[styles.selectionBar, { bottom: insets.bottom + 20, backgroundColor: colors.ink }]}>
-          <Pressable onPress={handleCopySelection} style={styles.selectionAction} hitSlop={6}>
-            <Ionicons name="copy-outline" size={17} color={colors.surface} />
-            <Text style={[typography.captionSemiBold, { color: colors.surface }]}>Copier</Text>
-          </Pressable>
-          <View style={[styles.selectionDivider, { backgroundColor: colors.surface, opacity: 0.2 }]} />
-          <Pressable onPress={handleShareSelection} style={styles.selectionAction} hitSlop={6}>
-            <Ionicons name="share-social-outline" size={17} color={colors.surface} />
-            <Text style={[typography.captionSemiBold, { color: colors.surface }]}>Partager</Text>
-          </Pressable>
-        </View>
       ) : null}
 
       {/* Header immersif : chevron retour, titre + repère de page, partage. */}
@@ -885,20 +880,4 @@ const styles = StyleSheet.create({
   stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   stepButton: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   themeSwatch: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  selectionBar: {
-    position: 'absolute',
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-  selectionAction: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 4 },
-  selectionDivider: { width: StyleSheet.hairlineWidth, height: 20 },
 });

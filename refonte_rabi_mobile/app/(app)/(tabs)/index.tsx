@@ -7,7 +7,8 @@ import { ContinueReadingBar } from '../../../src/components/ContinueReadingBar';
 import { HomeHeroHeader, HERO_REVEAL_HEIGHT } from '../../../src/components/HomeHeroHeader';
 import { HomeTopBar } from '../../../src/components/HomeTopBar';
 import { StickyCategoryBar } from '../../../src/components/StickyCategoryBar';
-import { PosterGridCard, GRID_CARD_WIDTH } from '../../../src/components/PosterGridCard';
+import { PosterGridCard } from '../../../src/components/PosterGridCard';
+import { PosterGridSkeletonGrid } from '../../../src/components/PosterGridCardSkeleton';
 import { PosterShelf } from '../../../src/components/PosterShelf';
 import { extractApiErrorMessage } from '../../../src/api/client';
 import { fetchBooks, fetchTopRatedBooks, type BookCard } from '../../../src/api/books';
@@ -184,7 +185,7 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           listQuery.isLoading ? (
-            <ActivityIndicator color={colors.accent} style={{ width: GRID_CARD_WIDTH, marginLeft: GRID_PADDING }} />
+            <PosterGridSkeletonGrid />
           ) : (
             <Text style={[typography.body, { color: colors.textMuted, paddingHorizontal: GRID_PADDING }]}>
               Aucun livre ne correspond à votre recherche.

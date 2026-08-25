@@ -1,15 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../../src/components/Button';
+import { BookDetailSkeleton } from '../../../src/components/BookDetailSkeleton';
 import { priceLabel } from '../../../src/components/BookListItem';
 import { extractApiErrorMessage } from '../../../src/api/client';
 import { fetchBookBySlug, type BookDetail } from '../../../src/api/books';
 import { fetchReadingProgress } from '../../../src/api/chapters';
 import { toggleBookLike } from '../../../src/api/likes';
 import { flattenChapters, type ChapterEntry } from '../../../src/lib/chapter-access';
+import { useRecentlyViewedStore } from '../../../src/lib/recently-viewed-store';
 import { resolveAssetUrl } from '../../../src/lib/resolve-asset-url';
 import { useTheme } from '../../../src/theme/useTheme';
 import { EpubDownloadSection } from '../../../src/components/EpubDownloadSection';
@@ -84,6 +86,13 @@ export default function BookDetailScreen() {
     queryFn: () => fetchBookBySlug(slug),
   });
 
+  // Alimente l'écran "Vu" (cf. app/(app)/history.tsx) — à chaque fiche livre
+  // effectivement chargée, pas seulement à l'ouverture d'un chapitre.
+  const recordView = useRecentlyViewedStore((state) => state.recordView);
+  useEffect(() => {
+    if (book) recordView(book);
+  }, [book, recordView]);
+
   const progressQuery = useQuery({
     queryKey: ['reading-progress', book?.id],
     queryFn: () => fetchReadingProgress(book!.id),
@@ -118,9 +127,10 @@ export default function BookDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
+      <>
+        <Stack.Screen options={{ title: '' }} />
+        <BookDetailSkeleton />
+      </>
     );
   }
 
@@ -215,7 +225,6 @@ export default function BookDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   cover: { width: 100, height: 140, overflow: 'hidden' },
   coverImage: { width: '100%', height: '100%' },
   actionButton: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },

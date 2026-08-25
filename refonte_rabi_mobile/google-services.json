@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1008813097807",
+    "project_id": "rabipeknovel-72900",
+    "storage_bucket": "rabipeknovel-72900.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1008813097807:android:25fcc634189486e6fcfb3a",
+        "android_client_info": {
+          "package_name": "com.frank00.rabipek"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCG9xijq4vWzx1Uou3dnSu0CaFi1yDjDxw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

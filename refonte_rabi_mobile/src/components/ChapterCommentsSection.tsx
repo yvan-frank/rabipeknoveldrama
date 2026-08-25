@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BottomSheet } from './BottomSheet';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Skeleton } from './Skeleton';
 import { useAuthStore } from '../auth/auth-store';
 import { extractApiErrorMessage } from '../api/client';
 import { deleteChapterComment, fetchChapterComments, submitChapterComment, type ChapterCommentItem } from '../api/comments';
@@ -83,6 +84,25 @@ function CommentBubble({
             </Pressable>
           </View>
         </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// Couleurs fixes (pas colors.border du thème) : ce panneau reste toujours
+// sombre quel que soit le thème courant, cf. commentaire BUBBLE_BG ci-dessus.
+const SKELETON_COLOR = 'rgba(255,255,255,0.14)';
+
+function CommentBubbleSkeleton() {
+  return (
+    <View style={styles.row}>
+      <Skeleton width={36} height={36} borderRadius={18} color={SKELETON_COLOR} />
+      <View style={{ flex: 1, marginLeft: 8 }}>
+        <View style={[styles.bubble, { backgroundColor: BUBBLE_BG }]}>
+          <Skeleton width="40%" height={13} borderRadius={4} color={SKELETON_COLOR} style={{ marginBottom: 8 }} />
+          <Skeleton height={13} borderRadius={4} color={SKELETON_COLOR} style={{ marginBottom: 6 }} />
+          <Skeleton width="65%" height={13} borderRadius={4} color={SKELETON_COLOR} />
+        </View>
       </View>
     </View>
   );
@@ -234,7 +254,11 @@ export function ChapterCommentsSection({ chapterId }: ChapterCommentsSectionProp
           ))}
         </View>
       ) : commentsQuery.isLoading ? (
-        <ActivityIndicator color={colors.accent} />
+        <>
+          <CommentBubbleSkeleton />
+          <CommentBubbleSkeleton />
+          <CommentBubbleSkeleton />
+        </>
       ) : topLevel.length === 0 ? (
         <Text style={[typography.body, { color: PANEL_MUTED, marginBottom: spacing.md }]}>
           Aucun commentaire pour ce chapitre — lancez la discussion.

@@ -45,7 +45,7 @@ export const palette = {
     border: '#27272A',
     ink: '#EDEEF0',
     inkSecondary: '#D7DBE1',
-    textMuted: '#dee2e6',
+    textMuted: '#aaabac',
     accent: BRAND_AMBER,
     accentMuted: '#3D2E10',
     love: BRAND_PINK,
@@ -125,7 +125,7 @@ export const typography = {
   body: { fontFamily: fontFamily.sansRegular, fontSize: 16, lineHeight: 24 },
   bodyMedium: { fontFamily: fontFamily.sansMedium, fontSize: 16, lineHeight: 24 },
   bodySemiBold: { fontFamily: fontFamily.sansSemiBold, fontSize: 16, lineHeight: 24 },
-  caption: { fontFamily: fontFamily.sansMedium, fontSize: 13, lineHeight: 18 },
+  caption: { fontFamily: fontFamily.sansMedium, fontSize: 11, lineHeight: 18 },
   captionSemiBold: { fontFamily: fontFamily.sansSemiBold, fontSize: 13, lineHeight: 18 },
   label: { fontFamily: fontFamily.sansSemiBold, fontSize: 11.5, lineHeight: 15, letterSpacing: 0.5 },
 };

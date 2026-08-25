@@ -37,6 +37,8 @@ export default function AppLayout() {
       <Stack.Screen name="search" options={{ title: 'Recherche' }} />
       <Stack.Screen name="settings" options={{ title: 'Paramètres' }} />
       <Stack.Screen name="library" options={{ title: 'Bibliothèque' }} />
+      <Stack.Screen name="history" options={{ title: 'Vu' }} />
+      <Stack.Screen name="inbox" options={{ title: 'Boîte de réception' }} />
       <Stack.Screen
         name="bonus"
         options={{

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
-import { PosterGridCard, GRID_CARD_WIDTH } from '../../src/components/PosterGridCard';
+import { PosterGridCard } from '../../src/components/PosterGridCard';
+import { PosterGridSkeletonGrid } from '../../src/components/PosterGridCardSkeleton';
 import { extractApiErrorMessage } from '../../src/api/client';
 import { fetchBooks, type BookCard } from '../../src/api/books';
 import { useTheme } from '../../src/theme/useTheme';
@@ -86,7 +87,7 @@ export default function SearchScreen() {
               {"Tapez un titre ou un nom d'auteur pour commencer."}
             </Text>
           ) : resultsQuery.isLoading ? (
-            <ActivityIndicator color={colors.accent} style={{ width: GRID_CARD_WIDTH, marginLeft: GRID_PADDING }} />
+            <PosterGridSkeletonGrid />
           ) : resultsQuery.isError ? (
             <Text style={[typography.body, { color: colors.danger, paddingHorizontal: GRID_PADDING }]}>
               {extractApiErrorMessage(resultsQuery.error, 'Impossible de charger les résultats')}

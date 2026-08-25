@@ -1,9 +1,7 @@
-// Aucun système de bonus/récompenses n'existe encore côté backend (ni table,
-// ni endpoint — cf. exploration faite pour l'écran Compte). Repris tel quel
-// de la capture de référence à la demande explicite de l'utilisateur : UI
-// d'abord, la vraie logique (progression, déblocage, éventuelle intégration
-// SDK publicitaire) viendra après étude — donc CTA statiques pour l'instant,
-// cf. bonus.tsx.
+// Tâches de la section "Tâches générales/nouveaux utilisateurs/lecture" :
+// aucune logique de progression/déblocage réelle derrière pour l'instant,
+// CTA statiques repris de la capture de référence (cf. bonus.tsx). Le solde
+// et le check-in quotidien, eux, sont réels — cf. src/api/points.ts.
 export interface BonusTask {
   id: string;
   title: string;
@@ -14,6 +12,10 @@ export interface BonusTask {
   extraBadge?: string;
   description: string;
   cta: 'complete' | 'ad';
+  // Statut réel (video/articles uniquement, cf. withLiveTaskData dans
+  // bonus.tsx) : remplace le CTA par un badge "Complétée" quand vrai. Absent
+  // ou faux pour les tâches encore factices ci-dessous.
+  completed?: boolean;
 }
 
 export interface BonusTaskSection {
@@ -25,26 +27,6 @@ export interface BonusTaskSection {
   footerLink?: string;
 }
 
-// Solde et série de connexion quotidienne : idem, aucune donnée réelle
-// derrière pour l'instant.
-export const MOCK_BONUS_TOTAL = 15;
-
-export interface CheckInDay {
-  label: string;
-  points: number;
-  done: boolean;
-}
-
-export const MOCK_CHECKIN_STREAK_DAYS = 1;
-export const MOCK_CHECKIN_DAYS: CheckInDay[] = [
-  { label: 'Auj.', points: 15, done: true },
-  { label: 'jour 2', points: 20, done: false },
-  { label: 'jour 3', points: 20, done: false },
-  { label: 'jour 4', points: 20, done: false },
-  { label: 'jour 5', points: 20, done: false },
-  { label: 'jour 6', points: 20, done: false },
-  { label: 'jour 7', points: 20, done: false },
-];
 
 export const MOCK_BONUS_SECTIONS: BonusTaskSection[] = [
   {

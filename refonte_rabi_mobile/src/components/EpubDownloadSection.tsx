@@ -7,6 +7,7 @@ import { extractApiErrorMessage } from '../api/client';
 import { deleteLocalEpub, downloadEpub, isEpubDownloaded, openEpub } from '../lib/epub-downloads';
 import { useTheme } from '../theme/useTheme';
 import { Button } from './Button';
+import { Skeleton } from './Skeleton';
 
 function formatSize(bytes: number | null): string {
   if (!bytes) return '';
@@ -60,7 +61,18 @@ export function EpubDownloadSection({ bookId }: EpubDownloadSectionProps) {
     setDownloadState('idle');
   }
 
-  if (editionQuery.isLoading) return null;
+  if (editionQuery.isLoading) {
+    return (
+      <View style={[shadow, { marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+          <Ionicons name="book-outline" size={18} color={colors.ink} />
+          <Text style={[typography.bodySemiBold, { color: colors.ink, marginLeft: spacing.xs }]}>Lecture hors-ligne (EPUB)</Text>
+        </View>
+        <Skeleton height={13} borderRadius={4} style={{ marginBottom: spacing.sm }} />
+        <Skeleton height={38} borderRadius={radius.pill} />
+      </View>
+    );
+  }
 
   return (
     <View

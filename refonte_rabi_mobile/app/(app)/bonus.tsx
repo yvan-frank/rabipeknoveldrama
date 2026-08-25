@@ -1,23 +1,107 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Alert, Animated, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TestIds, useRewardedAd } from 'react-native-google-mobile-ads';
+import { useAuthStore } from '../../src/auth/auth-store';
+import { extractApiErrorMessage } from '../../src/api/client';
 import {
-  MOCK_BONUS_SECTIONS,
-  MOCK_BONUS_TOTAL,
-  MOCK_CHECKIN_DAYS,
-  MOCK_CHECKIN_STREAK_DAYS,
-  type BonusTask,
-  type BonusTaskSection,
-} from '../../src/lib/mock-bonus-tasks';
+  creditRewardedAdPoints,
+  getArticlesStatus,
+  getCheckInStatus,
+  getPointsBalance,
+  getReadingTimeStatus,
+  getRewardedAdStatus,
+  markArticleRead,
+  performCheckIn,
+  type ArticlesStatus,
+  type CheckInStatus,
+  type ReadingTimeStatus,
+  type RewardedAdStatus,
+} from '../../src/api/points';
+import { MOCK_BONUS_SECTIONS, type BonusTask, type BonusTaskSection } from '../../src/lib/mock-bonus-tasks';
 import { useTheme } from '../../src/theme/useTheme';
 
 function showComingSoon() {
   Alert.alert('Bientôt disponible', 'Ce système de récompenses est en cours de finalisation.');
 }
 
-function BonusBanner() {
+function showReadingTimeInfo() {
+  Alert.alert(
+    'Comptabilisé automatiquement',
+    'Le temps de lecture se cumule tout seul pendant que vous lisez un chapitre — pas besoin de faire quoi que ce soit ici.',
+  );
+}
+
+const TOAST_VISIBLE_MS = 5000;
+
+// Vrai Ad Unit ID (rewarded) une fois publié ; TestIds.REWARDED en dev — les
+// règles AdMob interdisent de charger un vrai Ad Unit ID sur un build de
+// développement/test (risque de trafic invalide et de suspension du compte).
+const REWARDED_AD_UNIT_ID = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-6638210178103357/5145145303';
+
+// Toast local à cet écran (pas de lib externe) : une simple pastille qui
+// s'efface seule, pour la confirmation de crédit qui ne mérite pas de
+// bloquer l'utilisateur avec une Alert (contrairement aux erreurs).
+function useToast() {
+  const [message, setMessage] = useState<string | null>(null);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback(
+    (text: string) => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      setMessage(text);
+      opacity.setValue(0);
+      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      hideTimer.current = setTimeout(() => {
+        Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(({ finished }) => {
+          if (finished) setMessage(null);
+        });
+      }, TOAST_VISIBLE_MS);
+    },
+    [opacity],
+  );
+
+  useEffect(
+    () => () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    },
+    [],
+  );
+
+  return { message, opacity, showToast };
+}
+
+function Toast({ message, opacity }: { message: string | null; opacity: Animated.Value }) {
+  const { colors, spacing, radius, typography, shadow } = useTheme();
+  if (!message) return null;
+  return (
+    <View pointerEvents="none" style={styles.toastContainer}>
+      <Animated.View
+        style={[
+          shadow,
+          styles.toastPill,
+          {
+            opacity,
+            backgroundColor: colors.surface,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: colors.border,
+            borderRadius: radius.pill,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.sm,
+          },
+        ]}
+      >
+        <Ionicons name="star" size={16} color={colors.accent} />
+        <Text style={[typography.bodySemiBold, { color: colors.ink, marginLeft: 8 }]}>{message}</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
+function BonusBanner({ balance }: { balance: number | null }) {
   const { colors, spacing, typography } = useTheme();
   return (
     <LinearGradient
@@ -33,7 +117,7 @@ function BonusBanner() {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <Ionicons name="star" size={20} color={colors.accent} />
         <Text style={[typography.bodySemiBold, { color: colors.ink }]}>Mon bonus</Text>
-        <Text style={[typography.heading, { color: colors.ink }]}>{MOCK_BONUS_TOTAL}</Text>
+        <Text style={[typography.heading, { color: colors.ink }]}>{balance ?? '—'}</Text>
       </View>
       {/* Boîte de taille fixe + overflow hidden : le glyphe emoji peut être
           rendu plus grand que son fontSize nominal (variable selon l'OS) et
@@ -45,18 +129,54 @@ function BonusBanner() {
   );
 }
 
-function CheckInCard() {
+// Barème par défaut affiché pendant le chargement initial (avant la première
+// réponse de GET /points/checkin) — purement cosmétique, jamais utilisé pour
+// calculer un crédit réel.
+const FALLBACK_POINTS_SCHEDULE = [15, 20, 20, 20, 20, 20, 20];
+
+interface CheckInDayView {
+  label: string;
+  points: number;
+  done: boolean;
+}
+
+// La série (streakDay, 1-7) peut être "en attente d'un check-in aujourd'hui"
+// ou "déjà validée aujourd'hui" : le modulo gère aussi le cas où un cycle de
+// 7 jours vient de se terminer (le prochain check-in en redémarre un neuf).
+function buildCheckInDays(status: CheckInStatus): CheckInDayView[] {
+  const doneCount = status.checkedInToday ? status.streakDay : status.streakDay % 7;
+  const activeIndex = status.checkedInToday ? status.streakDay - 1 : status.streakDay % 7;
+  return status.pointsSchedule.map((points, index) => ({
+    label: index === activeIndex ? 'Auj.' : `Jour ${index + 1}`,
+    points,
+    done: index < doneCount,
+  }));
+}
+
+function CheckInCard({
+  status,
+  checking,
+  onCheckIn,
+}: {
+  status: CheckInStatus | null;
+  checking: boolean;
+  onCheckIn: () => void;
+}) {
   const { colors, spacing, radius, typography, shadow } = useTheme();
+  const days = status ? buildCheckInDays(status) : FALLBACK_POINTS_SCHEDULE.map((points) => ({ label: '', points, done: false }));
+  const doneCount = days.filter((day) => day.done).length;
+  const canCheckIn = !!status && !status.checkedInToday && !checking;
+
   return (
     // marginTop négatif : fait remonter la carte par-dessus le dégradé
     // (cf. paddingBottom réservé dans BonusBanner) — c'est la superposition
     // "fancy" voulue, pas un bug d'espacement.
     <View style={[shadow, styles.overlapCard, { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md }]}>
-      <Text style={[typography.bodySemiBold, { color: colors.accent }]}>Check-in accumulé : {MOCK_CHECKIN_STREAK_DAYS} Jour</Text>
+      <Text style={[typography.bodySemiBold, { color: colors.accent }]}>Check-in accumulé : {status?.streakDay ?? 0} Jour</Text>
 
       <View style={[styles.checkinRow, { marginTop: spacing.lg }]}>
-        {MOCK_CHECKIN_DAYS.map((day) => (
-          <View key={day.label} style={styles.checkinDay}>
+        {days.map((day, index) => (
+          <View key={index} style={styles.checkinDay}>
             <View
               style={[
                 styles.checkinBadge,
@@ -80,11 +200,17 @@ function CheckInCard() {
       </View>
 
       <View style={[styles.progressTrack, { backgroundColor: colors.border, marginTop: spacing.sm }]}>
-        <View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${(1 / MOCK_CHECKIN_DAYS.length) * 100}%` }]} />
+        <View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${(doneCount / 7) * 100}%` }]} />
       </View>
 
-      <Pressable onPress={showComingSoon} disabled style={[styles.checkinCta, { backgroundColor: colors.border, marginTop: spacing.lg }]}>
-        <Text style={[typography.bodySemiBold, { color: colors.textMuted }]}>Check-in demain</Text>
+      <Pressable
+        onPress={onCheckIn}
+        disabled={!canCheckIn}
+        style={[styles.checkinCta, { backgroundColor: canCheckIn ? colors.accent : colors.border, marginTop: spacing.lg }]}
+      >
+        <Text style={[typography.bodySemiBold, { color: canCheckIn ? '#FFFFFF' : colors.textMuted }]}>
+          {checking ? 'Validation…' : status?.checkedInToday ? 'Check-in demain' : 'Check-in du jour'}
+        </Text>
       </Pressable>
     </View>
   );
@@ -137,7 +263,7 @@ function TaskRow({ task, isLast, onPress }: { task: BonusTask; isLast: boolean; 
       ]}
     >
       <View style={[styles.starWrap, { backgroundColor: colors.accentMuted, borderRadius: radius.pill }]}>
-        <Ionicons name="star" size={18} color={colors.accent} />
+        <Ionicons name="star" size={14} color={colors.accent} />
       </View>
       <View style={{ flex: 1, marginLeft: spacing.md, marginRight: spacing.sm }}>
         <View style={styles.titleRow}>
@@ -151,21 +277,83 @@ function TaskRow({ task, isLast, onPress }: { task: BonusTask; isLast: boolean; 
         </View>
         <Text style={[typography.caption, { color: colors.textMuted, marginTop: 4 }]}>{task.description}</Text>
       </View>
-      <Pressable onPress={onPress} style={[styles.cta, { backgroundColor: colors.accentMuted, borderRadius: radius.pill }]}>
-        {task.cta === 'ad' ? (
-          <View style={styles.adCta}>
-            <Ionicons name="play-circle" size={16} color={colors.accent} />
-            <Text style={[typography.captionSemiBold, { color: colors.accent }]}>la pub</Text>
-          </View>
-        ) : (
-          <Text style={[typography.captionSemiBold, { color: colors.accent }]}>À compléter</Text>
-        )}
-      </Pressable>
+      {task.completed ? (
+        <View style={[styles.cta, styles.adCta, { backgroundColor: colors.successMuted, borderRadius: radius.pill }]}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+          <Text style={[typography.captionSemiBold, { color: colors.success }]}>Complétée</Text>
+        </View>
+      ) : (
+        <Pressable onPress={onPress} style={[styles.cta, { backgroundColor: colors.accentMuted, borderRadius: radius.pill }]}>
+          {task.cta === 'ad' ? (
+            <View style={styles.adCta}>
+              <Ionicons name="play-circle" size={16} color={colors.accent} />
+              <Text style={[typography.captionSemiBold, { color: colors.accent }]}>la pub</Text>
+            </View>
+          ) : (
+            <Text style={[typography.captionSemiBold, { color: colors.accent }]}>À compléter</Text>
+          )}
+        </Pressable>
+      )}
     </View>
   );
 }
 
-function TaskSectionCard({ section, onWatchAd }: { section: BonusTaskSection; onWatchAd: () => void }) {
+// Seules les tâches "video" (pub récompensée, cf. GET/POST
+// /points/earn/rewarded-ad), "articles" (cf. GET /points/articles) et
+// "read-15"/"read-30" (cf. GET /points/reading-time) ont un suivi réel ; les
+// autres titres restent ceux de la capture de référence, toujours factices.
+function withLiveTaskData(
+  sections: BonusTaskSection[],
+  videoStatus: RewardedAdStatus | null,
+  articlesStatus: ArticlesStatus | null,
+  readingTimeStatus: ReadingTimeStatus | null,
+): BonusTaskSection[] {
+  const articlesReadCount = articlesStatus ? articlesStatus.articles.filter((article) => article.read).length : null;
+  const minutesReadToday = readingTimeStatus ? Math.floor(readingTimeStatus.secondsToday / 60) : null;
+  const milestone15 = readingTimeStatus?.milestones.find((m) => m.minutes === 15);
+  const milestone30 = readingTimeStatus?.milestones.find((m) => m.minutes === 30);
+
+  return sections.map((section) => ({
+    ...section,
+    tasks: section.tasks.map((task) => {
+      if (task.id === 'video' && videoStatus) {
+        return {
+          ...task,
+          title: `1 Bonus (${videoStatus.watchedToday}/${videoStatus.dailyCap})`,
+          completed: videoStatus.watchedToday >= videoStatus.dailyCap,
+        };
+      }
+      if (task.id === 'articles' && articlesReadCount !== null) {
+        return { ...task, title: `1 Bonus (${articlesReadCount}/3)`, completed: articlesReadCount === 3 };
+      }
+      if (task.id === 'read-15' && minutesReadToday !== null && milestone15) {
+        return {
+          ...task,
+          description: `Lire pendant 15 minute ${Math.min(minutesReadToday, 15)} / 15`,
+          completed: milestone15.earned,
+        };
+      }
+      if (task.id === 'read-30' && minutesReadToday !== null && milestone30) {
+        return {
+          ...task,
+          description: `Lire pendant 30 minute ${Math.min(minutesReadToday, 30)} / 30`,
+          completed: milestone30.earned,
+        };
+      }
+      return task;
+    }),
+  }));
+}
+
+function TaskSectionCard({
+  section,
+  onWatchAd,
+  onReadArticle,
+}: {
+  section: BonusTaskSection;
+  onWatchAd: () => void;
+  onReadArticle: () => void;
+}) {
   const { colors, spacing, radius, typography, shadow } = useTheme();
   return (
     <View style={[shadow, { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginTop: spacing.md }]}>
@@ -175,7 +363,15 @@ function TaskSectionCard({ section, onWatchAd }: { section: BonusTaskSection; on
           key={task.id}
           task={task}
           isLast={index === section.tasks.length - 1}
-          onPress={task.cta === 'ad' ? onWatchAd : showComingSoon}
+          onPress={
+            task.cta === 'ad'
+              ? onWatchAd
+              : task.id === 'articles'
+                ? onReadArticle
+                : task.id === 'read-15' || task.id === 'read-30'
+                  ? showReadingTimeInfo
+                  : showComingSoon
+          }
         />
       ))}
       {section.footerLink ? (
@@ -188,33 +384,129 @@ function TaskSectionCard({ section, onWatchAd }: { section: BonusTaskSection; on
   );
 }
 
-// Reproduit la capture de référence à la demande explicite de l'utilisateur :
-// UI d'abord, la logique de progression/déblocage réelle viendra après étude
-// (cf. mock-bonus-tasks.ts pour le détail de ce qui est encore factice).
+// Reproduit la capture de référence à la demande explicite de l'utilisateur.
+// Solde, crédit de pub récompensée et check-in quotidien sont réels (cf.
+// src/api/points.ts) ; Playtime Studio et les autres tâches restent factices
+// pour l'instant (cf. mock-bonus-tasks.ts).
 export default function BonusScreen() {
   const { colors, spacing } = useTheme();
-  // ID de TEST (cf. app.config.ts) : affiche une vraie pub factice Google,
-  // jamais de revenu réel. À remplacer par un vrai Ad Unit ID une fois un
-  // compte AdMob créé pour Rabipek.
-  const { isLoaded, isEarnedReward, isClosed, load, show } = useRewardedAd(TestIds.REWARDED, {
+  const authStatus = useAuthStore((state) => state.status);
+  const isGuest = authStatus !== 'authenticated';
+  const [balance, setBalance] = useState<number | null>(null);
+  const [checkInStatus, setCheckInStatus] = useState<CheckInStatus | null>(null);
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [videoStatus, setVideoStatus] = useState<RewardedAdStatus | null>(null);
+  const [articlesStatus, setArticlesStatus] = useState<ArticlesStatus | null>(null);
+  const [readingTimeStatus, setReadingTimeStatus] = useState<ReadingTimeStatus | null>(null);
+  const { message: toastMessage, opacity: toastOpacity, showToast } = useToast();
+  const { isLoaded, isEarnedReward, isClosed, load, show } = useRewardedAd(REWARDED_AD_UNIT_ID, {
     requestNonPersonalizedAdsOnly: true,
   });
-  // Évite de déclencher l'alerte de récompense plusieurs fois pour un seul
-  // visionnage (isEarnedReward reste vrai tant que le hook n'a pas rechargé).
+  // Évite de déclencher le crédit plusieurs fois pour un seul visionnage
+  // (isEarnedReward reste vrai tant que le hook n'a pas rechargé).
   const rewardHandledRef = useRef(false);
+
+  const refreshBalance = useCallback(() => {
+    getPointsBalance()
+      .then(({ balance: fetched }) => setBalance(fetched))
+      .catch(() => {
+        // Écran encore utilisable sans solde affiché (ex. hors-ligne) ;
+        // pas d'alerte bloquante pour un simple défaut d'affichage.
+      });
+  }, []);
+
+  const refreshCheckInStatus = useCallback(() => {
+    getCheckInStatus()
+      .then(setCheckInStatus)
+      .catch(() => {
+        // Idem : l'écran reste utilisable, la carte affiche juste son état
+        // de repli le temps que la requête finisse par passer.
+      });
+  }, []);
+
+  const refreshVideoStatus = useCallback(() => {
+    getRewardedAdStatus()
+      .then(setVideoStatus)
+      .catch(() => {
+        // Idem : compteur affiché en repli (0/20) tant que la requête n'a pas abouti.
+      });
+  }, []);
+
+  const refreshArticlesStatus = useCallback(() => {
+    getArticlesStatus()
+      .then(setArticlesStatus)
+      .catch(() => {
+        // Idem : compteur affiché en repli (0/3) tant que la requête n'a pas abouti.
+      });
+  }, []);
+
+  const refreshReadingTimeStatus = useCallback(() => {
+    getReadingTimeStatus()
+      .then(setReadingTimeStatus)
+      .catch(() => {
+        // Idem : progression affichée en repli (0/15, 0/30) tant que la requête n'a pas abouti.
+      });
+  }, []);
+
+  useEffect(() => {
+    // Tout /points/* exige une session (requireAuth côté serveur) : un
+    // visiteur y recevrait 401 sur chaque appel, silencieusement avalé par
+    // les .catch ci-dessus — inutile de les déclencher, le solde/statuts
+    // resteront simplement à leur valeur de repli tant qu'il n'est pas connecté.
+    if (isGuest) return;
+    refreshBalance();
+    refreshCheckInStatus();
+    refreshVideoStatus();
+    refreshArticlesStatus();
+    refreshReadingTimeStatus();
+  }, [isGuest, refreshBalance, refreshCheckInStatus, refreshVideoStatus, refreshArticlesStatus, refreshReadingTimeStatus]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // Retourne true (et invite à se connecter) si l'action doit être bloquée —
+  // évite un appel API voué à échouer en 401 pour un visiteur.
+  function requireAuthOrPrompt(): boolean {
+    if (!isGuest) return false;
+    Alert.alert('Connexion requise', 'Connectez-vous pour gagner et suivre vos bonus.', [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Se connecter', onPress: () => router.push('/(auth)/login') },
+    ]);
+    return true;
+  }
+
+  function handleCheckIn() {
+    if (requireAuthOrPrompt()) return;
+    if (checkingIn || !checkInStatus || checkInStatus.checkedInToday) return;
+    setCheckingIn(true);
+    performCheckIn()
+      .then(({ streakDay, earned, balance: newBalance }) => {
+        setBalance(newBalance);
+        setCheckInStatus((prev) => (prev ? { ...prev, streakDay, checkedInToday: true } : prev));
+        showToast(`+${earned} points crédités !`);
+      })
+      .catch((error) => {
+        Alert.alert('Oups', extractApiErrorMessage(error, "Impossible d'enregistrer le check-in pour l'instant."));
+        // Un autre appareil/onglet a peut-être déjà validé le check-in du
+        // jour entre-temps (conflit 409) : on resynchronise l'état affiché.
+        refreshCheckInStatus();
+      })
+      .finally(() => setCheckingIn(false));
+  }
+
   useEffect(() => {
     if (isEarnedReward && !rewardHandledRef.current) {
       rewardHandledRef.current = true;
-      // Pas de vrai crédit de bonus ici : le système de points (solde +
-      // journal de transactions côté backend) n'existe pas encore, cf.
-      // discussion produit — seul l'affichage de la pub est réellement
-      // fonctionnel pour l'instant.
-      Alert.alert('Bravo !', 'Vous avez gagné une récompense (démo — pas encore créditée sur votre solde).');
+      creditRewardedAdPoints()
+        .then(({ balance: newBalance, earned, watchedToday }) => {
+          setBalance(newBalance);
+          setVideoStatus((prev) => (prev ? { ...prev, watchedToday } : prev));
+          showToast(`+${earned} points crédités !`);
+        })
+        .catch((error) => {
+          Alert.alert('Oups', extractApiErrorMessage(error, "Impossible de créditer la récompense pour l'instant."));
+        });
     }
   }, [isEarnedReward]);
 
@@ -226,6 +518,7 @@ export default function BonusScreen() {
   }, [isClosed, load]);
 
   function handleWatchAd() {
+    if (requireAuthOrPrompt()) return;
     if (isLoaded) {
       show();
     } else {
@@ -234,28 +527,62 @@ export default function BonusScreen() {
     }
   }
 
+  // Ouvre le prochain article externe non encore lu ; la lecture elle-même
+  // n'est pas vérifiable (contrairement au SDK AdMob), on considère
+  // l'ouverture du lien comme suffisante — même modèle de confiance que la
+  // pub récompensée.
+  function handleReadArticle() {
+    if (requireAuthOrPrompt()) return;
+    if (!articlesStatus) return;
+    const nextArticle = articlesStatus.articles.find((article) => !article.read);
+    if (!nextArticle) {
+      Alert.alert('Terminé', 'Vous avez déjà lu les 3 articles disponibles.');
+      return;
+    }
+
+    Linking.openURL(nextArticle.url).catch(() => {
+      Alert.alert('Oups', "Impossible d'ouvrir cet article pour l'instant.");
+    });
+
+    markArticleRead(nextArticle.id)
+      .then(({ earned, balance: newBalance }) => {
+        setArticlesStatus((prev) =>
+          prev ? { articles: prev.articles.map((article) => (article.id === nextArticle.id ? { ...article, read: true } : article)) } : prev,
+        );
+        if (earned > 0 && newBalance !== undefined) {
+          setBalance(newBalance);
+          showToast(`+${earned} points crédités !`);
+        }
+      })
+      .catch(() => {
+        // Pas d'alerte bloquante : l'article s'est déjà ouvert, le crédit
+        // sera simplement retenté à la prochaine tentative.
+      });
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }}>
-        <BonusBanner />
+        <BonusBanner balance={balance} />
         <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.lg }}>
-          <CheckInCard />
-          <PlaytimeStudioCard />
-          {MOCK_BONUS_SECTIONS.map((section) => (
-            <TaskSectionCard key={section.id} section={section} onWatchAd={handleWatchAd} />
+          <CheckInCard status={checkInStatus} checking={checkingIn} onCheckIn={handleCheckIn} />
+          {/*<PlaytimeStudioCard />*/}
+          {withLiveTaskData(MOCK_BONUS_SECTIONS, videoStatus, articlesStatus, readingTimeStatus).map((section) => (
+            <TaskSectionCard key={section.id} section={section} onWatchAd={handleWatchAd} onReadArticle={handleReadArticle} />
           ))}
         </View>
       </ScrollView>
+      <Toast message={toastMessage} opacity={toastOpacity} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   taskRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  starWrap: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  starWrap: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   badge: { paddingHorizontal: 8, paddingVertical: 3 },
-  cta: { paddingHorizontal: 16, paddingVertical: 10, alignSelf: 'flex-start' },
+  cta: { paddingHorizontal: 12, paddingVertical: 6, alignSelf: 'flex-start' },
   adCta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   overlapCard: { marginTop: -64 },
@@ -285,4 +612,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 12,
   },
+  toastContainer: { position: 'absolute', left: 0, right: 0, bottom: 32, alignItems: 'center' },
+  toastPill: { flexDirection: 'row', alignItems: 'center' },
 });

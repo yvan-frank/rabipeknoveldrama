@@ -28,6 +28,11 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.frank00.rabipek",
+    // Requis pour les notifications push (FCM v1) depuis qu'Expo route les
+    // push Android via Firebase Cloud Messaging plutôt que son propre relais
+    // — sans ce fichier, getExpoPushTokenAsync() échoue avec "Default
+    // FirebaseApp is not initialized" (cf. push-notifications.ts).
+    googleServicesFile: './google-services.json',
     adaptiveIcon: {
       backgroundColor: '#10161F',
       foregroundImage: './assets/android-icon-foreground.png',
@@ -64,6 +69,16 @@ const config: ExpoConfig = {
       },
     ],
     'expo-sharing',
+    [
+      'expo-notifications',
+      {
+        // Icône monochrome dédiée (obligatoire Android 13+, sinon l'icône
+        // de l'app entière est utilisée en fallback dégradé) — même image
+        // que l'icône adaptive Android déjà déclarée ci-dessus.
+        icon: './assets/android-icon-monochrome.png',
+        color: '#F59E0B',
+      },
+    ],
     [
       'react-native-google-mobile-ads',
       {

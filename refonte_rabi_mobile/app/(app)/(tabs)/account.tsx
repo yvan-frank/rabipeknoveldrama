@@ -1,20 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../../src/auth/auth-store';
 import { extractApiErrorMessage } from '../../../src/api/client';
+import { getPointsBalance } from '../../../src/api/points';
+import { getUnreadSupportCount } from '../../../src/api/support';
 import { getOrCreateGuestId } from '../../../src/lib/guest-id';
+import { unregisterCurrentPushToken } from '../../../src/lib/push-notifications';
 import { useTheme } from '../../../src/theme/useTheme';
 
-// Portefeuille/abonnement/gemmes/échange : aucune de ces fonctionnalités
-// n'existe côté backend aujourd'hui (cf. exploration — ni /wallet, ni
-// /subscriptions, ni système de points nulle part dans refonte_server). Cet
-// écran en reprend la présentation visuelle (comme demandé), mais avec des
-// valeurs à 0 et une alerte "Bientôt disponible" au tap plutôt que des
-// boutons silencieusement inertes ou des données inventées.
+// Abonnement/gemmes/échange : aucune de ces fonctionnalités n'existe côté
+// backend aujourd'hui (cf. exploration — ni /subscriptions, ni système de
+// gemmes dans refonte_server). Cet écran en reprend la présentation visuelle
+// (comme demandé), mais avec des valeurs à 0 et une alerte "Bientôt
+// disponible" au tap plutôt que des boutons silencieusement inertes ou des
+// données inventées. Le portefeuille (pièces/bonus), lui, est réel — cf.
+// src/api/points.ts.
 function MenuRow({
   icon,
   label,
@@ -44,6 +48,16 @@ function showComingSoon(label: string) {
   Alert.alert('Bientôt disponible', `${label} arrive prochainement sur Rabipek.`);
 }
 
+// Pas d'espace auteur dans l'app mobile (aucun endpoint/écran dédié) : on
+// renvoie vers la connexion auteur du site web, seul endroit où ça existe.
+const AUTHOR_CENTER_URL = 'https://rabipeknovel.com/connexion';
+
+function openAuthorCenter() {
+  Linking.openURL(AUTHOR_CENTER_URL).catch(() => {
+    Alert.alert('Oups', "Impossible d'ouvrir le centre des auteurs pour l'instant.");
+  });
+}
+
 export default function AccountScreen() {
   const { colors, spacing, radius, typography, shadow } = useTheme();
   const status = useAuthStore((state) => state.status);
@@ -55,6 +69,30 @@ export default function AccountScreen() {
   useEffect(() => {
     if (isGuest) getOrCreateGuestId().then(setGuestId);
   }, [isGuest]);
+
+  const [pointsBalance, setPointsBalance] = useState(0);
+  const [bonusCount, setBonusCount] = useState(0);
+  const [unreadSupportCount, setUnreadSupportCount] = useState(0);
+  // useFocusEffect (pas un simple useEffect) : cet écran est un onglet, donc
+  // reste monté en permanence — sans ça, le solde gagné sur /bonus (autre
+  // onglet) ou une réponse support reçue n'auraient jamais été réaffichés
+  // ici au retour, seulement au tout premier montage de l'app.
+  useFocusEffect(
+    useCallback(() => {
+      if (isGuest) return;
+      getPointsBalance()
+        .then(({ balance, bonusCount: count }) => {
+          setPointsBalance(balance);
+          setBonusCount(count);
+        })
+        .catch(() => {
+          // Écran encore utilisable avec les valeurs déjà connues (ex. hors-ligne).
+        });
+      getUnreadSupportCount()
+        .then(setUnreadSupportCount)
+        .catch(() => undefined);
+    }, [isGuest]),
+  );
 
   const displayName = isGuest ? 'Visiteur' : (user?.email ?? 'Mon compte');
   const displayId = isGuest ? guestId : `#${user?.id ?? ''}`;
@@ -71,6 +109,7 @@ export default function AccountScreen() {
   // donnait l'impression que le bouton ne faisait rien.
   async function handleLogout() {
     try {
+      await unregisterCurrentPushToken();
       await logout();
       router.replace('/(app)');
     } catch (err) {
@@ -116,14 +155,14 @@ export default function AccountScreen() {
               <View style={styles.walletStat}>
                 <Ionicons name="disc-outline" size={20} color={colors.accent} />
                 <View style={{ marginLeft: 8 }}>
-                  <Text style={[typography.bodySemiBold, { color: colors.ink }]}>0</Text>
+                  <Text style={[typography.bodySemiBold, { color: colors.ink }]}>{pointsBalance}</Text>
                   <Text style={[typography.label, { color: colors.textMuted }]}>pièces</Text>
                 </View>
               </View>
               <View style={[styles.walletStat, { flex: 1 }]}>
                 <Ionicons name="star" size={18} color={colors.accent} />
                 <View style={{ marginLeft: 8 }}>
-                  <Text style={[typography.bodySemiBold, { color: colors.ink }]}>0</Text>
+                  <Text style={[typography.bodySemiBold, { color: colors.ink }]}>{bonusCount}</Text>
                   <Text style={[typography.label, { color: colors.textMuted }]}>bonus</Text>
                 </View>
               </View>
@@ -150,13 +189,15 @@ export default function AccountScreen() {
 
           <View style={{ marginTop: spacing.lg }}>
             <MenuRow icon="library-outline" label="Bibliothèque" onPress={() => router.push('/library')} />
-            <MenuRow icon="mail-outline" label="Boîte de réception" onPress={() => showComingSoon('La boîte de réception')} />
-            <MenuRow icon="create-outline" label="Centre des auteurs" onPress={() => showComingSoon('Le centre des auteurs')} />
+            <MenuRow
+              icon="mail-outline"
+              label="Boîte de réception"
+              valueLabel={unreadSupportCount > 0 ? String(unreadSupportCount) : undefined}
+              onPress={() => router.push('/inbox')}
+            />
+            <MenuRow icon="create-outline" label="Centre des auteurs" onPress={openAuthorCenter} />
             <MenuRow icon="gift-outline" label="Gagner des bonus" trailingEmoji="🎁" onPress={() => router.push('/bonus')} />
-            <MenuRow icon="ticket-outline" label="Échange" onPress={() => showComingSoon("L'échange")} />
-            <MenuRow icon="diamond-outline" label="Gemmes" valueLabel="0" onPress={() => showComingSoon('Les gemmes')} />
-            <MenuRow icon="time-outline" label="Vu" onPress={() => showComingSoon("L'historique")} />
-            <MenuRow icon="chatbubble-ellipses-outline" label="Service en ligne" onPress={() => showComingSoon('Le service en ligne')} />
+            <MenuRow icon="time-outline" label="Vu" onPress={() => router.push('/history')} />
             <MenuRow icon="settings-outline" label="Paramètres" onPress={() => router.push('/settings')} />
           </View>
 

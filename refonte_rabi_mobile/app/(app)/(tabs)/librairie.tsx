@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PosterGridCard, GRID_CARD_WIDTH } from '../../../src/components/PosterGridCard';
+import { PosterGridSkeletonGrid } from '../../../src/components/PosterGridCardSkeleton';
+import { PopularBookCardSkeletonGrid } from '../../../src/components/PopularBookCardSkeleton';
 import { PosterShelf } from '../../../src/components/PosterShelf';
 import { fetchBooks, fetchTopRatedBooks, type BookCard } from '../../../src/api/books';
 import { fetchCategories } from '../../../src/api/categories';
@@ -116,7 +118,7 @@ export default function LibrairieScreen() {
 
             <Text style={[typography.heading, { color: colors.ink, marginBottom: spacing.md }]}>Populaires 🔥</Text>
             {popularQuery.isLoading ? (
-              <ActivityIndicator color={colors.accent} />
+              <PopularBookCardSkeletonGrid />
             ) : (
               <View style={styles.popularGrid}>
                 {(popularQuery.data?.items ?? []).map((book, index) => (
@@ -126,7 +128,7 @@ export default function LibrairieScreen() {
             )}
           </>
         ) : categoryBooksQuery.isLoading ? (
-          <ActivityIndicator color={colors.accent} />
+          <PosterGridSkeletonGrid paddingHorizontal={0} />
         ) : (categoryBooksQuery.data?.items.length ?? 0) === 0 ? (
           <Text style={[typography.body, { color: colors.textMuted }]}>Aucun livre dans cette catégorie pour le moment.</Text>
         ) : (
