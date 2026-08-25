@@ -21,6 +21,11 @@ const READING_MILESTONES = [
 // lecteur mobile rapporte par tranches de ~20s, cf. chapter/[chapterId].tsx).
 const MAX_READING_INCREMENT_SECONDS = 120;
 
+// Paramètres UTM communs aux 3 liens (cf. ARTICLE_LINKS) : permet de repérer
+// dans les statistiques du site partenaire le trafic généré par cette tâche
+// bonus, distinct des autres sources (réseaux sociaux, recherche, etc.).
+const ARTICLE_UTM_PARAMS = 'utm_source=rabipek_app&utm_medium=bonus_task&utm_campaign=lisez_3_articles';
+
 // Liste figée côté serveur (jamais fournie par le client) : la tâche "Lisez 3
 // articles" pointe vers 3 vrais articles externes choisis par le produit,
 // pas un flux dynamique — un id stable par article sert de clé pour
@@ -28,15 +33,15 @@ const MAX_READING_INCREMENT_SECONDS = 120;
 const ARTICLE_LINKS = [
   {
     id: 'article-1',
-    url: 'https://lequotidiendactu.com/entree-express/residence-permanente-au-canada-1-000-candidats-de-l-experience-canadienne',
+    url: `https://lequotidiendactu.com/entree-express/residence-permanente-au-canada-1-000-candidats-de-l-experience-canadienne?${ARTICLE_UTM_PARAMS}`,
   },
   {
     id: 'article-2',
-    url: 'https://lequotidiendactu.com/immigration/presidentielle-2027-immigration-etudiants-etrangers-france',
+    url: `https://lequotidiendactu.com/immigration/presidentielle-2027-immigration-etudiants-etrangers-france?${ARTICLE_UTM_PARAMS}`,
   },
   {
     id: 'article-3',
-    url: 'https://lequotidiendactu.com/se-preparer-et-vivre-en-france/payer-cvec-une-fois-en-france',
+    url: `https://lequotidiendactu.com/se-preparer-et-vivre-en-france/payer-cvec-une-fois-en-france?${ARTICLE_UTM_PARAMS}`,
   },
 ] as const;
 

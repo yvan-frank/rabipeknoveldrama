@@ -75,7 +75,26 @@ const envSchema = z.object({
   }
 });
 
-const parsed = envSchema.safeParse(process.env);
+// Convention "_PRO" : n'importe quelle variable FOO peut avoir un pendant
+// FOO_PRO dans le même .env (ex. DATABASE_URL_PRO, JWT_SECRET_PRO). En
+// production, sa valeur remplace celle de FOO — permet de garder les deux
+// jeux de valeurs (dev/local et prod) dans un seul fichier au lieu d'un
+// .env.production séparé à maintenir en double. Ignoré en dev/test : FOO
+// garde alors sa propre valeur, jamais celle de FOO_PRO.
+function applyProductionOverrides(rawEnv: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  if (rawEnv.NODE_ENV !== 'production') return rawEnv;
+
+  const resolved = { ...rawEnv };
+  for (const key of Object.keys(rawEnv)) {
+    if (!key.endsWith('_PRO')) continue;
+    const baseKey = key.slice(0, -'_PRO'.length);
+    const value = rawEnv[key];
+    if (value !== undefined && value !== '') resolved[baseKey] = value;
+  }
+  return resolved;
+}
+
+const parsed = envSchema.safeParse(applyProductionOverrides(process.env));
 
 if (!parsed.success) {
   console.error('❌ Variables d\'environnement invalides :', parsed.error.flatten().fieldErrors);
