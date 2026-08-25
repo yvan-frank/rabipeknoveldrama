@@ -1,0 +1,1 @@
+ALTER TABLE `readbook` MODIFY COLUMN `progress_percent` DOUBLE NOT NULL DEFAULT 0;

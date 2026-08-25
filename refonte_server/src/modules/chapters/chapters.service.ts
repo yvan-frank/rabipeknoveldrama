@@ -120,11 +120,60 @@ async function assertChapterAccess(
 // écrasé à chaque chapitre effectivement consulté — sert à la fois de
 // "reprendre la lecture" (dashboard) et d'indicateur d'activité. Best-effort :
 // une erreur ici ne doit jamais faire échouer la lecture du chapitre.
+// Le pourcentage n'est remis à 0 que lors d'un changement de chapitre : une
+// simple relecture du même chapitre (ex. l'app mobile qui revient au premier
+// plan) ne doit pas écraser la position déjà enregistrée via setReadingProgress.
 async function recordReadingProgress(userId: number, bookId: number, chapterNumber: number) {
+  const existing = await prisma.readBook.findUnique({
+    where: { userId_bookId: { userId, bookId } },
+    select: { chapterRead: true },
+  });
+
   await prisma.readBook.upsert({
     where: { userId_bookId: { userId, bookId } },
-    create: { userId, bookId, chapterRead: chapterNumber },
-    update: { chapterRead: chapterNumber, readAt: new Date() },
+    create: { userId, bookId, chapterRead: chapterNumber, progressPercent: 0 },
+    update: {
+      chapterRead: chapterNumber,
+      readAt: new Date(),
+      ...(existing && existing.chapterRead !== chapterNumber ? { progressPercent: 0 } : {}),
+    },
+  });
+}
+
+// Utilisé par le lecteur mobile pour enregistrer la position en cours de
+// lecture (scroll/pagination) sans réémettre tout le contenu du chapitre.
+// Réapplique le même contrôle d'accès que getChapterForViewer : la
+// progression ne doit jamais fuiter/valider un chapitre non autorisé.
+export async function setReadingProgress(
+  bookId: number,
+  chapterNumber: number,
+  progressPercent: number,
+  viewer: ChapterViewer,
+) {
+  const chapter = await prisma.chapter.findFirst({
+    where: { bookId, chapterNumber },
+    include: {
+      book: { select: { id: true, isFree: true, freeChapterCount: true } },
+      part: { select: { id: true, isFree: true, freeChapterCount: true } },
+    },
+  });
+  if (!chapter) {
+    throw ApiError.notFound('Chapitre introuvable');
+  }
+
+  await assertChapterAccess(chapter, viewer);
+
+  await prisma.readBook.upsert({
+    where: { userId_bookId: { userId: viewer.id, bookId } },
+    create: { userId: viewer.id, bookId, chapterRead: chapterNumber, progressPercent },
+    update: { chapterRead: chapterNumber, progressPercent, readAt: new Date() },
+  });
+}
+
+export async function getReadingProgress(bookId: number, userId: number) {
+  return prisma.readBook.findUnique({
+    where: { userId_bookId: { userId, bookId } },
+    select: { chapterRead: true, progressPercent: true, readAt: true },
   });
 }
 

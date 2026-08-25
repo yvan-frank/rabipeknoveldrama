@@ -15,6 +15,12 @@ export async function listEpubEditionsHandler(req: Request, res: Response) {
   res.json({ success: true, data: editions });
 }
 
+export async function getCurrentEpubEditionHandler(req: Request, res: Response) {
+  const { id } = req.params as unknown as { id: number };
+  const edition = await epubService.getCurrentReadyEditionForReader(id);
+  res.json({ success: true, data: edition });
+}
+
 export async function downloadEpubEditionHandler(req: Request, res: Response) {
   const { id } = req.params as unknown as { id: number };
   const file = await epubService.getEpubDownload(id, req.user!);

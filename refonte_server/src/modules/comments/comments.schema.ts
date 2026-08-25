@@ -21,3 +21,7 @@ export const createChapterCommentSchema = z.object({
   parentId: z.number().int().positive().optional(),
 });
 export type CreateChapterCommentInput = z.infer<typeof createChapterCommentSchema>;
+
+export const chapterCommentIdParamSchema = z.object({
+  commentId: z.coerce.number().int().positive(),
+});

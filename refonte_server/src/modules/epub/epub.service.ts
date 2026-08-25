@@ -162,6 +162,20 @@ export async function listEpubEditions(bookId: number, actingUser: AuthUser) {
   return editions.map(({ sourceRevision: editionRevision, ...edition }) => ({ ...edition, isCurrent: editionRevision === currentRevision }));
 }
 
+// Contrepartie lecteur de listEpubEditions : pas de vérification d'ownership
+// (n'importe quel utilisateur authentifié peut consulter), et ne renvoie que
+// l'édition prête et à jour, sans l'historique complet ni la possibilité de
+// déclencher une génération (réservée à l'auteur/admin, cf. bookEpubEditionsRouter).
+// L'accès réel au fichier reste vérifié séparément par getEpubDownload.
+export async function getCurrentReadyEditionForReader(bookId: number) {
+  const book = await loadEpubSource(bookId);
+  return prisma.epubEdition.findFirst({
+    where: { bookId, status: EpubStatus.READY, sourceRevision: sourceRevision(book) },
+    orderBy: { version: 'desc' },
+    select: { id: true, version: true, fileSizeBytes: true, generatedAt: true },
+  });
+}
+
 export async function generateEpubEdition(editionId: number) {
   const edition = await prisma.epubEdition.findUnique({ where: { id: editionId }, select: { id: true, bookId: true, status: true } });
   if (!edition || edition.status !== EpubStatus.QUEUED) return;

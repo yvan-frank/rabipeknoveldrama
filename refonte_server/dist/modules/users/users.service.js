@@ -182,6 +182,7 @@ async function getUserDashboard(userId) {
             book: purchase.book,
             totalChapters: purchase.book._count.chapters,
             chapterRead: existing?.chapterRead ?? null,
+            progressPercent: existing?.progressPercent ?? 0,
             // Un achat historique de livre donne accès à l'ensemble. Les nouveaux
             // achats de partie restent listés précisément dans purchasedParts.
             purchased: existing?.purchased ?? purchase.part === null,
@@ -196,6 +197,7 @@ async function getUserDashboard(userId) {
             book: read.book,
             totalChapters: read.book._count.chapters,
             chapterRead: read.chapterRead,
+            progressPercent: read.progressPercent,
             purchased: existing?.purchased ?? false,
             purchasedParts: existing?.purchasedParts ?? [],
             lastActivityAt: read.readAt,

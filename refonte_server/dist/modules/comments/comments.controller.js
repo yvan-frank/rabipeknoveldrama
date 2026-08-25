@@ -38,6 +38,7 @@ exports.upsertBookReviewHandler = upsertBookReviewHandler;
 exports.replyToBookReviewHandler = replyToBookReviewHandler;
 exports.listChapterCommentsHandler = listChapterCommentsHandler;
 exports.createChapterCommentHandler = createChapterCommentHandler;
+exports.deleteChapterCommentHandler = deleteChapterCommentHandler;
 const commentsService = __importStar(require("./comments.service"));
 async function listBookReviewsHandler(req, res) {
     const { bookId } = req.params;
@@ -63,5 +64,10 @@ async function createChapterCommentHandler(req, res) {
     const { chapterId } = req.params;
     const comment = await commentsService.createChapterComment(chapterId, req.user.id, req.body);
     res.status(201).json({ success: true, data: comment });
+}
+async function deleteChapterCommentHandler(req, res) {
+    const { commentId } = req.params;
+    await commentsService.deleteChapterComment(commentId, req.user.id);
+    res.json({ success: true, data: null });
 }
 //# sourceMappingURL=comments.controller.js.map

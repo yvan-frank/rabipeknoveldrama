@@ -36,3 +36,17 @@ export async function deleteChapterHandler(req: Request, res: Response) {
   await chaptersService.deleteChapter(id, req.user!);
   res.status(204).send();
 }
+
+export async function getReadingProgressHandler(req: Request, res: Response) {
+  const { id: bookId } = req.params as unknown as { id: number };
+  const progress = await chaptersService.getReadingProgress(bookId, req.user!.id);
+  res.json({ success: true, data: progress });
+}
+
+export async function updateReadingProgressHandler(req: Request, res: Response) {
+  const { id: bookId } = req.params as unknown as { id: number };
+  const { chapterNumber, progressPercent } = req.body as { chapterNumber: number; progressPercent: number };
+  const viewer = { id: req.user!.id, role: req.user!.role };
+  await chaptersService.setReadingProgress(bookId, chapterNumber, progressPercent, viewer);
+  res.status(204).send();
+}

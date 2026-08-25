@@ -51,4 +51,5 @@ exports.commentsRouter.post('/review/:commentId/reply', auth_middleware_1.requir
 // d'auteur" possible côté API tant que ce chantier n'est pas fait.
 exports.commentsRouter.get('/chapter/:chapterId', (0, validate_middleware_1.validate)(comments_schema_1.chapterIdParamSchema, 'params'), (0, asyncHandler_1.asyncHandler)(commentsController.listChapterCommentsHandler));
 exports.commentsRouter.post('/chapter/:chapterId', auth_middleware_1.requireAuth, (0, validate_middleware_1.validate)(comments_schema_1.chapterIdParamSchema, 'params'), (0, validate_middleware_1.validate)(comments_schema_1.createChapterCommentSchema), (0, asyncHandler_1.asyncHandler)(commentsController.createChapterCommentHandler));
+exports.commentsRouter.delete('/chapter-comment/:commentId', auth_middleware_1.requireAuth, (0, validate_middleware_1.validate)(comments_schema_1.chapterCommentIdParamSchema, 'params'), (0, asyncHandler_1.asyncHandler)(commentsController.deleteChapterCommentHandler));
 //# sourceMappingURL=comments.routes.js.map

@@ -25,6 +25,9 @@ class ApiError extends Error {
     static conflict(message = 'Conflit avec une ressource existante') {
         return new ApiError(409, message);
     }
+    static tooManyRequests(message = 'Trop de requêtes, réessayez plus tard') {
+        return new ApiError(429, message);
+    }
     static internal(message = 'Erreur interne du serveur') {
         return new ApiError(500, message);
     }

@@ -113,3 +113,15 @@ export async function createChapterComment(
     },
   });
 }
+
+// Seul l'auteur du commentaire peut le supprimer (pas de modération
+// auteur/admin ici, contrairement aux avis livre — cf. commentaire sur
+// comments.routes.ts : les comptes Author n'ont pas encore d'auth câblée).
+// onDelete: Cascade sur ChapterComment.parent (cf. schema.prisma) supprime
+// automatiquement les réponses du fil avec leur parent.
+export async function deleteChapterComment(commentId: number, userId: number) {
+  const comment = await prisma.chapterComment.findUnique({ where: { id: commentId }, select: { userId: true } });
+  if (!comment) throw ApiError.notFound('Commentaire introuvable');
+  if (comment.userId !== userId) throw ApiError.forbidden("Vous ne pouvez supprimer que vos propres commentaires");
+  await prisma.chapterComment.delete({ where: { id: commentId } });
+}

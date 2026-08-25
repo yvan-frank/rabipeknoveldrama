@@ -13,6 +13,11 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(20, 'Refresh token invalide'),
+});
+export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+
 // Miroir du wizard onboarding auteur côté frontend (RegisterForm) — la
 // validation "au plus 100 mots" est dupliquée côté client pour l'UX, ici
 // pour la sécurité (le client ne fait jamais foi).

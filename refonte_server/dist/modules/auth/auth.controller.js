@@ -37,6 +37,7 @@ exports.registerHandler = registerHandler;
 exports.registerAuthorHandler = registerAuthorHandler;
 exports.loginHandler = loginHandler;
 exports.logoutHandler = logoutHandler;
+exports.refreshHandler = refreshHandler;
 exports.meHandler = meHandler;
 const env_1 = require("../../config/env");
 const authService = __importStar(require("./auth.service"));
@@ -47,23 +48,33 @@ const COOKIE_OPTIONS = {
     maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 async function registerHandler(req, res) {
-    const { user, token } = await authService.register(req.body);
+    const { user, token, accessToken, refreshToken } = await authService.register(req.body);
     res.cookie(env_1.env.COOKIE_NAME, token, COOKIE_OPTIONS);
-    res.status(201).json({ success: true, data: { user } });
+    res.status(201).json({ success: true, data: { user, accessToken, refreshToken } });
 }
 async function registerAuthorHandler(req, res) {
-    const { user, token } = await authService.registerAuthor(req.body);
+    const { user, token, accessToken, refreshToken } = await authService.registerAuthor(req.body);
     res.cookie(env_1.env.COOKIE_NAME, token, COOKIE_OPTIONS);
-    res.status(201).json({ success: true, data: { user } });
+    res.status(201).json({ success: true, data: { user, accessToken, refreshToken } });
 }
 async function loginHandler(req, res) {
-    const { user, token } = await authService.login(req.body);
+    const { user, token, accessToken, refreshToken } = await authService.login(req.body);
     res.cookie(env_1.env.COOKIE_NAME, token, COOKIE_OPTIONS);
-    res.json({ success: true, data: { user } });
+    res.json({ success: true, data: { user, accessToken, refreshToken } });
 }
-function logoutHandler(_req, res) {
+// L'app mobile n'a pas de cookie à effacer : elle envoie son refresh token
+// pour qu'il soit révoqué côté serveur (sinon il resterait échangeable).
+async function logoutHandler(req, res) {
+    const refreshToken = req.body?.refreshToken;
+    if (refreshToken) {
+        await authService.revokeRefreshToken(refreshToken);
+    }
     res.clearCookie(env_1.env.COOKIE_NAME);
     res.json({ success: true, data: null });
+}
+async function refreshHandler(req, res) {
+    const { user, accessToken, refreshToken } = await authService.refreshAccessToken(req.body.refreshToken);
+    res.json({ success: true, data: { user, accessToken, refreshToken } });
 }
 function meHandler(req, res) {
     res.json({ success: true, data: { user: req.user } });

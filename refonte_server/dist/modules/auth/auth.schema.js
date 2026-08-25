@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerAuthorSchema = exports.loginSchema = exports.registerSchema = void 0;
+exports.registerAuthorSchema = exports.refreshTokenSchema = exports.loginSchema = exports.registerSchema = void 0;
 const zod_1 = require("zod");
 exports.registerSchema = zod_1.z.object({
     name: zod_1.z.string().min(2).max(150),
@@ -10,6 +10,9 @@ exports.registerSchema = zod_1.z.object({
 exports.loginSchema = zod_1.z.object({
     email: zod_1.z.string().email(),
     password: zod_1.z.string().min(1),
+});
+exports.refreshTokenSchema = zod_1.z.object({
+    refreshToken: zod_1.z.string().min(20, 'Refresh token invalide'),
 });
 // Miroir du wizard onboarding auteur côté frontend (RegisterForm) — la
 // validation "au plus 100 mots" est dupliquée côté client pour l'UX, ici

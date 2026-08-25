@@ -9,7 +9,14 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL est requis'),
 
   JWT_SECRET: z.string().min(16, 'JWT_SECRET doit faire au moins 16 caractères'),
+  // Durée du JWT posé dans le cookie httpOnly web — comportement inchangé.
   JWT_EXPIRES_IN: z.string().default('7d'),
+  // Durée du JWT d'accès renvoyé en JSON pour les clients qui ne peuvent pas
+  // lire un cookie httpOnly (app mobile). Volontairement courte : la session
+  // longue durée est portée par le refresh token (JWT_REFRESH_TOKEN_TTL_DAYS),
+  // révocable côté serveur, contrairement à ce JWT.
+  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
   COOKIE_NAME: z.string().default('rabipek_token'),
   // Clé AES-256 encodée en base64. Optionnelle ici pour laisser démarrer une
   // instance avant migration, mais obligatoire dès qu'un chapitre est lu ou

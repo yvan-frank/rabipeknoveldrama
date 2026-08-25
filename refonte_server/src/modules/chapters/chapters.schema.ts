@@ -24,3 +24,17 @@ export const chapterIdParamSchema = z.object({
 export const bookIdParamSchema = z.object({
   bookId: z.coerce.number().int().positive(),
 });
+
+// Monté sous /books/:id/reading-progress — id désigne ici le livre, pas un
+// chapitre, d'où un schéma dédié plutôt que la réutilisation de chapterIdParamSchema.
+export const bookReadingProgressParamSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
+
+export const updateReadingProgressSchema = z.object({
+  chapterNumber: z.number().int().positive(),
+  // Décimal (pas int) : cf. schema.prisma sur ReadBook.progressPercent — la
+  // reprise "exacte" en mobile dépend de cette précision.
+  progressPercent: z.number().min(0).max(100),
+});
+export type UpdateReadingProgressInput = z.infer<typeof updateReadingProgressSchema>;

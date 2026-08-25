@@ -35,20 +35,148 @@ model User {
   isAdmin        Boolean  @default(false) @map("is_admin")
   isActive       Boolean  @default(false) @map("is_active")
   affiliateCode  String?  @map("affiliate_code") @db.VarChar(20)
+  // Solde de points de fidélité (pubs récompensées, check-in quotidien, etc.)
+  // caché sur User pour une lecture rapide ; PointsTransaction reste la
+  // source de vérité auditable (le solde n'est qu'une somme mise en cache,
+  // toujours recalculée dans la même transaction DB que l'écriture du ledger).
+  pointsBalance  Int      @default(0) @map("points_balance")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
 
-  carts           Cart[]
-  achats          Achat[]
-  comments        Comment[]
-  chapterComments ChapterComment[]
-  likes           Like[]
-  shares          Share[]
-  readBooks       ReadBook[]
-  affiliate       Affiliate?
+  carts             Cart[]
+  achats             Achat[]
+  comments           Comment[]
+  chapterComments    ChapterComment[]
+  likes              Like[]
+  shares             Share[]
+  readBooks          ReadBook[]
+  affiliate          Affiliate?
+  pointsTransactions PointsTransaction[]
+  checkIns           CheckIn[]
+  articleReads       ArticleRead[]
+  dailyReadingTimes  DailyReadingTime[]
+  supportMessages    SupportMessage[]
+  pushTokens         PushToken[]
 
   @@map("users")
+}
+
+// Journal d'écritures du solde de points (ledger) : chaque crédit/débit laisse
+// une trace horodatée avec sa raison, ce que le seul champ User.pointsBalance
+// ne permettrait pas d'auditer ni de rejouer en cas d'incident.
+model PointsTransaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  // Positif pour un crédit (pub visionnée, check-in...), négatif pour un
+  // futur débit (échange contre un avantage) — pas de champ "type" séparé,
+  // le signe de amount suffit.
+  amount    Int
+  reason    String   @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("points_transactions")
+}
+
+// Une ligne par jour effectivement check-in (jamais 2 pour la même date grâce
+// à l'unique ci-dessous, qui sert aussi de garde-fou anti-double-clic/rejeu).
+// streakDay (1-7) est calculé et figé au moment du check-in : le recalculer à
+// la volée depuis l'historique serait possible mais plus fragile qu'un simple
+// stockage de la valeur déjà validée.
+model CheckIn {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  checkInDate DateTime @map("check_in_date") @db.Date
+  streakDay   Int      @map("streak_day")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, checkInDate])
+  @@index([userId, checkInDate])
+  @@map("check_ins")
+}
+
+// Marque la lecture d'un des 3 articles externes de la tâche bonus "Lisez 3
+// articles" (liste figée côté serveur, cf. points.service.ts) — une ligne par
+// article distinct ouvert, jamais deux pour le même grâce à l'unique
+// ci-dessous (idempotent si l'utilisateur rouvre un article déjà lu).
+model ArticleRead {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  articleId String   @map("article_id") @db.VarChar(50)
+  readAt    DateTime @default(now()) @map("read_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@map("article_reads")
+}
+
+// Cumul quotidien de secondes de lecture active (rapportées par le lecteur
+// mobile par petits incréments, cf. points.service.ts) — sert les paliers
+// bonus "Lire 15/30 min". Les booléens de crédit évitent de recréditer un
+// palier déjà atteint plus tôt dans la journée (le cumul continue de monter
+// après le palier, mais ne doit plus déclencher de nouveau crédit).
+model DailyReadingTime {
+  id                  Int      @id @default(autoincrement())
+  userId              Int      @map("user_id")
+  date                DateTime @map("date") @db.Date
+  totalSeconds        Int      @default(0) @map("total_seconds")
+  milestone15Credited Boolean  @default(false) @map("milestone_15_credited")
+  milestone30Credited Boolean  @default(false) @map("milestone_30_credited")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_reading_time")
+}
+
+// Un seul fil par utilisateur (userId sert de clé de conversation, pas
+// d'entité "Conversation" séparée — inutile tant qu'il n'y a qu'un seul
+// canal support, pas de multi-thread par utilisateur). readByUser/
+// readByAdmin distincts (pas un simple "read") : chaque camp doit pouvoir
+// savoir ce qu'il n'a pas encore vu, indépendamment de l'autre.
+model SupportMessage {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  sender      SupportSender
+  content     String   @db.Text
+  readByUser  Boolean  @default(false) @map("read_by_user")
+  readByAdmin Boolean  @default(false) @map("read_by_admin")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("support_messages")
+}
+
+enum SupportSender {
+  user
+  admin
+}
+
+// Un utilisateur peut avoir plusieurs jetons (plusieurs appareils) — token
+// unique globalement (format Expo Push, propre à une install app+device) :
+// si le même token se réenregistre pour un autre compte (déconnexion/
+// reconnexion sur le même appareil), il doit basculer vers ce nouveau
+// propriétaire plutôt que produire un doublon en erreur (cf. upsert côté service).
+model PushToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @unique @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_tokens")
 }
 
 model Author {
@@ -108,6 +236,28 @@ model AuthorExtension {
   author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@map("author_extension")
+}
+
+// Jeton de rafraîchissement pour les clients qui ne peuvent pas s'appuyer sur
+// le cookie httpOnly (app mobile) : ils échangent ce jeton opaque et longue
+// durée contre un access token JWT courte durée via POST /auth/refresh.
+// Exception délibérée et étroite à la décision "JWT stateless" ci-dessus
+// (cf. en-tête de fichier) : un refresh token doit être révocable côté
+// serveur pour rester sûr sur une longue durée de vie, ce qu'un JWT seul ne
+// permet pas. accountType/accountId pointent vers User ou Author (pas de
+// relation FK typée : Prisma ne modélise pas les relations polymorphes).
+// Seul le hash SHA-256 du jeton est stocké, jamais sa valeur en clair.
+model RefreshToken {
+  id          Int       @id @default(autoincrement())
+  tokenHash   String    @unique @map("token_hash") @db.VarChar(64)
+  accountType String    @map("account_type") @db.VarChar(10)
+  accountId   Int       @map("account_id")
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([accountType, accountId])
+  @@map("refresh_tokens")
 }
 
 // Réglages globaux de la plateforme. La ligne unique (id = 1) est créée à la
@@ -470,11 +620,18 @@ model Share {
 }
 
 model ReadBook {
-  id           Int      @id @default(autoincrement()) @map("id_read")
-  readAt       DateTime @default(now()) @map("read_date")
-  chapterRead  Int      @map("chapter_read")
-  userId       Int      @map("id_user")
-  bookId       Int      @map("id_book")
+  id              Int      @id @default(autoincrement()) @map("id_read")
+  readAt          DateTime @default(now()) @map("read_date")
+  chapterRead     Int      @map("chapter_read")
+  // Position de lecture à l'intérieur de chapterRead (0-100). Distincte du
+  // numéro de chapitre pour permettre une reprise précise côté mobile ;
+  // remise à 0 lorsque le lecteur change de chapitre (cf. chapters.service.ts).
+  // Float (pas Int) : la reprise "exacte" en mode feuilleté/défilement repose
+  // sur cette précision décimale — un pourcentage arrondi à l'entier introduit
+  // une dérive systématique d'une page/quelques pixels à la réouverture.
+  progressPercent Float    @default(0) @map("progress_percent")
+  userId          Int      @map("id_user")
+  bookId          Int      @map("id_book")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)

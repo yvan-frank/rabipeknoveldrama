@@ -39,6 +39,8 @@ exports.getChapterForManageHandler = getChapterForManageHandler;
 exports.createChapterHandler = createChapterHandler;
 exports.updateChapterHandler = updateChapterHandler;
 exports.deleteChapterHandler = deleteChapterHandler;
+exports.getReadingProgressHandler = getReadingProgressHandler;
+exports.updateReadingProgressHandler = updateReadingProgressHandler;
 const chaptersService = __importStar(require("./chapters.service"));
 async function listChaptersByBookHandler(req, res) {
     const { bookId } = req.params;
@@ -68,6 +70,18 @@ async function updateChapterHandler(req, res) {
 async function deleteChapterHandler(req, res) {
     const { id } = req.params;
     await chaptersService.deleteChapter(id, req.user);
+    res.status(204).send();
+}
+async function getReadingProgressHandler(req, res) {
+    const { id: bookId } = req.params;
+    const progress = await chaptersService.getReadingProgress(bookId, req.user.id);
+    res.json({ success: true, data: progress });
+}
+async function updateReadingProgressHandler(req, res) {
+    const { id: bookId } = req.params;
+    const { chapterNumber, progressPercent } = req.body;
+    const viewer = { id: req.user.id, role: req.user.role };
+    await chaptersService.setReadingProgress(bookId, chapterNumber, progressPercent, viewer);
     res.status(204).send();
 }
 //# sourceMappingURL=chapters.controller.js.map

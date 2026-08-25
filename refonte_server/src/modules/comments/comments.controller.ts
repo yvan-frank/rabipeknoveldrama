@@ -30,3 +30,9 @@ export async function createChapterCommentHandler(req: Request, res: Response) {
   const comment = await commentsService.createChapterComment(chapterId, req.user!.id, req.body);
   res.status(201).json({ success: true, data: comment });
 }
+
+export async function deleteChapterCommentHandler(req: Request, res: Response) {
+  const { commentId } = req.params as unknown as { commentId: number };
+  await commentsService.deleteChapterComment(commentId, req.user!.id);
+  res.json({ success: true, data: null });
+}

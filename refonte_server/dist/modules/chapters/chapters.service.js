@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.listChaptersByBook = listChaptersByBook;
 exports.getChapterById = getChapterById;
 exports.getChapterForManage = getChapterForManage;
+exports.setReadingProgress = setReadingProgress;
+exports.getReadingProgress = getReadingProgress;
 exports.getChapterForViewer = getChapterForViewer;
 exports.createChapter = createChapter;
 exports.updateChapter = updateChapter;
@@ -106,11 +108,50 @@ async function assertChapterAccess(chapter, viewer) {
 // écrasé à chaque chapitre effectivement consulté — sert à la fois de
 // "reprendre la lecture" (dashboard) et d'indicateur d'activité. Best-effort :
 // une erreur ici ne doit jamais faire échouer la lecture du chapitre.
+// Le pourcentage n'est remis à 0 que lors d'un changement de chapitre : une
+// simple relecture du même chapitre (ex. l'app mobile qui revient au premier
+// plan) ne doit pas écraser la position déjà enregistrée via setReadingProgress.
 async function recordReadingProgress(userId, bookId, chapterNumber) {
+    const existing = await prisma_1.prisma.readBook.findUnique({
+        where: { userId_bookId: { userId, bookId } },
+        select: { chapterRead: true },
+    });
     await prisma_1.prisma.readBook.upsert({
         where: { userId_bookId: { userId, bookId } },
-        create: { userId, bookId, chapterRead: chapterNumber },
-        update: { chapterRead: chapterNumber, readAt: new Date() },
+        create: { userId, bookId, chapterRead: chapterNumber, progressPercent: 0 },
+        update: {
+            chapterRead: chapterNumber,
+            readAt: new Date(),
+            ...(existing && existing.chapterRead !== chapterNumber ? { progressPercent: 0 } : {}),
+        },
+    });
+}
+// Utilisé par le lecteur mobile pour enregistrer la position en cours de
+// lecture (scroll/pagination) sans réémettre tout le contenu du chapitre.
+// Réapplique le même contrôle d'accès que getChapterForViewer : la
+// progression ne doit jamais fuiter/valider un chapitre non autorisé.
+async function setReadingProgress(bookId, chapterNumber, progressPercent, viewer) {
+    const chapter = await prisma_1.prisma.chapter.findFirst({
+        where: { bookId, chapterNumber },
+        include: {
+            book: { select: { id: true, isFree: true, freeChapterCount: true } },
+            part: { select: { id: true, isFree: true, freeChapterCount: true } },
+        },
+    });
+    if (!chapter) {
+        throw ApiError_1.ApiError.notFound('Chapitre introuvable');
+    }
+    await assertChapterAccess(chapter, viewer);
+    await prisma_1.prisma.readBook.upsert({
+        where: { userId_bookId: { userId: viewer.id, bookId } },
+        create: { userId: viewer.id, bookId, chapterRead: chapterNumber, progressPercent },
+        update: { chapterRead: chapterNumber, progressPercent, readAt: new Date() },
+    });
+}
+async function getReadingProgress(bookId, userId) {
+    return prisma_1.prisma.readBook.findUnique({
+        where: { userId_bookId: { userId, bookId } },
+        select: { chapterRead: true, progressPercent: true, readAt: true },
     });
 }
 async function getChapterForViewer(id, viewer) {

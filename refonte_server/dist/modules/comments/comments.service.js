@@ -6,6 +6,7 @@ exports.getBookReviewStats = getBookReviewStats;
 exports.upsertBookReview = upsertBookReview;
 exports.listChapterComments = listChapterComments;
 exports.createChapterComment = createChapterComment;
+exports.deleteChapterComment = deleteChapterComment;
 const prisma_1 = require("../../lib/prisma");
 const ApiError_1 = require("../../utils/ApiError");
 const ownership_1 = require("../../utils/ownership");
@@ -104,5 +105,18 @@ async function createChapterComment(chapterId, userId, input) {
             user: { select: reviewerSelect },
         },
     });
+}
+// Seul l'auteur du commentaire peut le supprimer (pas de modération
+// auteur/admin ici, contrairement aux avis livre — cf. commentaire sur
+// comments.routes.ts : les comptes Author n'ont pas encore d'auth câblée).
+// onDelete: Cascade sur ChapterComment.parent (cf. schema.prisma) supprime
+// automatiquement les réponses du fil avec leur parent.
+async function deleteChapterComment(commentId, userId) {
+    const comment = await prisma_1.prisma.chapterComment.findUnique({ where: { id: commentId }, select: { userId: true } });
+    if (!comment)
+        throw ApiError_1.ApiError.notFound('Commentaire introuvable');
+    if (comment.userId !== userId)
+        throw ApiError_1.ApiError.forbidden("Vous ne pouvez supprimer que vos propres commentaires");
+    await prisma_1.prisma.chapterComment.delete({ where: { id: commentId } });
 }
 //# sourceMappingURL=comments.service.js.map

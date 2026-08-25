@@ -44,6 +44,9 @@ exports.authRouter = (0, express_1.Router)();
 exports.authRouter.post('/register', (0, validate_middleware_1.validate)(auth_schema_1.registerSchema), (0, asyncHandler_1.asyncHandler)(authController.registerHandler));
 exports.authRouter.post('/register-author', (0, validate_middleware_1.validate)(auth_schema_1.registerAuthorSchema), (0, asyncHandler_1.asyncHandler)(authController.registerAuthorHandler));
 exports.authRouter.post('/login', (0, validate_middleware_1.validate)(auth_schema_1.loginSchema), (0, asyncHandler_1.asyncHandler)(authController.loginHandler));
-exports.authRouter.post('/logout', authController.logoutHandler);
+// Renouvellement de l'access token mobile à partir d'un refresh token —
+// aucune authentification requise ici, le refresh token en tient lieu.
+exports.authRouter.post('/refresh', (0, validate_middleware_1.validate)(auth_schema_1.refreshTokenSchema), (0, asyncHandler_1.asyncHandler)(authController.refreshHandler));
+exports.authRouter.post('/logout', (0, asyncHandler_1.asyncHandler)(authController.logoutHandler));
 exports.authRouter.get('/me', auth_middleware_1.requireAuth, authController.meHandler);
 //# sourceMappingURL=auth.routes.js.map

@@ -5,6 +5,7 @@ import { validate } from '../../middlewares/validate.middleware';
 import { requireAuth, requireRole } from '../../middlewares/auth.middleware';
 import {
   bookIdParamSchema,
+  chapterCommentIdParamSchema,
   chapterIdParamSchema,
   createChapterCommentSchema,
   upsertReviewSchema,
@@ -46,4 +47,11 @@ commentsRouter.post(
   validate(chapterIdParamSchema, 'params'),
   validate(createChapterCommentSchema),
   asyncHandler(commentsController.createChapterCommentHandler),
+);
+
+commentsRouter.delete(
+  '/chapter-comment/:commentId',
+  requireAuth,
+  validate(chapterCommentIdParamSchema, 'params'),
+  asyncHandler(commentsController.deleteChapterCommentHandler),
 );
