@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import mobileAds, { AdsConsent } from 'react-native-google-mobile-ads';
 import { useAuthStore } from '../src/auth/auth-store';
+import { AppAlertHost } from '../src/components/AppAlert';
 import { useNotificationPreferenceStore } from '../src/lib/notification-preference-store';
 import { registerForPushNotifications, unregisterCurrentPushToken } from '../src/lib/push-notifications';
 import { fontsToLoad } from '../src/theme/tokens';
@@ -109,6 +110,10 @@ export default function RootLayout() {
           (auth) <-> (app), un changement de contexte complet (visiteur/connecté),
           pas un "empilement" d'écran — un fondu se lit mieux qu'un glissement. */}
       <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
+      {/* Monté une seule fois ici : showAlert() (cf. src/components/AppAlert.tsx)
+          fonctionne depuis n'importe quel écran de l'app, pas seulement ceux
+          sous ce layout racine. */}
+      <AppAlertHost />
     </QueryClientProvider>
   );
 }

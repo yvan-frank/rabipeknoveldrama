@@ -1,6 +1,6 @@
 {
   "name": "refonte_rabi_mobile",
-  "version": "1.0.0",
+  "version": "2.7.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.4.1",

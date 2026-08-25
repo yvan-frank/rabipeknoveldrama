@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { AdsConsent, AdsConsentPrivacyOptionsRequirementStatus } from 'react-native-google-mobile-ads';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/auth/auth-store';
+import { showAlert } from '../../src/components/AppAlert';
 import { useNotificationPreferenceStore } from '../../src/lib/notification-preference-store';
 import { useThemePreferenceStore } from '../../src/theme/theme-preference-store';
 import { useTheme } from '../../src/theme/useTheme';
@@ -42,7 +43,7 @@ export default function SettingsScreen() {
 
   function handleAdsPrivacyOptions() {
     AdsConsent.showPrivacyOptionsForm().catch(() => {
-      Alert.alert('Oups', "Impossible d'ouvrir les options de confidentialité pour l'instant.");
+      showAlert('Oups', "Impossible d'ouvrir les options de confidentialité pour l'instant.");
     });
   }
 

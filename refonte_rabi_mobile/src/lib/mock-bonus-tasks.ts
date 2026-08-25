@@ -35,20 +35,6 @@ export const MOCK_BONUS_SECTIONS: BonusTaskSection[] = [
     footerLink: 'Obtenez plus de Bonus',
     tasks: [
       {
-        id: 'adjoe',
-        title: '1000+ Bonus',
-        badge: { label: 'adjoe', color: '#F4511E' },
-        description: 'Débloquez 1000+ de bonus ! Jouez pour des récompenses énormes.',
-        cta: 'complete',
-      },
-      {
-        id: 'tapjoy',
-        title: '1000+ Bonus',
-        badge: { label: 'tapjoy', color: '#E53935' },
-        description: 'Débloquez 1000+ de bonus ! Jouez pour des récompenses énormes.',
-        cta: 'complete',
-      },
-      {
         id: 'video',
         title: '1 Bonus (0/20)',
         description: 'Vous serez récompensé(e) pour chaque tâche de visionnage de vidéo accomplie.',

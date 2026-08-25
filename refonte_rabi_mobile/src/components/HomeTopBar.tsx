@@ -23,12 +23,14 @@ export function HomeTopBar({ greeting, onPressSearch, opacity, pointerEvents }: 
       pointerEvents={pointerEvents}
       style={[styles.bar, { opacity, top: insets.top + spacing.sm, left: spacing.lg, right: spacing.lg }]}
     >
-      <View style={styles.pill}>
+      {/* Toute la pastille est tappable (pas seulement l'icône loupe) : la
+          salutation invite tout autant à chercher qu'à l'icône elle-même. */}
+      <Pressable onPress={onPressSearch} style={styles.pill}>
         <Text style={[typography.caption, { color: '#FFFFFF' }]}>{greeting}</Text>
-        <Pressable onPress={onPressSearch} hitSlop={10} style={styles.searchButton}>
+        <View style={styles.searchButton}>
           <Ionicons name="search" size={18} color="#FFFFFF" />
-        </Pressable>
-      </View>
+        </View>
+      </Pressable>
     </Animated.View>
   );
 }

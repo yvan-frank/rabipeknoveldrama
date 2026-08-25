@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { showAlert } from '../../src/components/AppAlert';
 import { resolveAssetUrl } from '../../src/lib/resolve-asset-url';
 import { useRecentlyViewedStore, type RecentlyViewedEntry } from '../../src/lib/recently-viewed-store';
 import { useTheme } from '../../src/theme/useTheme';
@@ -58,7 +59,7 @@ export default function HistoryScreen() {
   const clear = useRecentlyViewedStore((state) => state.clear);
 
   function handleClear() {
-    Alert.alert("Effacer l'historique ?", 'Les livres consultés récemment seront retirés de cette liste.', [
+    showAlert("Effacer l'historique ?", 'Les livres consultés récemment seront retirés de cette liste.', [
       { text: 'Annuler', style: 'cancel' },
       { text: 'Effacer', style: 'destructive', onPress: clear },
     ]);

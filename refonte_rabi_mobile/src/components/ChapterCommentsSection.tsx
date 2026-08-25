@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { showAlert } from './AppAlert';
 import { BottomSheet } from './BottomSheet';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './Skeleton';
@@ -37,7 +38,7 @@ const PANEL_MUTED = 'rgba(255,255,255,0.6)';
 const PANEL_DANGER = '#FCA5A5';
 
 function showLikeComingSoon() {
-  Alert.alert('Bientôt disponible', 'Aimer un commentaire arrive prochainement.');
+  showAlert('Bientôt disponible', 'Aimer un commentaire arrive prochainement.');
 }
 
 function CommentBubble({
@@ -184,7 +185,7 @@ export function ChapterCommentsSection({ chapterId }: ChapterCommentsSectionProp
       if (detailComment?.id === commentId) closeDetail();
       queryClient.invalidateQueries({ queryKey: ['chapter-comments', chapterId] });
     },
-    onError: (error) => Alert.alert('Erreur', extractApiErrorMessage(error, 'Impossible de supprimer ce commentaire')),
+    onError: (error) => showAlert('Erreur', extractApiErrorMessage(error, 'Impossible de supprimer ce commentaire')),
   });
 
   // Liste plate côté serveur : les réponses (parentId non nul) sont indentées
@@ -346,7 +347,7 @@ export function ChapterCommentsSection({ chapterId }: ChapterCommentsSectionProp
               label="Signaler"
               onPress={() => {
                 setActionsTarget(null);
-                Alert.alert('Bientôt disponible', 'Le signalement de commentaire arrive prochainement.');
+                showAlert('Bientôt disponible', 'Le signalement de commentaire arrive prochainement.');
               }}
             />
           )}

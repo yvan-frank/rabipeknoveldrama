@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Alert, Animated, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { TestIds, useRewardedAd } from 'react-native-google-mobile-ads';
 import { useAuthStore } from '../../src/auth/auth-store';
+import { showAlert } from '../../src/components/AppAlert';
+import { BonusScreenSkeleton } from '../../src/components/BonusScreenSkeleton';
 import { extractApiErrorMessage } from '../../src/api/client';
 import {
   creditRewardedAdPoints,
@@ -24,11 +26,11 @@ import { MOCK_BONUS_SECTIONS, type BonusTask, type BonusTaskSection } from '../.
 import { useTheme } from '../../src/theme/useTheme';
 
 function showComingSoon() {
-  Alert.alert('Bientôt disponible', 'Ce système de récompenses est en cours de finalisation.');
+  showAlert('Bientôt disponible', 'Ce système de récompenses est en cours de finalisation.');
 }
 
 function showReadingTimeInfo() {
-  Alert.alert(
+  showAlert(
     'Comptabilisé automatiquement',
     'Le temps de lecture se cumule tout seul pendant que vous lisez un chapitre — pas besoin de faire quoi que ce soit ici.',
   );
@@ -406,8 +408,13 @@ export default function BonusScreen() {
   // (isEarnedReward reste vrai tant que le hook n'a pas rechargé).
   const rewardHandledRef = useRef(false);
 
+  // Vrai le temps du tout premier chargement (cf. BonusScreenSkeleton
+  // ci-dessous) — pas pour un visiteur, qui n'a rien à charger (aucune
+  // requête /points/* n'est déclenchée pour lui, cf. plus bas).
+  const [initialLoading, setInitialLoading] = useState(!isGuest);
+
   const refreshBalance = useCallback(() => {
-    getPointsBalance()
+    return getPointsBalance()
       .then(({ balance: fetched }) => setBalance(fetched))
       .catch(() => {
         // Écran encore utilisable sans solde affiché (ex. hors-ligne) ;
@@ -416,7 +423,7 @@ export default function BonusScreen() {
   }, []);
 
   const refreshCheckInStatus = useCallback(() => {
-    getCheckInStatus()
+    return getCheckInStatus()
       .then(setCheckInStatus)
       .catch(() => {
         // Idem : l'écran reste utilisable, la carte affiche juste son état
@@ -425,7 +432,7 @@ export default function BonusScreen() {
   }, []);
 
   const refreshVideoStatus = useCallback(() => {
-    getRewardedAdStatus()
+    return getRewardedAdStatus()
       .then(setVideoStatus)
       .catch(() => {
         // Idem : compteur affiché en repli (0/20) tant que la requête n'a pas abouti.
@@ -433,7 +440,7 @@ export default function BonusScreen() {
   }, []);
 
   const refreshArticlesStatus = useCallback(() => {
-    getArticlesStatus()
+    return getArticlesStatus()
       .then(setArticlesStatus)
       .catch(() => {
         // Idem : compteur affiché en repli (0/3) tant que la requête n'a pas abouti.
@@ -441,7 +448,7 @@ export default function BonusScreen() {
   }, []);
 
   const refreshReadingTimeStatus = useCallback(() => {
-    getReadingTimeStatus()
+    return getReadingTimeStatus()
       .then(setReadingTimeStatus)
       .catch(() => {
         // Idem : progression affichée en repli (0/15, 0/30) tant que la requête n'a pas abouti.
@@ -453,12 +460,18 @@ export default function BonusScreen() {
     // visiteur y recevrait 401 sur chaque appel, silencieusement avalé par
     // les .catch ci-dessus — inutile de les déclencher, le solde/statuts
     // resteront simplement à leur valeur de repli tant qu'il n'est pas connecté.
-    if (isGuest) return;
-    refreshBalance();
-    refreshCheckInStatus();
-    refreshVideoStatus();
-    refreshArticlesStatus();
-    refreshReadingTimeStatus();
+    if (isGuest) {
+      setInitialLoading(false);
+      return;
+    }
+    setInitialLoading(true);
+    Promise.allSettled([
+      refreshBalance(),
+      refreshCheckInStatus(),
+      refreshVideoStatus(),
+      refreshArticlesStatus(),
+      refreshReadingTimeStatus(),
+    ]).finally(() => setInitialLoading(false));
   }, [isGuest, refreshBalance, refreshCheckInStatus, refreshVideoStatus, refreshArticlesStatus, refreshReadingTimeStatus]);
 
   useEffect(() => {
@@ -469,7 +482,7 @@ export default function BonusScreen() {
   // évite un appel API voué à échouer en 401 pour un visiteur.
   function requireAuthOrPrompt(): boolean {
     if (!isGuest) return false;
-    Alert.alert('Connexion requise', 'Connectez-vous pour gagner et suivre vos bonus.', [
+    showAlert('Connexion requise', 'Connectez-vous pour gagner et suivre vos bonus.', [
       { text: 'Annuler', style: 'cancel' },
       { text: 'Se connecter', onPress: () => router.push('/(auth)/login') },
     ]);
@@ -487,7 +500,7 @@ export default function BonusScreen() {
         showToast(`+${earned} points crédités !`);
       })
       .catch((error) => {
-        Alert.alert('Oups', extractApiErrorMessage(error, "Impossible d'enregistrer le check-in pour l'instant."));
+        showAlert('Oups', extractApiErrorMessage(error, "Impossible d'enregistrer le check-in pour l'instant."));
         // Un autre appareil/onglet a peut-être déjà validé le check-in du
         // jour entre-temps (conflit 409) : on resynchronise l'état affiché.
         refreshCheckInStatus();
@@ -505,7 +518,7 @@ export default function BonusScreen() {
           showToast(`+${earned} points crédités !`);
         })
         .catch((error) => {
-          Alert.alert('Oups', extractApiErrorMessage(error, "Impossible de créditer la récompense pour l'instant."));
+          showAlert('Oups', extractApiErrorMessage(error, "Impossible de créditer la récompense pour l'instant."));
         });
     }
   }, [isEarnedReward]);
@@ -522,7 +535,7 @@ export default function BonusScreen() {
     if (isLoaded) {
       show();
     } else {
-      Alert.alert('Chargement…', "La publicité n'est pas encore prête, réessayez dans quelques secondes.");
+      showAlert('Chargement…', "La publicité n'est pas encore prête, réessayez dans quelques secondes.");
       load();
     }
   }
@@ -536,12 +549,12 @@ export default function BonusScreen() {
     if (!articlesStatus) return;
     const nextArticle = articlesStatus.articles.find((article) => !article.read);
     if (!nextArticle) {
-      Alert.alert('Terminé', 'Vous avez déjà lu les 3 articles disponibles.');
+      showAlert('Terminé', 'Vous avez déjà lu les 3 articles disponibles.');
       return;
     }
 
     Linking.openURL(nextArticle.url).catch(() => {
-      Alert.alert('Oups', "Impossible d'ouvrir cet article pour l'instant.");
+      showAlert('Oups', "Impossible d'ouvrir cet article pour l'instant.");
     });
 
     markArticleRead(nextArticle.id)
@@ -558,6 +571,10 @@ export default function BonusScreen() {
         // Pas d'alerte bloquante : l'article s'est déjà ouvert, le crédit
         // sera simplement retenté à la prochaine tentative.
       });
+  }
+
+  if (initialLoading) {
+    return <BonusScreenSkeleton />;
   }
 
   return (

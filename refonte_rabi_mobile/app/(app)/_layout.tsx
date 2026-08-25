@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
-import { Alert, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
+import { showAlert } from '../../src/components/AppAlert';
 import { useTheme } from '../../src/theme/useTheme';
 
 // Stack racine de la zone "app" : héberge le groupe d'onglets `(tabs)`
@@ -46,7 +47,7 @@ export default function AppLayout() {
           headerRight: () => (
             <Pressable
               onPress={() =>
-                Alert.alert(
+                showAlert(
                   'Comment ça marche ?',
                   'Complétez des tâches (lecture, partage, vidéos) pour gagner des bonus, utilisables pour débloquer des chapitres.',
                 )

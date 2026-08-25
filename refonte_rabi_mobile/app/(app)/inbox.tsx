@@ -15,26 +15,30 @@ function formatTime(iso: string): string {
 }
 
 function MessageBubble({ message }: { message: SupportMessage }) {
-  const { colors, spacing, radius, typography } = useTheme();
+  const { colors, spacing, radius, typography, shadow } = useTheme();
   const isUser = message.sender === 'user';
   return (
     <View style={[styles.bubbleRow, { justifyContent: isUser ? 'flex-end' : 'flex-start' }]}>
       <View
         style={[
+          shadow,
           styles.bubble,
           {
             backgroundColor: isUser ? colors.accent : colors.surface,
-            borderRadius: radius.lg,
-            borderBottomRightRadius: isUser ? 4 : radius.lg,
-            borderBottomLeftRadius: isUser ? radius.lg : 4,
+            // Un seul coin resserré du côté "pointé" (bas-droite pour moi,
+            // bas-gauche pour le support) plutôt qu'une vraie queue de bulle
+            // dessinée : même lecture visuelle, design plus épuré.
+            borderRadius: radius.lg + 2,
+            borderBottomRightRadius: isUser ? 4 : radius.lg + 2,
+            borderBottomLeftRadius: isUser ? radius.lg + 2 : 4,
             paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
+            paddingVertical: spacing.sm + 2,
           },
         ]}
       >
-        {!isUser ? <Text style={[typography.label, { color: colors.accent, marginBottom: 2 }]}>Support Rabipek</Text> : null}
+        {!isUser ? <Text style={[typography.label, { color: colors.accent, marginBottom: 3 }]}>Support Rabipek</Text> : null}
         <Text style={[typography.body, { color: isUser ? '#FFFFFF' : colors.ink }]}>{message.content}</Text>
-        <Text style={[typography.label, { color: isUser ? 'rgba(255,255,255,0.7)' : colors.textMuted, marginTop: 4 }]}>
+        <Text style={[typography.label, { color: isUser ? 'rgba(255,255,255,0.7)' : colors.textMuted, marginTop: 4, alignSelf: 'flex-end' }]}>
           {formatTime(message.createdAt)}
         </Text>
       </View>
@@ -141,28 +145,33 @@ export default function InboxScreen() {
         }
       />
 
-      <View style={[shadow, styles.composer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <TextInput
-          value={content}
-          onChangeText={setContent}
-          placeholder="Écrire au support…"
-          placeholderTextColor={colors.textMuted}
-          multiline
-          style={[typography.body, { flex: 1, color: colors.ink, maxHeight: 100, paddingVertical: 6 }]}
-        />
+      {/* Composeur type WhatsApp : champ pilule flottant + bouton d'envoi rond
+          séparé, pas de barre/bordure encadrant toute la ligne. */}
+      <View style={styles.composerRow}>
+        <View style={[shadow, styles.inputPill, { backgroundColor: colors.surface, borderRadius: radius.pill }]}>
+          <TextInput
+            value={content}
+            onChangeText={setContent}
+            placeholder="Message…"
+            placeholderTextColor={colors.textMuted}
+            multiline
+            style={[typography.body, { color: colors.ink, maxHeight: 100 }]}
+          />
+        </View>
         <Pressable
           onPress={handleSend}
           disabled={content.trim().length === 0 || sendMutation.isPending}
           style={[
+            shadow,
             styles.sendButton,
             { backgroundColor: colors.accent, borderRadius: radius.pill, opacity: content.trim().length === 0 ? 0.4 : 1 },
           ]}
         >
-          <Ionicons name="send" size={16} color="#FFFFFF" />
+          <Ionicons name="send" size={18} color="#FFFFFF" />
         </Pressable>
       </View>
       {sendMutation.isError ? (
-        <Text style={[typography.caption, { color: colors.danger, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm }]}>
+        <Text style={[typography.caption, { color: colors.danger, paddingHorizontal: spacing.lg, paddingTop: spacing.xs }]}>
           {extractApiErrorMessage(sendMutation.error, "Impossible d'envoyer le message")}
         </Text>
       ) : null}
@@ -175,13 +184,7 @@ const styles = StyleSheet.create({
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 64 },
   bubbleRow: { flexDirection: 'row', marginBottom: 10 },
   bubble: { maxWidth: '80%' },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  sendButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  composerRow: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
+  inputPill: { flex: 1, paddingHorizontal: 18, paddingVertical: 10, justifyContent: 'center' },
+  sendButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

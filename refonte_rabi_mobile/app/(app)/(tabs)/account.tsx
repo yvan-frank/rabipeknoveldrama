@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect } from 'expo-router';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../../src/auth/auth-store';
+import { showAlert } from '../../../src/components/AppAlert';
 import { extractApiErrorMessage } from '../../../src/api/client';
 import { getPointsBalance } from '../../../src/api/points';
 import { getUnreadSupportCount } from '../../../src/api/support';
@@ -45,7 +46,7 @@ function MenuRow({
 }
 
 function showComingSoon(label: string) {
-  Alert.alert('Bientôt disponible', `${label} arrive prochainement sur Rabipek.`);
+  showAlert('Bientôt disponible', `${label} arrive prochainement sur Rabipek.`);
 }
 
 // Pas d'espace auteur dans l'app mobile (aucun endpoint/écran dédié) : on
@@ -54,7 +55,7 @@ const AUTHOR_CENTER_URL = 'https://rabipeknovel.com/connexion';
 
 function openAuthorCenter() {
   Linking.openURL(AUTHOR_CENTER_URL).catch(() => {
-    Alert.alert('Oups', "Impossible d'ouvrir le centre des auteurs pour l'instant.");
+    showAlert('Oups', "Impossible d'ouvrir le centre des auteurs pour l'instant.");
   });
 }
 
@@ -113,7 +114,7 @@ export default function AccountScreen() {
       await logout();
       router.replace('/(app)');
     } catch (err) {
-      Alert.alert('Erreur', extractApiErrorMessage(err, 'Impossible de se déconnecter'));
+      showAlert('Erreur', extractApiErrorMessage(err, 'Impossible de se déconnecter'));
     }
   }
 
