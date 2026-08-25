@@ -1,0 +1,14 @@
+# Si l'hébergeur pointe le DocumentRoot sur la racine du projet plutôt que
+# sur public/ (cas fréquent en mutualisé type LWS/cPanel), ces directives
+# empêchent l'exposition du code source, des secrets et des dépendances.
+# Le déploiement recommandé reste DocumentRoot = <projet>/public — voir README.md.
+
+<FilesMatch "^\.env">
+  Require all denied
+</FilesMatch>
+<FilesMatch "composer\.(json|lock)$">
+  Require all denied
+</FilesMatch>
+
+RewriteEngine On
+RewriteRule ^(src|vendor|private|\.git)/ - [F,L]

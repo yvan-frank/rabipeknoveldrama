@@ -1,0 +1,27 @@
+{
+  "name": "rabipek/server-php",
+  "description": "Scaffold PHP natif de l'API Rabipek — mêmes routes et architecture modulaire que refonte_server (Express/TS), sans framework.",
+  "type": "project",
+  "license": "UNLICENSED",
+  "require": {
+    "php": ">=8.1",
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-zip": "*",
+    "ext-curl": "*",
+    "ext-dom": "*",
+    "ext-fileinfo": "*",
+    "ext-iconv": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}

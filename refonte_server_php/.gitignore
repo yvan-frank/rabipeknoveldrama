@@ -1,0 +1,7 @@
+/vendor/
+/.env
+*.log
+/private/epub/*
+!/private/epub/.gitkeep
+/public/uploads/*
+!/public/uploads/.gitkeep
