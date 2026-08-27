@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Points;
 
 use App\Lib\Database;
+use App\Modules\Chapters\ChaptersService;
 use App\Utils\ApiError;
 use PDO;
+use PDOException;
 use Throwable;
 
 /**
@@ -19,6 +21,7 @@ final class PointsService
     private const REASON_ARTICLES_TASK = 'articles_task';
     private const REASON_READING_15MIN = 'reading_time_15min';
     private const REASON_READING_30MIN = 'reading_time_30min';
+    private const REASON_CHAPTER_UNLOCK = 'chapter_unlock';
 
     // Paliers quotidiens de temps de lecture (cf. capture de référence :
     // "Lire pendant 15/30 minute"). Le cumul continue de monter après 30 min
@@ -325,6 +328,115 @@ final class PointsService
             'points' => $m['points'],
             'earned' => $entry[$m['field']] ?? false,
         ], self::READING_MILESTONES);
+    }
+
+    // Coût réglable globalement (comme author_kyc_bypass_enabled) plutôt que
+    // codé en dur — 40 points par défaut, décidé en étude de faisabilité.
+    // La ligne id=1 de platform_settings est créée paresseusement à la
+    // première lecture, même motif que AuthorsService::getPlatformSettings.
+    public static function getChapterUnlockPointsCost(): int
+    {
+        $db = self::db();
+        $db->prepare('INSERT INTO platform_settings (id, updated_at) VALUES (1, NOW()) ON DUPLICATE KEY UPDATE id = id')->execute();
+        $stmt = $db->prepare('SELECT chapter_unlock_points_cost FROM platform_settings WHERE id = 1');
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
+
+    // Déblocage définitif d'UN chapitre premium contre des points — grain
+    // chapitre, complémentaire à l'achat en argent (grain livre/partie, cf.
+    // ChaptersService::assertChapterAccess qui accepte les deux). Le débit
+    // réutilise creditPointsNoTransaction avec un montant négatif : même
+    // mécanisme de crédit, signe inversé, donc même trace auditable dans
+    // points_transactions qu'un gain classique.
+    public static function unlockChapterWithPoints(int $userId, int $chapterId): array
+    {
+        $chapter = ChaptersService::getChapterById($chapterId);
+        $db = self::db();
+
+        if (self::isChapterFreelyAccessible($chapter) || self::hasAchatAccess($db, $userId, $chapter)) {
+            throw ApiError::badRequest('Ce chapitre est déjà accessible, inutile de le débloquer avec des points');
+        }
+
+        $checkStmt = $db->prepare('SELECT id FROM chapter_point_unlocks WHERE user_id = :userId AND chapter_id = :chapterId');
+        $checkStmt->execute(['userId' => $userId, 'chapterId' => $chapterId]);
+        if ($checkStmt->fetchColumn() !== false) {
+            throw ApiError::conflict('Ce chapitre est déjà débloqué');
+        }
+
+        $cost = self::getChapterUnlockPointsCost();
+
+        $db->beginTransaction();
+        try {
+            // Verrou de ligne (FOR UPDATE) : sans lui, deux déblocages
+            // concurrents pour le même utilisateur pourraient tous deux
+            // passer la vérification de solde avant que l'un des deux ne
+            // débite, produisant un solde négatif — chaque crédit/débit
+            // existant jusqu'ici n'était qu'un incrément, jamais exposé à ce
+            // risque de double dépense.
+            $balanceStmt = $db->prepare('SELECT points_balance FROM users WHERE id_user = :id FOR UPDATE');
+            $balanceStmt->execute(['id' => $userId]);
+            $balance = $balanceStmt->fetchColumn();
+            if ($balance === false) {
+                throw ApiError::notFound('Utilisateur introuvable');
+            }
+            if ((int) $balance < $cost) {
+                throw ApiError::badRequest('Solde de points insuffisant pour débloquer ce chapitre');
+            }
+
+            $newBalance = self::creditPointsNoTransaction($db, $userId, -$cost, self::REASON_CHAPTER_UNLOCK);
+
+            try {
+                $db->prepare('INSERT INTO chapter_point_unlocks (user_id, chapter_id, points_spent, created_at) VALUES (:userId, :chapterId, :cost, NOW())')
+                    ->execute(['userId' => $userId, 'chapterId' => $chapterId, 'cost' => $cost]);
+            } catch (PDOException $e) {
+                if ((int) $e->getCode() === 23000) {
+                    throw ApiError::conflict('Ce chapitre est déjà débloqué');
+                }
+                throw $e;
+            }
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
+        return ['chapterId' => $chapterId, 'pointsSpent' => $cost, 'balance' => $newBalance];
+    }
+
+    /** @param array{chapterNumber:int,partId:?int,part:?array,book:array} $chapter */
+    private static function isChapterFreelyAccessible(array $chapter): bool
+    {
+        if ($chapter['part'] !== null && $chapter['partId'] !== null) {
+            if ($chapter['part']['isFree']) {
+                return true;
+            }
+            $countStmt = self::db()->prepare('SELECT COUNT(*) FROM chapters WHERE part_id = :partId AND chapter_number <= :chapterNumber');
+            $countStmt->execute(['partId' => $chapter['partId'], 'chapterNumber' => $chapter['chapterNumber']]);
+            return (int) $countStmt->fetchColumn() <= $chapter['part']['freeChapterCount'];
+        }
+
+        if ($chapter['book']['isFree']) {
+            return true;
+        }
+        return $chapter['chapterNumber'] <= $chapter['book']['freeChapterCount'];
+    }
+
+    /** @param array{partId:?int,part:?array,book:array} $chapter */
+    private static function hasAchatAccess(PDO $db, int $userId, array $chapter): bool
+    {
+        if ($chapter['part'] !== null && $chapter['partId'] !== null) {
+            $stmt = $db->prepare(
+                'SELECT id_achat FROM achat WHERE id_user = :userId AND (part_id = :partId OR (id_book = :bookId AND part_id IS NULL)) LIMIT 1',
+            );
+            $stmt->execute(['userId' => $userId, 'partId' => $chapter['partId'], 'bookId' => $chapter['book']['id']]);
+            return $stmt->fetchColumn() !== false;
+        }
+
+        $stmt = $db->prepare('SELECT id_achat FROM achat WHERE id_book = :bookId AND id_user = :userId LIMIT 1');
+        $stmt->execute(['bookId' => $chapter['book']['id'], 'userId' => $userId]);
+        return $stmt->fetchColumn() !== false;
     }
 
     private static function creditPoints(int $userId, int $amount, string $reason): int

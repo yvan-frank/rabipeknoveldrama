@@ -56,6 +56,97 @@ final class UsersService
         self::db()->prepare('UPDATE users SET deleted_at = NOW() WHERE id_user = :id')->execute(['id' => $id]);
     }
 
+    // Promotion admin lecteur -> auteur. `users` et `author` sont deux tables
+    // indépendantes (pas un simple rôle) : "promouvoir" crée donc un vrai
+    // compte auteur, en réutilisant tel quel le hash bcrypt existant (déjà
+    // auto-descriptif — coût/sel inclus dans la chaîne — donc vérifiable sans
+    // le reconnaître) pour que le même mot de passe continue de fonctionner.
+    // Le compte lecteur est désactivé (soft-delete, réversible) dans la
+    // foulée : sinon AuthService::login() — qui interroge `users` avant
+    // `author` — retomberait toujours sur l'ancien compte lecteur et le
+    // nouveau compte auteur ne serait jamais atteignable avec cet email.
+    public static function promoteToAuthor(int $id): array
+    {
+        $db = self::db();
+
+        $stmt = $db->prepare('SELECT id_user, name, email, password FROM users WHERE id_user = :id AND deleted_at IS NULL');
+        $stmt->execute(['id' => $id]);
+        $user = $stmt->fetch();
+        if ($user === false) {
+            throw ApiError::notFound('Utilisateur introuvable');
+        }
+
+        $existingAuthor = $db->prepare('SELECT id_author FROM author WHERE email = :email');
+        $existingAuthor->execute(['email' => $user['email']]);
+        if ($existingAuthor->fetch() !== false) {
+            throw ApiError::conflict('Un compte auteur existe déjà avec cet email');
+        }
+
+        $db->beginTransaction();
+        try {
+            $insert = $db->prepare(
+                'INSERT INTO author (name, email, password, is_email_verified, is_account_verified, created_at)
+                 VALUES (:name, :email, :password, 1, 1, NOW())',
+            );
+            $insert->execute(['name' => $user['name'], 'email' => $user['email'], 'password' => $user['password']]);
+            $authorId = (int) $db->lastInsertId();
+
+            $db->prepare('UPDATE users SET deleted_at = NOW() WHERE id_user = :id')->execute(['id' => $id]);
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
+        return ['id' => $authorId, 'name' => $user['name'], 'email' => $user['email']];
+    }
+
+    // Coût identique à AuthService::SALT_COST (bcrypt) — même politique de
+    // hachage, que le mot de passe soit défini à l'inscription ou réinitialisé
+    // par un administrateur.
+    private const PASSWORD_SALT_COST = 12;
+
+    // Édition admin : nom/email/statut actif/statut admin/mot de passe.
+    // L'email est contraint UNIQUE en base — un doublon remonte en 409
+    // plutôt qu'en 500.
+    /** @param array{name?:string,email?:string,isActive?:bool,isAdmin?:bool,password?:string} $input */
+    public static function updateUser(int $id, array $input): array
+    {
+        self::getUserById($id);
+        if ($input === []) {
+            return self::getUserById($id);
+        }
+
+        $columns = ['name' => 'name', 'email' => 'email', 'isActive' => 'is_active', 'isAdmin' => 'is_admin'];
+        $sets = [];
+        $params = ['id' => $id];
+        foreach ($columns as $key => $column) {
+            if (array_key_exists($key, $input)) {
+                $sets[] = "{$column} = :{$key}";
+                $params[$key] = is_bool($input[$key]) ? ($input[$key] ? 1 : 0) : $input[$key];
+            }
+        }
+
+        if (array_key_exists('password', $input)) {
+            $sets[] = 'password = :password';
+            $params['password'] = password_hash($input['password'], PASSWORD_BCRYPT, ['cost' => self::PASSWORD_SALT_COST]);
+        }
+
+        try {
+            self::db()
+                ->prepare('UPDATE users SET ' . implode(', ', $sets) . ', updated_at = NOW() WHERE id_user = :id')
+                ->execute($params);
+        } catch (Throwable $e) {
+            if (str_contains($e->getMessage(), 'Duplicate entry')) {
+                throw ApiError::conflict('Cette adresse e-mail est déjà utilisée');
+            }
+            throw $e;
+        }
+
+        return self::getUserById($id);
+    }
+
     // Attribution manuelle temporaire, avant l'intégration des moyens de
     // paiement. Un Achat de livre (part_id = null) est déjà la source de
     // vérité des droits de lecture : ce format donne donc accès à toutes les
@@ -332,6 +423,22 @@ final class UsersService
         $usersStmt = $db->query('SELECT ' . self::PUBLIC_USER_SELECT . ' FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 6');
         $recentUsers = array_map(self::mapPublicUser(...), $usersStmt->fetchAll());
 
+        $authorsStmt = $db->query(
+            'SELECT a.id_author, a.name, a.email, a.is_account_verified, a.created_at,
+                    ae.kyc_verified_at
+             FROM author a
+             LEFT JOIN author_extension ae ON ae.author_id = a.id_author
+             ORDER BY a.created_at DESC LIMIT 6',
+        );
+        $recentAuthors = array_map(static fn (array $row): array => [
+            'id' => (int) $row['id_author'],
+            'name' => $row['name'],
+            'email' => $row['email'],
+            'isAccountVerified' => (bool) $row['is_account_verified'],
+            'isKycVerified' => $row['kyc_verified_at'] !== null,
+            'createdAt' => $row['created_at'],
+        ], $authorsStmt->fetchAll());
+
         $booksStmt = $db->query(
             'SELECT b.id_book, b.title, b.slug, b.cover, b.date_pub, b.is_free, b.price, au.name AS author_name, au.email AS author_email
              FROM books b JOIN author au ON au.id_author = b.id_author
@@ -370,6 +477,7 @@ final class UsersService
 
         return [
             'recentUsers' => $recentUsers,
+            'recentAuthors' => $recentAuthors,
             'recentBooks' => $recentBooks,
             'revenue' => $revenue,
             'counts' => [

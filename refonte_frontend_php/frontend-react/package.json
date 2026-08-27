@@ -1,0 +1,29 @@
+{
+  "name": "rabipek-frontend-islands",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ilots React (formulaires, widgets interactifs) montes dans les pages PHP de refonte_frontend_php.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@tiptap/extension-highlight": "^3.29.2",
+    "@tiptap/extension-text-align": "^3.29.2",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/react": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
+    "axios": "^1.19.0",
+    "lucide-react": "^1.34.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5",
+    "vite": "^6.0.0"
+  }
+}

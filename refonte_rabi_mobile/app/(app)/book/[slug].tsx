@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../../src/components/Button';
 import { BookDetailSkeleton } from '../../../src/components/BookDetailSkeleton';
 import { priceLabel } from '../../../src/components/BookListItem';
@@ -155,6 +155,12 @@ export default function BookDetailScreen() {
   return (
     <>
       <Stack.Screen options={{ title: book.title }} />
+      {/* Sans ceci, le clavier recouvrait le champ de saisie de l'avis (loin
+          dans le scroll) — même correctif que login.tsx/register.tsx et
+          BottomSheet.tsx (panneau Commentaires) : 'height' sur Android (pas
+          undefined), sinon KeyboardAvoidingView ne fait rien sur cette
+          plateforme. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: spacing.lg }}>
         <View style={{ flexDirection: 'row' }}>
           <View style={[styles.cover, shadow, { backgroundColor: colors.surface, borderRadius: 14 }]}>
@@ -209,7 +215,7 @@ export default function BookDetailScreen() {
         <Text style={[typography.heading, { color: colors.ink, marginTop: spacing.xl, marginBottom: spacing.sm }]}>
           Avis {book.reviewCount > 0 ? `(${book.reviewCount})` : ''}
         </Text>
-        <ReviewsSection bookId={book.id} />
+        <ReviewsSection bookId={book.id} bookAuthorId={book.author?.id} />
 
         <Text style={[typography.heading, { color: colors.ink, marginTop: spacing.xl, marginBottom: spacing.sm }]}>
           Chapitres ({chapterEntries.length})
@@ -220,6 +226,7 @@ export default function BookDetailScreen() {
           ))}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </>
   );
 }

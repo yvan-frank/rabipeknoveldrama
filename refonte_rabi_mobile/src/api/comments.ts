@@ -30,6 +30,15 @@ export async function submitBookReview(bookId: number, rating: number, message: 
   return response.data.data;
 }
 
+// Réservé à l'auteur du livre concerné (vérifié côté serveur via
+// Ownership::assertAuthorOwnership, cf. CommentsService::replyToBookReview) —
+// upsert comme submitBookReview : renvoyer répond de nouveau remplace la
+// réponse précédente au lieu d'en empiler une seconde.
+export async function replyToBookReview(commentId: number, content: string): Promise<ReviewReply> {
+  const response = await apiClient.post<ApiEnvelope<ReviewReply>>(`/comments/review/${commentId}/reply`, { content });
+  return response.data.data;
+}
+
 export interface ChapterCommentItem {
   id: number;
   content: string;

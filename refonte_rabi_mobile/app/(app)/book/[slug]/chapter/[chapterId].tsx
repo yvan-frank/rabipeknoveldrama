@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { usePreventScreenCapture } from 'expo-screen-capture';
@@ -11,9 +12,10 @@ import { BottomSheet } from '../../../../../src/components/BottomSheet';
 import { Button } from '../../../../../src/components/Button';
 import { ChapterCommentsSection } from '../../../../../src/components/ChapterCommentsSection';
 import { ReaderTutorialOverlay } from '../../../../../src/components/ReaderTutorialOverlay';
+import { showToast } from '../../../../../src/components/Toast';
 import { useAuthStore } from '../../../../../src/auth/auth-store';
 import { extractApiErrorMessage } from '../../../../../src/api/client';
-import { addReadingTime } from '../../../../../src/api/points';
+import { addReadingTime, getChapterUnlockCost, getPointsBalance, unlockChapterWithPoints } from '../../../../../src/api/points';
 import { fetchBookBySlug } from '../../../../../src/api/books';
 import { fetchChapter, fetchReadingProgress, saveReadingProgress } from '../../../../../src/api/chapters';
 import { flattenChapters, type ChapterEntry } from '../../../../../src/lib/chapter-access';
@@ -481,6 +483,71 @@ function Stepper({ label, value, onDecrease, onIncrease }: { label: string; valu
   );
 }
 
+// -- Chapitre verrouillé (403) : achat classique OU déblocage par points ----
+// Étude de faisabilité "points pour lire un chapitre" -> mécanisme réel (cf.
+// src/api/points.ts, PointsService::unlockChapterWithPoints côté serveur) :
+// complémentaire à l'achat en argent, jamais un substitut — un visiteur ou
+// un lecteur au solde insuffisant garde simplement le message d'origine.
+function ChapterLockedScreen({ chapterId, message, onUnlocked }: { chapterId: number; message: string; onUnlocked: () => void }) {
+  const { colors, spacing, typography } = useTheme();
+  const isAuthenticated = useAuthStore((state) => state.status === 'authenticated');
+  const [cost, setCost] = useState<number | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    Promise.all([getChapterUnlockCost(), getPointsBalance()])
+      .then(([unlockCost, pointsBalance]) => {
+        setCost(unlockCost);
+        setBalance(pointsBalance.balance);
+      })
+      .catch(() => undefined);
+  }, [isAuthenticated]);
+
+  async function handleUnlock() {
+    setError(null);
+    setIsUnlocking(true);
+    try {
+      await unlockChapterWithPoints(chapterId);
+      showToast('Chapitre débloqué !');
+      onUnlocked();
+    } catch (err) {
+      setError(extractApiErrorMessage(err, 'Impossible de débloquer ce chapitre'));
+    } finally {
+      setIsUnlocking(false);
+    }
+  }
+
+  const canAfford = cost !== null && balance !== null && balance >= cost;
+
+  return (
+    <View style={[styles.center, { flex: 1, backgroundColor: colors.background, padding: spacing.lg }]}>
+      <Text style={[typography.body, { color: colors.danger, textAlign: 'center', marginBottom: spacing.lg }]}>{message}</Text>
+
+      {isAuthenticated && cost !== null ? (
+        <View style={{ width: '100%', maxWidth: 320, marginBottom: spacing.lg, alignItems: 'center' }}>
+          <View style={{ height: StyleSheet.hairlineWidth, width: '100%', backgroundColor: colors.border, marginBottom: spacing.lg }} />
+          <Text style={[typography.captionSemiBold, { color: colors.textMuted, marginBottom: spacing.sm }]}>
+            {balance !== null ? `Votre solde : ${balance} points` : 'Chargement du solde…'}
+          </Text>
+          {error ? <Text style={[typography.caption, { color: colors.danger, marginBottom: spacing.sm, textAlign: 'center' }]}>{error}</Text> : null}
+          {canAfford ? (
+            <Button label={`Débloquer pour ${cost} points`} onPress={handleUnlock} loading={isUnlocking} />
+          ) : (
+            <Text style={[typography.caption, { color: colors.textMuted, textAlign: 'center' }]}>
+              Solde insuffisant ({cost} points requis) — gagnez-en depuis l&apos;onglet Bonus.
+            </Text>
+          )}
+        </View>
+      ) : null}
+
+      <Button label="Retour à la fiche" variant="secondary" onPress={() => router.back()} />
+    </View>
+  );
+}
+
 // -- Panneau "Aa" (police, taille, mise en page, style, opacité, thème) ------
 function SettingsPanel() {
   const { colors, spacing, typography } = useTheme();
@@ -555,6 +622,7 @@ function SettingsPanel() {
 export default function ChapterReaderScreen() {
   const { slug, chapterId } = useLocalSearchParams<{ slug: string; chapterId: string }>();
   const { colors, spacing, typography, scheme } = useTheme();
+  const queryClient = useQueryClient();
   const fontSizeIndex = useReaderPrefsStore((s) => s.fontSizeIndex);
   const lineHeightIndex = useReaderPrefsStore((s) => s.lineHeightIndex);
   const themeOverride = useReaderPrefsStore((s) => s.themeOverride);
@@ -735,6 +803,16 @@ export default function ChapterReaderScreen() {
   }
 
   if (chapterQuery.isError || !chapterQuery.data) {
+    const isLocked = axios.isAxiosError(chapterQuery.error) && chapterQuery.error.response?.status === 403;
+    if (isLocked) {
+      return (
+        <ChapterLockedScreen
+          chapterId={numericChapterId}
+          message={extractApiErrorMessage(chapterQuery.error, 'Ce chapitre est inaccessible')}
+          onUnlocked={() => queryClient.invalidateQueries({ queryKey: ['chapter', numericChapterId] })}
+        />
+      );
+    }
     return (
       <View style={[styles.center, { backgroundColor: colors.background, padding: spacing.lg }]}>
         <Text style={[typography.body, { color: colors.danger, textAlign: 'center', marginBottom: spacing.lg }]}>

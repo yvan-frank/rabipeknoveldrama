@@ -20,6 +20,9 @@
       "App\\": "src/"
     }
   },
+  "scripts": {
+    "migrate": "php bin/migrate.php"
+  },
   "config": {
     "optimize-autoloader": true,
     "sort-packages": true

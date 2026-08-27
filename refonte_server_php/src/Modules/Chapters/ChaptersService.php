@@ -130,10 +130,13 @@ final class ChaptersService
                 'SELECT id_achat FROM achat WHERE id_user = :userId AND (part_id = :partId OR (id_book = :bookId AND part_id IS NULL)) LIMIT 1',
             );
             $purchaseStmt->execute(['userId' => $viewer['id'], 'partId' => $chapter['partId'], 'bookId' => $chapter['book']['id']]);
-            if ($purchaseStmt->fetchColumn() === false) {
-                throw ApiError::forbidden('Achetez cette partie pour lire ce chapitre');
+            if ($purchaseStmt->fetchColumn() !== false) {
+                return;
             }
-            return;
+            if (self::hasChapterPointUnlock($db, $viewer['id'], $chapter['id'])) {
+                return;
+            }
+            throw ApiError::forbidden('Achetez cette partie (ou débloquez ce chapitre avec des points) pour le lire');
         }
 
         if ($chapter['book']['isFree']) {
@@ -145,9 +148,24 @@ final class ChaptersService
 
         $purchaseStmt = $db->prepare('SELECT id_achat FROM achat WHERE id_book = :bookId AND id_user = :userId LIMIT 1');
         $purchaseStmt->execute(['bookId' => $chapter['book']['id'], 'userId' => $viewer['id']]);
-        if ($purchaseStmt->fetchColumn() === false) {
-            throw ApiError::forbidden('Achetez ce livre pour lire ce chapitre');
+        if ($purchaseStmt->fetchColumn() !== false) {
+            return;
         }
+        if (self::hasChapterPointUnlock($db, $viewer['id'], $chapter['id'])) {
+            return;
+        }
+        throw ApiError::forbidden('Achetez ce livre (ou débloquez ce chapitre avec des points) pour le lire');
+    }
+
+    // Déblocage définitif d'un chapitre premium contre des points (cf.
+    // PointsService::unlockChapterWithPoints) — complémentaire à l'achat en
+    // argent, jamais un substitut : les deux mécanismes accordent le même
+    // accès en lecture, indépendamment l'un de l'autre.
+    private static function hasChapterPointUnlock(PDO $db, int $userId, int $chapterId): bool
+    {
+        $stmt = $db->prepare('SELECT id FROM chapter_point_unlocks WHERE user_id = :userId AND chapter_id = :chapterId LIMIT 1');
+        $stmt->execute(['userId' => $userId, 'chapterId' => $chapterId]);
+        return $stmt->fetchColumn() !== false;
     }
 
     // Best-effort : une erreur ici ne doit jamais faire échouer la lecture du

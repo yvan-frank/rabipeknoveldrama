@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { showAlert } from './AppAlert';
 import { BottomSheet } from './BottomSheet';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './Skeleton';
+import { showToast } from './Toast';
 import { useAuthStore } from '../auth/auth-store';
 import { extractApiErrorMessage } from '../api/client';
 import { deleteChapterComment, fetchChapterComments, submitChapterComment, type ChapterCommentItem } from '../api/comments';
@@ -140,6 +142,7 @@ export function ChapterCommentsSection({ chapterId }: ChapterCommentsSectionProp
   const { colors, spacing, typography } = useTheme();
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((state) => state.user?.id);
+  const isGuest = useAuthStore((state) => state.status === 'guest');
   const [content, setContent] = useState('');
   // La réponse à un commentaire précis (parentId) est déjà supportée par
   // l'API (cf. submitChapterComment) — l'icône "répondre" de chaque bulle
@@ -216,6 +219,17 @@ export function ChapterCommentsSection({ chapterId }: ChapterCommentsSectionProp
   function closeDetail() {
     setDetailComment(null);
     setReplyTarget(null);
+  }
+
+  // Visiteur non connecté : /chapters/:id/comments exige une session côté
+  // serveur (401 sinon) — on n'envoie même pas la requête, on l'invite à se
+  // connecter via un toast plutôt que de le laisser taper puis échouer.
+  function handleSubmit() {
+    if (isGuest) {
+      showToast('Connectez-vous pour commenter', 'Se connecter', () => router.push('/(auth)/login'));
+      return;
+    }
+    submitMutation.mutate();
   }
 
   return (
@@ -315,7 +329,7 @@ export function ChapterCommentsSection({ chapterId }: ChapterCommentsSectionProp
           style={[typography.body, { flex: 1, color: PANEL_TEXT, maxHeight: 90, paddingVertical: 6 }]}
         />
         <Pressable
-          onPress={() => submitMutation.mutate()}
+          onPress={handleSubmit}
           disabled={content.trim().length === 0 || submitMutation.isPending}
           style={[styles.sendButton, { backgroundColor: colors.accent, opacity: content.trim().length === 0 ? 0.4 : 1 }]}
         >

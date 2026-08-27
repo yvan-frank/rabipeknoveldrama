@@ -35,6 +35,13 @@ final class AuthorsController
         Response::success(AuthorsService::setAuthorKycVerification($authorId, $verified));
     }
 
+    public static function update(Request $request): void
+    {
+        $id = AuthorsSchema::authorIdParam($request->params['authorId']);
+        $input = AuthorsSchema::update($request->body);
+        Response::success(AuthorsService::updateAuthor($id, $input));
+    }
+
     public static function getKycBypassPolicy(Request $request): void
     {
         Response::success(AuthorsService::getAuthorKycBypassPolicy());

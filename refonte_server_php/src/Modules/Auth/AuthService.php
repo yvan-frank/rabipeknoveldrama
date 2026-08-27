@@ -11,9 +11,10 @@ use App\Utils\Jwt;
 use PDO;
 
 /**
- * Équivalent de src/modules/auth/auth.service.ts. Ne porte pour l'instant
- * que le flux "lecteur" (table `users`) — l'inscription auteur (KYC, genres)
- * suivra une fois le module Authors écrit, comme côté Node registerAuthor().
+ * Équivalent de src/modules/auth/auth.service.ts. L'inscription auteur
+ * (`registerAuthor`, KYC, genres) reste non portée — cf. AuthRoutes.php —
+ * mais la connexion couvre désormais aussi bien `users` que `author`
+ * (module Authors écrit depuis), comme côté Node login().
  */
 final class AuthService
 {
@@ -60,17 +61,29 @@ final class AuthService
         $db = self::db();
         $row = self::findUserByEmail($db, $input['email']);
 
-        if ($row === false || !password_verify($input['password'], $row['password'])) {
+        if ($row !== false) {
+            if (!password_verify($input['password'], $row['password'])) {
+                throw ApiError::unauthorized('Email ou mot de passe incorrect');
+            }
+
+            return self::issueSession([
+                'id' => (int) $row['id_user'],
+                'email' => $row['email'],
+                'role' => ((bool) $row['is_admin']) ? 'admin' : 'user',
+            ]);
+        }
+
+        $author = self::findAuthorByEmail($db, $input['email']);
+        if ($author === false || !password_verify($input['password'], $author['password'])) {
             throw ApiError::unauthorized('Email ou mot de passe incorrect');
         }
 
-        $authUser = [
-            'id' => (int) $row['id_user'],
-            'email' => $row['email'],
-            'role' => ((bool) $row['is_admin']) ? 'admin' : 'user',
-        ];
-
-        return self::issueSession($authUser);
+        return self::issueSession([
+            'id' => (int) $author['id_author'],
+            'email' => $author['email'],
+            'role' => 'author',
+            'authorId' => (int) $author['id_author'],
+        ]);
     }
 
     public static function logout(?string $refreshToken): void
@@ -130,11 +143,29 @@ final class AuthService
         return $stmt->fetch();
     }
 
+    private static function findAuthorByEmail(PDO $db, string $email): array|false
+    {
+        $stmt = $db->prepare('SELECT id_author, email, password FROM author WHERE email = :email LIMIT 1');
+        $stmt->execute(['email' => $email]);
+        return $stmt->fetch();
+    }
+
     private static function loadAuthUser(PDO $db, string $accountType, int $accountId): array
     {
         if ($accountType === 'author') {
-            // TODO: porter authors.service.ts (module Authors non écrit ici).
-            throw ApiError::internal('Comptes auteur non pris en charge par ce scaffold pour le moment');
+            $stmt = $db->prepare('SELECT id_author, email FROM author WHERE id_author = :id LIMIT 1');
+            $stmt->execute(['id' => $accountId]);
+            $row = $stmt->fetch();
+            if ($row === false) {
+                throw ApiError::unauthorized('Compte introuvable');
+            }
+
+            return [
+                'id' => (int) $row['id_author'],
+                'email' => $row['email'],
+                'role' => 'author',
+                'authorId' => (int) $row['id_author'],
+            ];
         }
 
         $stmt = $db->prepare('SELECT id_user, email, is_admin FROM users WHERE id_user = :id AND deleted_at IS NULL LIMIT 1');

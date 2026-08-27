@@ -17,6 +17,28 @@ export interface RewardedAdStatus {
   dailyCap: number;
 }
 
+export interface ChapterUnlockResult {
+  chapterId: number;
+  pointsSpent: number;
+  balance: number;
+}
+
+// Étude de faisabilité "points pour lire un chapitre" -> mécanisme implémenté
+// côté serveur (cf. PointsService::unlockChapterWithPoints,
+// ChaptersService::assertChapterAccess) : déblocage définitif d'UN chapitre
+// premium, complémentaire à l'achat en argent (grain livre/partie), pas un
+// substitut. Le coût est réglable côté admin (platform_settings), jamais
+// codé en dur ici.
+export async function getChapterUnlockCost(): Promise<number> {
+  const response = await apiClient.get<ApiEnvelope<{ cost: number }>>('/points/chapter-unlock-cost');
+  return response.data.data.cost;
+}
+
+export async function unlockChapterWithPoints(chapterId: number): Promise<ChapterUnlockResult> {
+  const response = await apiClient.post<ApiEnvelope<ChapterUnlockResult>>(`/points/chapters/${chapterId}/unlock`);
+  return response.data.data;
+}
+
 export async function getPointsBalance(): Promise<PointsBalance> {
   const response = await apiClient.get<ApiEnvelope<PointsBalance>>('/points/balance');
   return response.data.data;

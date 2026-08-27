@@ -49,8 +49,10 @@ function showComingSoon(label: string) {
   showAlert('Bientôt disponible', `${label} arrive prochainement sur Rabipek.`);
 }
 
-// Pas d'espace auteur dans l'app mobile (aucun endpoint/écran dédié) : on
-// renvoie vers la connexion auteur du site web, seul endroit où ça existe.
+// L'inscription auteur (register-author) n'existe toujours pas côté mobile
+// (ni côté API d'ailleurs, cf. AuthRoutes.php côté serveur) — un compte déjà
+// role==='author' a maintenant son espace en natif (cf. app/(app)/author),
+// mais un lecteur qui voudrait LE DEVENIR est encore renvoyé vers le site web.
 const AUTHOR_CENTER_URL = 'https://rabipeknovel.com/connexion';
 
 function openAuthorCenter() {
@@ -97,6 +99,11 @@ export default function AccountScreen() {
 
   const displayName = isGuest ? 'Visiteur' : (user?.email ?? 'Mon compte');
   const displayId = isGuest ? guestId : `#${user?.id ?? ''}`;
+
+  function handleAuthorCenterPress() {
+    if (user?.role === 'author') router.push('/author');
+    else openAuthorCenter();
+  }
 
   async function copyId() {
     if (!displayId) return;
@@ -196,7 +203,11 @@ export default function AccountScreen() {
               valueLabel={unreadSupportCount > 0 ? String(unreadSupportCount) : undefined}
               onPress={() => router.push('/inbox')}
             />
-            <MenuRow icon="create-outline" label="Centre des auteurs" onPress={openAuthorCenter} />
+            <MenuRow
+              icon="create-outline"
+              label={user?.role === 'author' ? 'Espace auteur' : 'Centre des auteurs'}
+              onPress={handleAuthorCenterPress}
+            />
             <MenuRow icon="gift-outline" label="Gagner des bonus" trailingEmoji="🎁" onPress={() => router.push('/bonus')} />
             <MenuRow icon="time-outline" label="Vu" onPress={() => router.push('/history')} />
             <MenuRow icon="settings-outline" label="Paramètres" onPress={() => router.push('/settings')} />

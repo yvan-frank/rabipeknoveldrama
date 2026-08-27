@@ -18,6 +18,73 @@ final class AuthorsService
         return Database::connection();
     }
 
+    private const PUBLIC_AUTHOR_SELECT = 'id_author AS id, name, email, telephone, address, about, is_account_verified, created_at';
+
+    public static function getAuthorById(int $id): array
+    {
+        $stmt = self::db()->prepare('SELECT ' . self::PUBLIC_AUTHOR_SELECT . ' FROM author WHERE id_author = :id');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        if ($row === false) {
+            throw ApiError::notFound('Auteur introuvable');
+        }
+        return [
+            'id' => (int) $row['id'],
+            'name' => $row['name'],
+            'email' => $row['email'],
+            'telephone' => $row['telephone'],
+            'address' => $row['address'],
+            'about' => $row['about'],
+            'isAccountVerified' => (bool) $row['is_account_verified'],
+            'createdAt' => $row['created_at'],
+        ];
+    }
+
+    // Coût identique à AuthService::SALT_COST (bcrypt).
+    private const PASSWORD_SALT_COST = 12;
+
+    // Édition admin : identité/contact de base + mot de passe. L'email est
+    // contraint UNIQUE en base — un doublon remonte en 409 plutôt qu'en 500.
+    /** @param array{name?:string,email?:string,telephone?:?string,address?:?string,about?:?string,isAccountVerified?:bool,password?:string} $input */
+    public static function updateAuthor(int $id, array $input): array
+    {
+        self::getAuthorById($id);
+        if ($input === []) {
+            return self::getAuthorById($id);
+        }
+
+        $columns = [
+            'name' => 'name', 'email' => 'email', 'telephone' => 'telephone',
+            'address' => 'address', 'about' => 'about', 'isAccountVerified' => 'is_account_verified',
+        ];
+        $sets = [];
+        $params = ['id' => $id];
+        foreach ($columns as $key => $column) {
+            if (array_key_exists($key, $input)) {
+                $sets[] = "{$column} = :{$key}";
+                $params[$key] = is_bool($input[$key]) ? ($input[$key] ? 1 : 0) : $input[$key];
+            }
+        }
+
+        if (array_key_exists('password', $input)) {
+            $sets[] = 'password = :password';
+            $params['password'] = password_hash($input['password'], PASSWORD_BCRYPT, ['cost' => self::PASSWORD_SALT_COST]);
+        }
+
+        try {
+            self::db()
+                ->prepare('UPDATE author SET ' . implode(', ', $sets) . ', modified_at = NOW() WHERE id_author = :id')
+                ->execute($params);
+        } catch (\Throwable $e) {
+            if (str_contains($e->getMessage(), 'Duplicate entry')) {
+                throw ApiError::conflict('Cette adresse e-mail est déjà utilisée');
+            }
+            throw $e;
+        }
+
+        return self::getAuthorById($id);
+    }
+
     // KYC "complet" = toutes les données d'identité renseignées ET la
     // politique de confidentialité acceptée — purement déclaratif (l'auteur a
     // rempli le formulaire), distinct de la vérification par un administrateur.

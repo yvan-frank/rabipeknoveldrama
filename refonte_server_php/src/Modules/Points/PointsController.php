@@ -64,4 +64,15 @@ final class PointsController
         $seconds = PointsSchema::addReadingTime($request->body);
         Response::success(PointsService::addReadingTime((int) $request->user['id'], $seconds));
     }
+
+    public static function chapterUnlockCost(Request $request): void
+    {
+        Response::success(['cost' => PointsService::getChapterUnlockPointsCost()]);
+    }
+
+    public static function unlockChapterWithPoints(Request $request): void
+    {
+        $chapterId = PointsSchema::chapterIdParam($request->params['chapterId']);
+        Response::success(PointsService::unlockChapterWithPoints((int) $request->user['id'], $chapterId), 201);
+    }
 }

@@ -37,5 +37,9 @@ final class AuthorsRoutes
         $router->get('/kyc-bypass', [AuthorsController::class, 'getKycBypassPolicy'], $adminOnly);
         $router->patch('/kyc-bypass', [AuthorsController::class, 'setKycBypassPolicy'], $adminOnly);
         $router->patch('/:authorId/kyc-verification', [AuthorsController::class, 'setKycVerification'], $adminOnly);
+        // Doit rester APRÈS les routes littérales ci-dessus (routeur =
+        // premier match gagne dans l'ordre d'enregistrement) : sinon
+        // PATCH /kyc-bypass matcherait ce segment dynamique en premier.
+        $router->patch('/:authorId', [AuthorsController::class, 'update'], $adminOnly);
     }
 }

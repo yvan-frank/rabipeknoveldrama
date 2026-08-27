@@ -44,6 +44,19 @@ final class UsersController
         Response::noContent();
     }
 
+    public static function update(Request $request): void
+    {
+        $id = UsersSchema::idParam($request->params['id']);
+        $input = UsersSchema::update($request->body);
+        Response::success(UsersService::updateUser($id, $input));
+    }
+
+    public static function promoteToAuthor(Request $request): void
+    {
+        $id = UsersSchema::idParam($request->params['id']);
+        Response::success(UsersService::promoteToAuthor($id), 201);
+    }
+
     public static function grantBook(Request $request): void
     {
         $id = UsersSchema::idParam($request->params['id']);

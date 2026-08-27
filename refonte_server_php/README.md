@@ -2,9 +2,12 @@
 
 Scaffold d'un serveur API Rabipek en **PHP natif** (aucun framework), qui
 reproduit l'architecture et **toutes les routes** de [`refonte_server`](../refonte_server)
-(Express + TypeScript + Prisma). Même base de données MySQL (le schéma reste
-celui de `refonte_server/prisma/schema.prisma` — ce projet ne le duplique pas,
-il s'y connecte via PDO).
+(Express + TypeScript + Prisma). Même base de données MySQL (mêmes tables,
+mêmes noms de colonnes que `refonte_server/prisma/schema.prisma`), mais ce
+projet possède désormais son propre schéma versionné et applicable
+indépendamment — voir [`database/migrations/`](database/migrations) et
+`composer migrate` ci-dessous — plutôt que de dépendre d'un `prisma migrate
+deploy` déjà exécuté côté Node.
 
 ## Pourquoi ce scaffold
 
@@ -104,7 +107,7 @@ requête, pas d'event loop) :
 
 - PHP >= 8.1 avec `pdo_mysql`
 - Composer (uniquement pour l'autoload PSR-4 — aucune dépendance runtime)
-- La même base MySQL que `refonte_server` (migrations Prisma déjà appliquées)
+- Une base MySQL vide (ou déjà à jour — voir migrations ci-dessous)
 
 ## Installation
 
@@ -112,7 +115,31 @@ requête, pas d'event loop) :
 composer install
 cp .env.example .env
 # éditer .env : DATABASE_URL, JWT_SECRET, CORS_ORIGINS...
+composer migrate
 ```
+
+## Migrations de schéma
+
+```bash
+composer migrate
+```
+
+Applique les fichiers `.sql` de [`database/migrations/`](database/migrations)
+non encore exécutés, dans l'ordre alphabétique — équivalent maison de
+`prisma migrate deploy` (cf. `bin/migrate.php`). `0001_initial_schema.sql`
+est un snapshot complet du schéma (39 tables, `CREATE TABLE IF NOT EXISTS`) :
+il fonctionne aussi bien pour créer une base neuve que pour être rejoué sans
+effet sur une base déjà à jour. Les migrations appliquées sont suivies dans
+la table `_php_migrations` (distincte de `_prisma_migrations`, propre à
+Prisma côté Node).
+
+Pour une évolution future du schéma : ajouter un nouveau fichier numéroté
+(`0002_xxx.sql`, etc.) dans `database/migrations/` — jamais modifier
+`0001_initial_schema.sql` après coup. Par cohérence avec `refonte_server`
+(toujours la référence Node), ajouter aussi la migration Prisma
+correspondante dans `refonte_server/prisma/migrations/` et le modèle dans
+`refonte_server/prisma/schema.prisma`, même si elle n'est pas exécutée par
+ce projet.
 
 ## Lancer en développement
 

@@ -62,9 +62,13 @@ final class BooksSchema
         $cover = self::requireString($body, 'cover', 1, null, $errors);
         $filePath = self::optionalString($body['filePath'] ?? null, 255);
         $price = self::requireInt($body, 'price', 0, null, $errors);
-        $pageNumber = self::requireInt($body, 'pageNumber', 1, null, $errors);
+        // Facultatifs (contrairement aux autres champs ci-dessus) : le nombre
+        // de pages n'est qu'indicatif et le résumé peut être complété plus
+        // tard depuis la fiche du livre — les forcer bloquait inutilement la
+        // création rapide d'un livre, notamment côté mobile.
+        $pageNumber = self::intOrDefault($body['pageNumber'] ?? null, 0, 0);
         $bookLink = self::optionalString($body['bookLink'] ?? null, null);
-        $resume = self::requireString($body, 'resume', 1, null, $errors);
+        $resume = self::optionalString($body['resume'] ?? null, null) ?? '';
         $categoryId = self::requireInt($body, 'categoryId', 1, null, $errors);
         $authorId = self::requireInt($body, 'authorId', 1, null, $errors);
 

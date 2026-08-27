@@ -29,7 +29,9 @@ final class UsersRoutes
         $router->get('/book-grants', [UsersController::class, 'listBookGrants'], $adminOnly);
         $router->delete('/book-grants/:grantId', [UsersController::class, 'revokeBookGrant'], $adminOnly);
         $router->post('/:id/book-grants', [UsersController::class, 'grantBook'], $adminOnly);
+        $router->post('/:id/promote-to-author', [UsersController::class, 'promoteToAuthor'], $adminOnly);
         $router->get('/:id', [UsersController::class, 'show'], $adminOnly);
+        $router->patch('/:id', [UsersController::class, 'update'], $adminOnly);
         $router->delete('/:id', [UsersController::class, 'delete'], $adminOnly);
     }
 }

@@ -38,7 +38,10 @@ export default function RegisterScreen() {
         </Pressable>
       ) : null}
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      {/* behavior 'height' sur Android (pas undefined) : sans ça le clavier
+          recouvrait les champs de saisie sans repousser le contenu — même
+          correctif que BottomSheet.tsx (panneau Commentaires). */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
           <AuthHero tagline="Créez votre compte pour découvrir et lire vos romans préférés." />
 

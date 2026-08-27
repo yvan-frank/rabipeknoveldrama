@@ -10,9 +10,11 @@ use PDOException;
 
 /**
  * Connexion PDO paresseuse et partagée — équivalent natif de src/lib/prisma.ts.
- * Le schéma reste celui de refonte_server/prisma/schema.prisma (mêmes tables,
- * mêmes noms de colonnes via les @map de Prisma) : ce scaffold ne le recrée
- * pas, il s'y connecte.
+ * Le schéma (mêmes tables, mêmes noms de colonnes) reste calqué sur
+ * refonte_server/prisma/schema.prisma, mais ce serveur PHP possède désormais
+ * son propre schéma versionné et applicable indépendamment — cf.
+ * database/migrations/ et `composer migrate` (bin/migrate.php) — plutôt que
+ * de dépendre d'un `prisma migrate deploy` déjà exécuté côté Node.
  */
 final class Database
 {

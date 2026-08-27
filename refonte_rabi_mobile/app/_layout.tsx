@@ -9,6 +9,7 @@ import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import mobileAds, { AdsConsent } from 'react-native-google-mobile-ads';
 import { useAuthStore } from '../src/auth/auth-store';
 import { AppAlertHost } from '../src/components/AppAlert';
+import { ToastHost } from '../src/components/Toast';
 import { useNotificationPreferenceStore } from '../src/lib/notification-preference-store';
 import { registerForPushNotifications, unregisterCurrentPushToken } from '../src/lib/push-notifications';
 import { fontsToLoad } from '../src/theme/tokens';
@@ -114,6 +115,7 @@ export default function RootLayout() {
           fonctionne depuis n'importe quel écran de l'app, pas seulement ceux
           sous ce layout racine. */}
       <AppAlertHost />
+      <ToastHost />
     </QueryClientProvider>
   );
 }

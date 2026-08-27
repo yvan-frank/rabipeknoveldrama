@@ -70,6 +70,16 @@ const config: ExpoConfig = {
     ],
     'expo-sharing',
     [
+      // Requis pour ImagePicker.launchImageLibraryAsync (couverture de livre,
+      // pièce d'identité KYC — cf. src/api/authors.ts) : sans ce plugin, iOS
+      // n'a pas de texte de permission (NSPhotoLibraryUsageDescription) et
+      // rejette l'accès à la photothèque plutôt que de simplement demander.
+      'expo-image-picker',
+      {
+        photosPermission: "Rabipek a besoin d'accéder à vos photos pour choisir une couverture ou une pièce d'identité.",
+      },
+    ],
+    [
       'expo-notifications',
       {
         // Icône monochrome dédiée (obligatoire Android 13+, sinon l'icône

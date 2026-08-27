@@ -1,0 +1,21 @@
+{
+  "name": "rabipek/frontend-php",
+  "description": "Scaffold PHP natif du frontend Rabipek — mêmes routes que refonte_rabi_frontend (Next.js App Router), rendu côté serveur en PHP. Les composants interactifs (formulaires, widgets) sont des îlots React montés via Vite.",
+  "type": "project",
+  "license": "UNLICENSED",
+  "require": {
+    "php": ">=8.1",
+    "ext-json": "*",
+    "ext-curl": "*",
+    "ext-mbstring": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}

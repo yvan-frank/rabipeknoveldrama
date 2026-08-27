@@ -60,6 +60,69 @@ final class AuthorsSchema
         ];
     }
 
+    // Édition admin : identité/contact de base (pas le KYC, géré à part par
+    // setKycVerification/setKycBypassPolicy).
+    /** @param array<string,mixed> $body */
+    public static function update(array $body): array
+    {
+        $errors = [];
+        $result = [];
+
+        if (array_key_exists('name', $body)) {
+            $name = is_string($body['name']) ? trim($body['name']) : '';
+            if ($name === '' || mb_strlen($name) < 2) {
+                $errors['name'][] = 'Le nom doit contenir au moins 2 caractères';
+            } else {
+                $result['name'] = mb_substr($name, 0, 255);
+            }
+        }
+
+        if (array_key_exists('email', $body)) {
+            $email = is_string($body['email']) ? trim($body['email']) : '';
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors['email'][] = 'Adresse e-mail invalide';
+            } else {
+                $result['email'] = mb_substr($email, 0, 255);
+            }
+        }
+
+        if (array_key_exists('telephone', $body)) {
+            $telephone = $body['telephone'];
+            $result['telephone'] = is_string($telephone) && trim($telephone) !== '' ? mb_substr(trim($telephone), 0, 255) : null;
+        }
+
+        if (array_key_exists('address', $body)) {
+            $address = $body['address'];
+            $result['address'] = is_string($address) && trim($address) !== '' ? mb_substr(trim($address), 0, 255) : null;
+        }
+
+        if (array_key_exists('about', $body)) {
+            $about = $body['about'];
+            $result['about'] = is_string($about) && trim($about) !== '' ? trim($about) : null;
+        }
+
+        if (array_key_exists('isAccountVerified', $body)) {
+            $result['isAccountVerified'] = (bool) $body['isAccountVerified'];
+        }
+
+        // Mot de passe optionnel — ne réinitialise que si une valeur non
+        // vide est fournie ; hashé côté service.
+        if (array_key_exists('password', $body) && $body['password'] !== null && $body['password'] !== '') {
+            $password = $body['password'];
+            if (!is_string($password) || mb_strlen($password) < 8) {
+                $errors['password'][] = 'Le mot de passe doit contenir au moins 8 caractères';
+            } else {
+                $result['password'] = $password;
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
+        return $result;
+    }
+
     public static function kycVerification(array $body): bool
     {
         if (!is_bool($body['verified'] ?? null)) {

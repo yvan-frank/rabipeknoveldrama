@@ -24,6 +24,14 @@ final class PointsSchema
         return $limit;
     }
 
+    public static function chapterIdParam(string $raw): int
+    {
+        if (!ctype_digit($raw) || (int) $raw < 1) {
+            throw ApiError::badRequest('Identifiant de chapitre invalide');
+        }
+        return (int) $raw;
+    }
+
     public static function articleIdParam(string $raw): string
     {
         if (!in_array($raw, self::ARTICLE_IDS, true)) {

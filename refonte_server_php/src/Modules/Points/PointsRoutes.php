@@ -26,5 +26,7 @@ final class PointsRoutes
         $router->post('/articles/:articleId/read', [PointsController::class, 'markArticleRead'], $auth);
         $router->get('/reading-time', [PointsController::class, 'readingTimeStatus'], $auth);
         $router->post('/reading-time', [PointsController::class, 'addReadingTime'], $auth);
+        $router->get('/chapter-unlock-cost', [PointsController::class, 'chapterUnlockCost'], $auth);
+        $router->post('/chapters/:chapterId/unlock', [PointsController::class, 'unlockChapterWithPoints'], $auth);
     }
 }
