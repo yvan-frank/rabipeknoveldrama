@@ -21,6 +21,9 @@ interface Props {
   parts: BookPart[];
 }
 
+const badgeClass = 'inline-block rounded-full bg-black/10 px-2 py-0.5 text-[0.7rem] font-semibold dark:bg-white/10';
+const badgeFreeClass = 'inline-block rounded-full bg-brand-amber/20 px-2 py-0.5 text-[0.7rem] font-semibold text-brand-amber';
+
 // Équivalent des actions de src/app/livres/[slug]/page.tsx (like, prix,
 // achat par partie) — la lecture elle-même n'est plus possible sur le web
 // (cf. BooksController::chapter côté PHP), seuls le like et le panier
@@ -68,17 +71,17 @@ export default function BookActions({ bookId, isFree, price, isPromotion, promot
   }
 
   return (
-    <div className="book-actions">
-      <div className="book-actions__price">
+    <div className="my-4 mb-6 flex max-w-96 flex-col gap-3 rounded-xl border border-black/10 p-4 dark:border-white/10">
+      <div className="flex items-baseline gap-2 font-semibold">
         {isFree ? (
-          <span className="badge badge--free">Gratuit</span>
+          <span className={badgeFreeClass}>Gratuit</span>
         ) : isPromotion ? (
           <>
-            <span className="book-actions__price-old">{formatPrice(price)} FCFA</span>
-            <span className="book-actions__price-current">{formatPrice(promotionPrice)} FCFA</span>
+            <span className="text-[0.85rem] font-normal opacity-50 line-through">{formatPrice(price)} FCFA</span>
+            <span className="text-[1.1rem] text-brand-amber">{formatPrice(promotionPrice)} FCFA</span>
           </>
         ) : (
-          <span className="book-actions__price-current">{formatPrice(price)} FCFA</span>
+          <span className="text-[1.1rem] text-brand-amber">{formatPrice(price)} FCFA</span>
         )}
       </div>
 
@@ -87,26 +90,28 @@ export default function BookActions({ bookId, isFree, price, isPromotion, promot
         onClick={toggleLike}
         disabled={isLiking}
         aria-pressed={liked}
-        className={`book-actions__like${liked ? ' is-active' : ''}`}
+        className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[0.85rem] ${
+          liked ? 'border-brand-pink text-brand-pink' : 'border-black/10 dark:border-white/10'
+        }`}
       >
         {liked ? '♥' : '♡'} {count}
       </button>
 
       {parts.length > 0 && (
-        <ul className="book-actions__parts">
+        <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
           {parts.map((part) => (
-            <li key={part.id}>
+            <li key={part.id} className="flex items-center justify-between gap-3 text-[0.85rem]">
               <span>{part.title}</span>
               {part.isFree ? (
-                <span className="badge badge--free">Gratuit</span>
+                <span className={badgeFreeClass}>Gratuit</span>
               ) : part.isPurchased ? (
-                <span className="badge">Déjà acheté</span>
+                <span className={badgeClass}>Déjà acheté</span>
               ) : (
                 <button
                   type="button"
-                  className="btn btn--primary"
                   disabled={cartState[part.id] === 'adding' || cartState[part.id] === 'added'}
                   onClick={() => addPartToCart(part.id)}
+                  className="inline-block rounded-lg bg-neutral-900 px-3 py-1.5 text-[0.8rem] text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900"
                 >
                   {cartState[part.id] === 'added'
                     ? 'Ajouté au panier'

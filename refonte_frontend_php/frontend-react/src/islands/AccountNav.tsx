@@ -33,9 +33,9 @@ export default function AccountNav({ loginHref, registerHref }: Props) {
 
   if (user) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{user.email}</span>
-        <a href={getDashboardPath(user.role)} style={{ fontSize: '0.875rem' }}>
+      <div className="flex items-center gap-3">
+        <span className="text-[0.8rem] opacity-70">{user.email}</span>
+        <a href={getDashboardPath(user.role)} className="text-sm no-underline">
           {getDashboardLabel(user.role)}
         </a>
       </div>
@@ -43,14 +43,13 @@ export default function AccountNav({ loginHref, registerHref }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-      <a href={loginHref} style={{ fontSize: '0.875rem' }}>
+    <div className="flex items-center gap-4">
+      <a href={loginHref} className="text-sm no-underline">
         Connexion
       </a>
       <a
         href={registerHref}
-        className="btn btn--primary"
-        style={{ fontSize: '0.875rem', padding: '0.4rem 0.9rem' }}
+        className="inline-block rounded-lg bg-neutral-900 px-3.5 py-1.5 text-sm text-white no-underline dark:bg-neutral-100 dark:text-neutral-900"
       >
         Inscription
       </a>

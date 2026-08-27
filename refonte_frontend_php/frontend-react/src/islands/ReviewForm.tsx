@@ -111,27 +111,27 @@ export default function ReviewForm({ bookId }: Props) {
   }
 
   return (
-    <div className="review-form">
+    <div className="mt-8 flex flex-col gap-6">
       <h2>Avis des lecteurs {reviews ? `(${reviews.length})` : ''}</h2>
 
       {reviews === null ? (
-        <p className="empty">Chargement des avis…</p>
+        <p className="opacity-60">Chargement des avis…</p>
       ) : reviews.length === 0 ? (
-        <p className="empty">Aucun avis pour le moment — soyez le premier à donner votre avis.</p>
+        <p className="opacity-60">Aucun avis pour le moment — soyez le premier à donner votre avis.</p>
       ) : (
-        <ul className="review-form__list">
+        <ul className="m-0 flex list-none flex-col gap-4 p-0">
           {reviews.map((review) => (
-            <li key={review.id} className="review-form__item">
-              <div className="review-form__item-head">
+            <li key={review.id} className="rounded-xl border border-black/10 px-4 py-3.5 dark:border-white/10">
+              <div className="flex items-center justify-between gap-3 text-[0.85rem] font-semibold">
                 <span>{review.user.name}</span>
-                <span className="review-form__stars" aria-label={`${review.rating} sur 5`}>
+                <span aria-label={`${review.rating} sur 5`} className="tracking-wide text-brand-amber">
                   {stars(review.rating)}
                 </span>
               </div>
-              <p>{review.message}</p>
-              <p className="review-form__item-date">{formatDate(review.createdAt)}</p>
+              <p className="mt-2 text-sm leading-relaxed opacity-85">{review.message}</p>
+              <p className="mt-2 text-[0.7rem] font-normal opacity-55">{formatDate(review.createdAt)}</p>
               {review.replies.map((reply) => (
-                <div key={reply.id} className="review-form__reply">
+                <div key={reply.id} className="mt-2.5 border-l-2 border-brand-amber px-3 py-2.5 text-[0.8rem] opacity-80">
                   Réponse de l'auteur : {reply.content}
                 </div>
               ))}
@@ -141,17 +141,17 @@ export default function ReviewForm({ bookId }: Props) {
       )}
 
       {user ? (
-        <form className="review-form__editor" onSubmit={handleSubmit}>
+        <form className="flex max-w-md flex-col gap-2.5" onSubmit={handleSubmit}>
           <h3>{reviews?.some((r) => r.user.id === user.id) ? 'Modifier mon avis' : 'Laisser un avis'}</h3>
-          <div className="review-form__rating-picker" role="radiogroup" aria-label="Note">
+          <div className="flex gap-1 text-[1.3rem]" role="radiogroup" aria-label="Note">
             {[1, 2, 3, 4, 5].map((value) => (
               <button
                 key={value}
                 type="button"
                 role="radio"
                 aria-checked={rating === value}
-                className={value <= rating ? 'is-selected' : ''}
                 onClick={() => setRating(value)}
+                className={`border-none bg-none p-0 leading-none text-brand-amber ${value <= rating ? 'opacity-100' : 'opacity-35'}`}
               >
                 {value <= rating ? '★' : '☆'}
               </button>
@@ -163,14 +163,19 @@ export default function ReviewForm({ bookId }: Props) {
             placeholder="Qu'avez-vous pensé de ce livre ?"
             maxLength={2000}
             required
+            className="min-h-[4.5rem] resize-y rounded-lg border border-black/10 bg-white px-2.5 py-2.5 text-neutral-900 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100"
           />
-          {error && <p className="review-form__error">{error}</p>}
-          <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
+          {error && <p className="text-[0.8rem] text-rose-600">{error}</p>}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900"
+          >
             {isSubmitting ? 'Envoi…' : 'Publier mon avis'}
           </button>
         </form>
       ) : (
-        <p className="empty">
+        <p className="opacity-60">
           <a href={`/connexion?redirect=${encodeURIComponent(window.location.pathname)}`}>Connectez-vous</a> pour laisser un avis.
         </p>
       )}

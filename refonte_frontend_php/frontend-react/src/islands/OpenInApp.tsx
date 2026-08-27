@@ -25,19 +25,29 @@ export default function OpenInApp({ deepLink, playStoreUrl, appStoreUrl }: Props
   }, [deepLink]);
 
   return (
-    <div className="open-in-app__actions">
-      <button type="button" className="btn btn--primary" onClick={() => (window.location.href = deepLink)}>
+    <div className="flex flex-col items-center gap-4">
+      <button
+        type="button"
+        className="inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white dark:bg-neutral-100 dark:text-neutral-900"
+        onClick={() => (window.location.href = deepLink)}
+      >
         Ouvrir dans l'app
       </button>
 
       {showFallback && (
-        <div className="open-in-app__stores">
+        <div className="flex flex-col items-center gap-2">
           <p>L'app ne s'est pas ouverte automatiquement ?</p>
-          <a href={playStoreUrl} className="btn">
+          <a
+            href={playStoreUrl}
+            className="inline-block rounded-lg border border-black/10 px-5 py-2.5 text-sm no-underline dark:border-white/10"
+          >
             Google Play
           </a>
           {appStoreUrl && (
-            <a href={appStoreUrl} className="btn">
+            <a
+              href={appStoreUrl}
+              className="inline-block rounded-lg border border-black/10 px-5 py-2.5 text-sm no-underline dark:border-white/10"
+            >
               App Store
             </a>
           )}

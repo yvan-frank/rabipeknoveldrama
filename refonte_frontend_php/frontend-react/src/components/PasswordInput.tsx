@@ -17,7 +17,7 @@ export function PasswordInput({ id, value, onChange, autoComplete, onFocus, onBl
   const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <div className="password-input">
+    <div className="relative">
       <input
         id={id}
         type={isVisible ? 'text' : 'password'}
@@ -27,11 +27,13 @@ export function PasswordInput({ id, value, onChange, autoComplete, onFocus, onBl
         onFocus={onFocus}
         onBlur={onBlur}
         required={required}
+        className="w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 pr-10 text-sm text-neutral-900 focus:border-brand-amber focus:ring-3 focus:ring-brand-amber/20 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100"
       />
       <button
         type="button"
         onClick={() => setIsVisible((v) => !v)}
         aria-label={isVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+        className="absolute top-1/2 right-2.5 -translate-y-1/2 text-base opacity-60 hover:opacity-100"
       >
         {isVisible ? '🙈' : '👁'}
       </button>

@@ -41,22 +41,27 @@ function initial(book: DashboardBook): string {
   return book.title.slice(0, 1).toUpperCase();
 }
 
+const bookCardClass =
+  'flex items-center gap-3 rounded-2xl border border-black/10 px-3 py-2.5 no-underline text-inherit hover:border-brand-amber dark:border-white/10';
+
 function BookCard({ book, href, meta }: { book: DashboardBook; href: string; meta: string }) {
   return (
-    <a href={href} className="dashboard-book">
-      <span className="dashboard-book__avatar">{initial(book)}</span>
-      <span className="dashboard-book__info">
-        <span className="dashboard-book__title">{book.title}</span>
-        <span className="dashboard-book__meta">{meta}</span>
+    <a href={href} className={bookCardClass}>
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-amber to-brand-pink font-bold text-neutral-900">
+        {initial(book)}
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap">{book.title}</span>
+        <span className="text-[0.7rem] opacity-55">{meta}</span>
       </span>
     </a>
   );
 }
 
 function BookGrid({ items, emptyText }: { items: Array<{ key: number; book: DashboardBook; href: string; meta: string }>; emptyText: string }) {
-  if (items.length === 0) return <p className="empty">{emptyText}</p>;
+  if (items.length === 0) return <p className="opacity-60">{emptyText}</p>;
   return (
-    <div className="dashboard-book-grid">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
       {items.map((item) => (
         <BookCard key={item.key} book={item.book} href={item.href} meta={item.meta} />
       ))}
@@ -65,9 +70,9 @@ function BookGrid({ items, emptyText }: { items: Array<{ key: number; book: Dash
 }
 
 function LibraryGrid({ entries, emptyText }: { entries: LibraryEntry[]; emptyText: string }) {
-  if (entries.length === 0) return <p className="empty">{emptyText}</p>;
+  if (entries.length === 0) return <p className="opacity-60">{emptyText}</p>;
   return (
-    <div className="dashboard-book-grid">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
       {entries.map((entry) => {
         const progress = entry.chapterRead && entry.totalChapters > 0 ? Math.min(100, Math.round((entry.chapterRead / entry.totalChapters) * 100)) : 0;
         const status = entry.purchased
@@ -78,13 +83,15 @@ function LibraryGrid({ entries, emptyText }: { entries: LibraryEntry[]; emptyTex
               ? `Chapitre ${entry.chapterRead}/${entry.totalChapters}`
               : 'Pas encore commencé';
         return (
-          <a key={entry.id} href={`/livres/${entry.book.slug}`} className="dashboard-book dashboard-book--library">
-            <span className="dashboard-book__avatar">{initial(entry.book)}</span>
-            <span className="dashboard-book__info">
-              <span className="dashboard-book__title">{entry.book.title}</span>
-              <span className="dashboard-book__meta">{status}</span>
-              <span className="dashboard-progress">
-                <span className="dashboard-progress__bar" style={{ width: `${progress}%` }} />
+          <a key={entry.id} href={`/livres/${entry.book.slug}`} className={bookCardClass}>
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-amber to-brand-pink font-bold text-neutral-900">
+              {initial(entry.book)}
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap">{entry.book.title}</span>
+              <span className="text-[0.7rem] opacity-55">{status}</span>
+              <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                <span className="block h-full bg-gradient-to-r from-brand-amber to-brand-pink" style={{ width: `${progress}%` }} />
               </span>
             </span>
           </a>
@@ -96,19 +103,19 @@ function LibraryGrid({ entries, emptyText }: { entries: LibraryEntry[]; emptyTex
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="dashboard-metric">
-      <span className="dashboard-metric__label">{label}</span>
-      <strong className="dashboard-metric__value">{value}</strong>
+    <div className="flex flex-col gap-2 rounded-2xl border border-black/10 p-4 dark:border-white/10">
+      <span className="text-xs opacity-60">{label}</span>
+      <strong className="text-[1.6rem]">{value}</strong>
     </div>
   );
 }
 
 function Panel({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <section className="dashboard-panel">
-      <h2>{title}</h2>
-      <p className="dashboard-panel__description">{description}</p>
-      <div className="dashboard-panel__body">{children}</div>
+    <section className="rounded-[1.25rem] border border-black/10 px-6 py-5 dark:border-white/10">
+      <h2 className="m-0 text-[1.15rem]">{title}</h2>
+      <p className="mt-1 mb-4 text-[0.8rem] opacity-60">{description}</p>
+      <div>{children}</div>
     </section>
   );
 }
@@ -146,38 +153,47 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="dashboard">
-      <header className="dashboard__header">
-        <a href="/" className="dashboard__logo">
-          Rabi<span>pek</span>
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-black/10 bg-white px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 dark:border-white/10 dark:bg-neutral-950">
+        <a href="/" className="shrink-0 text-[1.1rem] font-black text-inherit no-underline sm:text-[1.2rem]">
+          Rabi<span className="text-brand-amber">pek</span>
         </a>
-        <div className="dashboard__header-actions">
-          {user && <span className="dashboard__email">{user.email}</span>}
-          <button type="button" className="btn" onClick={handleLogout} disabled={isLoggingOut}>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3.5">
+          {user && <span className="hidden max-w-40 truncate text-[0.8rem] opacity-60 sm:inline">{user.email}</span>}
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="inline-block shrink-0 rounded-lg px-3.5 py-2 text-sm disabled:opacity-60 sm:px-5 sm:py-2.5"
+          >
             {isLoggingOut ? 'Déconnexion…' : 'Déconnexion'}
           </button>
         </div>
       </header>
 
-      <div className="dashboard__body">
-        <nav className="dashboard__nav">
+      <div className="mx-auto flex w-full max-w-[88rem] flex-1 flex-col md:flex-row">
+        <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-black/10 p-3 md:w-60 md:flex-col md:border-r md:border-b-0 md:p-6 dark:border-white/10">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
               type="button"
-              className={section === item.id ? 'is-active' : ''}
               onClick={() => setSection(item.id)}
+              className={`shrink-0 rounded-lg px-3 py-2.5 text-left text-sm whitespace-nowrap ${
+                section === item.id
+                  ? 'bg-neutral-900 font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900'
+                  : 'bg-none text-inherit hover:bg-black/10 dark:hover:bg-white/10'
+              }`}
             >
               {item.label}
             </button>
           ))}
         </nav>
 
-        <main className="dashboard__main">
+        <main className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-4 sm:px-7 sm:py-6">
           {error ? (
-            <p className="review-form__error">{error}</p>
+            <p className="text-sm text-rose-600">{error}</p>
           ) : !data ? (
-            <p className="empty">Chargement…</p>
+            <p className="opacity-60">Chargement…</p>
           ) : section === 'bibliotheque' ? (
             <Panel title="Ma bibliothèque" description="Vos livres achetés ou entamés, avec votre progression de lecture.">
               <LibraryGrid entries={data.library} emptyText="Commencez la lecture d'un livre pour le retrouver ici." />
@@ -198,7 +214,7 @@ export default function Dashboard() {
             </Panel>
           ) : section === 'activite' ? (
             <Panel title="Mon activité" description="Votre empreinte dans la communauté Rabipek.">
-              <div className="dashboard-metrics">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
                 <Metric label="Commentaires" value={data.counts.comments} />
                 <Metric label="Partages" value={data.counts.shares} />
                 <Metric label="Lectures" value={data.counts.reads} />
@@ -206,24 +222,24 @@ export default function Dashboard() {
             </Panel>
           ) : section === 'parametres' ? (
             <Panel title="Paramètres du compte" description="Vos informations de connexion et préférences.">
-              <div className="dashboard-settings">
-                <span className="dashboard-panel__description">Adresse e-mail</span>
-                <p>{user?.email}</p>
-                <p className="empty">La modification du profil sera disponible prochainement.</p>
+              <div>
+                <span className="text-[0.8rem] opacity-60">Adresse e-mail</span>
+                <p className="my-1">{user?.email}</p>
+                <p className="my-1 opacity-60">La modification du profil sera disponible prochainement.</p>
               </div>
             </Panel>
           ) : (
             <>
-              <section className="dashboard-hero">
-                <p className="dashboard-hero__eyebrow">✨ Votre espace de lecture</p>
-                <h1>Bonjour, bienvenue dans votre prochain chapitre.</h1>
-                <p>Retrouvez vos livres, vos favoris et votre activité en un seul endroit.</p>
-                <a href="/livres" className="btn btn--primary">
+              <section className="rounded-3xl bg-gradient-to-br from-brand-amber to-brand-pink p-5 text-neutral-900 sm:p-8">
+                <p className="text-[0.85rem] font-semibold">✨ Votre espace de lecture</p>
+                <h1 className="my-3 max-w-lg text-[clamp(1.6rem,3vw,2.4rem)]">Bonjour, bienvenue dans votre prochain chapitre.</h1>
+                <p className="max-w-md opacity-80">Retrouvez vos livres, vos favoris et votre activité en un seul endroit.</p>
+                <a href="/livres" className="mt-4 inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white no-underline">
                   Explorer le catalogue →
                 </a>
               </section>
 
-              <div className="dashboard-metrics">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
                 <Metric label="Dans ma bibliothèque" value={data.counts.purchases} />
                 <Metric label="Coups de cœur" value={data.counts.likes} />
                 <Metric label="Dans mon panier" value={data.counts.cart} />

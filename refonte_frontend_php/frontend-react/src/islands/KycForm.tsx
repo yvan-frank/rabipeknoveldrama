@@ -72,6 +72,13 @@ function toApiPayload(form: FormState) {
   return { ...rest, ...(Object.keys(socialLinks).length > 0 ? { socialLinks } : {}) };
 }
 
+const fieldClass = 'flex flex-col gap-1.5 text-[0.8rem] opacity-85';
+const inputClass =
+  'w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-brand-amber focus:ring-3 focus:ring-brand-amber/20 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100';
+const rowClass = 'grid grid-cols-2 gap-4';
+const btnPrimaryClass =
+  'inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900';
+
 // Équivalent de src/components/dashboard/author/KycForm.tsx (+
 // DocumentUploadField.tsx intégré). Une fois vérifié (isVerified), le
 // formulaire est verrouillé : cf. AuthorKycMiddleware côté API, qui
@@ -161,35 +168,44 @@ export default function KycForm() {
     }
   }
 
-  if (loadError) return <p className="review-form__error">{loadError}</p>;
-  if (status === null) return <p className="empty">Chargement…</p>;
+  if (loadError) return <p className="text-sm text-rose-600">{loadError}</p>;
+  if (status === null) return <p className="opacity-60">Chargement…</p>;
 
   const isVerified = status.isVerified;
 
   return (
-    <div className="kyc-form">
+    <div className="flex flex-col gap-5">
       {isVerified ? (
-        <p className="kyc-form__banner kyc-form__banner--verified">
+        <p className="rounded-xl border border-emerald-500/35 bg-emerald-500/12 px-4.5 py-3.5 text-[0.85rem] text-emerald-500">
           ✓ Votre identité est vérifiée — vous pouvez gérer vos livres librement. Vos informations sont verrouillées ;
           contactez un administrateur si vous devez les modifier.
         </p>
       ) : (
         status.isComplete && (
-          <p className="kyc-form__banner kyc-form__banner--pending">✓ KYC soumis — en attente de vérification par un administrateur.</p>
+          <p className="rounded-xl border border-brand-amber/35 bg-brand-amber/12 px-4.5 py-3.5 text-[0.85rem] text-brand-amber">
+            ✓ KYC soumis — en attente de vérification par un administrateur.
+          </p>
         )
       )}
 
-      <form className="book-form" onSubmit={handleSubmit}>
-        <fieldset disabled={isVerified} className="kyc-form__fieldset">
-          <label className="book-form__field">
+      <form className="flex max-w-2xl flex-col gap-4" onSubmit={handleSubmit}>
+        <fieldset disabled={isVerified} className="flex flex-col gap-4 border-none p-0 m-0 disabled:opacity-65">
+          <label className={fieldClass}>
             Nom complet
-            <input type="text" value={form.fullName} onChange={(e) => set('fullName', e.target.value)} maxLength={50} required />
+            <input
+              type="text"
+              value={form.fullName}
+              onChange={(e) => set('fullName', e.target.value)}
+              maxLength={50}
+              required
+              className={inputClass}
+            />
           </label>
 
-          <div className="book-form__row">
-            <label className="book-form__field">
+          <div className={rowClass}>
+            <label className={fieldClass}>
               Pays
-              <select value={form.country} onChange={(e) => set('country', e.target.value)} required>
+              <select value={form.country} onChange={(e) => set('country', e.target.value)} required className={inputClass}>
                 <option value="" disabled>
                   Choisir…
                 </option>
@@ -200,16 +216,23 @@ export default function KycForm() {
                 ))}
               </select>
             </label>
-            <label className="book-form__field">
+            <label className={fieldClass}>
               Adresse
-              <input type="text" value={form.address} onChange={(e) => set('address', e.target.value)} maxLength={50} required />
+              <input
+                type="text"
+                value={form.address}
+                onChange={(e) => set('address', e.target.value)}
+                maxLength={50}
+                required
+                className={inputClass}
+              />
             </label>
           </div>
 
-          <div className="book-form__row">
-            <label className="book-form__field">
+          <div className={rowClass}>
+            <label className={fieldClass}>
               Type de pièce d'identité
-              <select value={form.documentType} onChange={(e) => set('documentType', e.target.value)}>
+              <select value={form.documentType} onChange={(e) => set('documentType', e.target.value)} className={inputClass}>
                 {DOCUMENT_TYPE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -217,16 +240,23 @@ export default function KycForm() {
                 ))}
               </select>
             </label>
-            <label className="book-form__field">
+            <label className={fieldClass}>
               Numéro du document
-              <input type="text" value={form.documentId} onChange={(e) => set('documentId', e.target.value)} maxLength={50} required />
+              <input
+                type="text"
+                value={form.documentId}
+                onChange={(e) => set('documentId', e.target.value)}
+                maxLength={50}
+                required
+                className={inputClass}
+              />
             </label>
           </div>
 
-          <div className="book-form__field">
+          <div className={fieldClass}>
             <span>Pièce d'identité (CNI, passeport ou autre)</span>
             {form.documents && (
-              <p className="kyc-form__doc-status">
+              <p className="my-1 flex items-center gap-2.5 text-[0.85rem] text-emerald-500">
                 ✓ {docFileName ?? 'Document envoyé'}
                 {!isVerified && (
                   <button
@@ -235,55 +265,90 @@ export default function KycForm() {
                       set('documents', '');
                       setDocFileName(null);
                     }}
+                    className="border-none bg-none text-xs text-inherit underline opacity-70"
                   >
                     Retirer
                   </button>
                 )}
               </p>
             )}
-            <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={handleDocumentChange} disabled={docUploading || isVerified} />
-            {docUploading && <p className="empty">Envoi…</p>}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={handleDocumentChange}
+              disabled={docUploading || isVerified}
+            />
+            {docUploading && <p className="opacity-60">Envoi…</p>}
           </div>
 
-          <fieldset className="book-form__extension">
-            <legend>Réseaux sociaux (facultatif)</legend>
-            <div className="book-form__row">
-              <label className="book-form__field">
+          <fieldset className="flex flex-col gap-3.5 rounded-xl border border-black/10 p-4 dark:border-white/10">
+            <legend className="px-1.5 text-xs font-bold tracking-[0.05em] uppercase opacity-60">Réseaux sociaux (facultatif)</legend>
+            <div className={rowClass}>
+              <label className={fieldClass}>
                 Facebook
-                <input type="text" value={form.facebook} onChange={(e) => set('facebook', e.target.value)} placeholder="https://facebook.com/…" />
+                <input
+                  type="text"
+                  value={form.facebook}
+                  onChange={(e) => set('facebook', e.target.value)}
+                  placeholder="https://facebook.com/…"
+                  className={inputClass}
+                />
               </label>
-              <label className="book-form__field">
+              <label className={fieldClass}>
                 Instagram
-                <input type="text" value={form.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="https://instagram.com/…" />
+                <input
+                  type="text"
+                  value={form.instagram}
+                  onChange={(e) => set('instagram', e.target.value)}
+                  placeholder="https://instagram.com/…"
+                  className={inputClass}
+                />
               </label>
             </div>
-            <div className="book-form__row">
-              <label className="book-form__field">
+            <div className={rowClass}>
+              <label className={fieldClass}>
                 X / Twitter
-                <input type="text" value={form.twitter} onChange={(e) => set('twitter', e.target.value)} placeholder="https://x.com/…" />
+                <input
+                  type="text"
+                  value={form.twitter}
+                  onChange={(e) => set('twitter', e.target.value)}
+                  placeholder="https://x.com/…"
+                  className={inputClass}
+                />
               </label>
-              <label className="book-form__field">
+              <label className={fieldClass}>
                 Site web
-                <input type="text" value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://…" />
+                <input
+                  type="text"
+                  value={form.website}
+                  onChange={(e) => set('website', e.target.value)}
+                  placeholder="https://…"
+                  className={inputClass}
+                />
               </label>
             </div>
           </fieldset>
 
-          <label className="kyc-form__consent">
+          <label className="flex items-center gap-2 text-[0.85rem]">
             <input type="checkbox" checked={form.privacyAccepted} onChange={(e) => set('privacyAccepted', e.target.checked)} />
             J'accepte la politique de confidentialité
           </label>
-          <a href="/politique-confidentialite" target="_blank" rel="noreferrer" className="kyc-form__policy-link">
+          <a
+            href="/politique-confidentialite"
+            target="_blank"
+            rel="noreferrer"
+            className="-mt-2 text-xs text-brand-amber"
+          >
             Lire la politique de confidentialité
           </a>
         </fieldset>
 
-        {error && <p className="review-form__error">{error}</p>}
-        {success && <p className="kyc-form__success">Informations enregistrées.</p>}
+        {error && <p className="text-sm text-rose-600">{error}</p>}
+        {success && <p className="text-[0.85rem] text-emerald-500">Informations enregistrées.</p>}
 
         {!isVerified && (
-          <div className="book-form__actions">
-            <button type="submit" className="btn btn--primary" disabled={isSubmitting || docUploading}>
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={isSubmitting || docUploading} className={btnPrimaryClass}>
               {isSubmitting ? 'Enregistrement…' : 'Soumettre mon KYC'}
             </button>
           </div>

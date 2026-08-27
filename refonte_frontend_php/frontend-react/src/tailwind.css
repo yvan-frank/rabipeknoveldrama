@@ -1,0 +1,49 @@
+@import "tailwindcss";
+/* Uniquement pour les pages légales (mentions, CGV, confidentialité) : long
+   texte semantique (h2/h3/p/ul/strong/a) où étiqueter chaque élément une par
+   une serait absurde — exactement le cas d'usage prévu par ce plugin. */
+@plugin "@tailwindcss/typography";
+
+/* Dark mode piloté par la classe .dark sur <html> (script anti-flash dans
+   resources/views/layout.php) — pas la stratégie "media" par défaut de
+   Tailwind v4, pour garder le bouton clair/sombre déjà en place. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Les vues PHP ne passent jamais par Vite (rendues côté serveur, chargées
+   directement par le navigateur) — sans ces directives @source explicites,
+   le scanner de classes de Tailwind ne verrait que frontend-react/src et
+   manquerait toutes les classes utilisées dans resources/views/*.php. */
+@source "../../resources/views";
+@source "../../src";
+
+@theme {
+  /* Reprise telle quelle de refonte_rabi_frontend/src/app/globals.css
+     (mêmes valeurs qu'avant la migration, cf. site.css d'origine) — accent
+     amber + rose, base noir/blanc, Poppins/Lora. */
+  --color-brand-amber: #f59e0b;
+  --color-brand-pink: #eb1983;
+  --font-sans: "Poppins", Arial, Helvetica, sans-serif;
+  --font-serif: "Lora", serif;
+}
+
+@layer base {
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply min-h-screen flex flex-col bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100;
+    font-family: var(--font-sans);
+  }
+  main {
+    @apply flex-1;
+  }
+  a {
+    color: inherit;
+  }
+  /* Évite un saut de mise en page pendant l'hydratation d'un îlot React :
+     sans hauteur minimale, un point de montage vide (avant que React ne
+     rende dedans) s'effondre à 0px et fait bouger tout ce qui suit. */
+  [data-island] {
+    min-height: 1px;
+  }
+}

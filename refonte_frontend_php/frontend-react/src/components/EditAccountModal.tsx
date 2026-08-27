@@ -33,6 +33,30 @@ interface Props {
   onPromoted?: () => void;
 }
 
+const fieldClass = 'flex flex-col gap-1.5 text-sm opacity-85';
+const inputClass =
+  'w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-brand-amber focus:ring-3 focus:ring-brand-amber/20 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100';
+const btnClass = 'inline-block rounded-lg px-5 py-2.5 text-sm disabled:opacity-60';
+const btnPrimaryClass =
+  'inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900';
+
+function Switch({ isOn, onToggle }: { isOn: boolean; onToggle: () => void }) {
+  return (
+    <span
+      onClick={onToggle}
+      className={`relative h-6.5 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${
+        isOn ? 'bg-gradient-to-br from-brand-amber to-brand-pink' : 'bg-black/10 dark:bg-white/10'
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-[0_1px_3px_rgb(0_0_0/25%)] transition-transform ${
+          isOn ? 'translate-x-4.5' : ''
+        }`}
+      />
+    </span>
+  );
+}
+
 // Modale d'édition rapide (nom/email/statuts) pour un compte lecteur ou
 // auteur, ouverte depuis la section "Utilisateurs" de l'admin — aucun
 // équivalent dans la source Next.js (qui n'affiche ces comptes qu'en
@@ -109,23 +133,40 @@ export function EditAccountModal({ account, onClose, onSaved, onPromoted }: Prop
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && !isSubmitting && !isPromoting && onClose()}>
-      <section role="dialog" aria-modal="true" className="modal edit-account-modal">
-        <p className="modal__eyebrow">{account.kind === 'user' ? 'Compte lecteur' : 'Compte auteur'}</p>
-        <h2>Modifier les informations</h2>
+    <div
+      role="presentation"
+      onMouseDown={(e) => e.target === e.currentTarget && !isSubmitting && !isPromoting && onClose()}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-[30rem] rounded-[1.25rem] bg-white p-6 text-neutral-900 shadow-[0_20px_60px_rgb(0_0_0/30%)] dark:bg-neutral-900 dark:text-neutral-100"
+      >
+        <p className="m-0 text-[0.7rem] font-bold tracking-[0.1em] text-brand-amber uppercase">
+          {account.kind === 'user' ? 'Compte lecteur' : 'Compte auteur'}
+        </p>
+        <h2 className="my-2 text-[1.4rem]">Modifier les informations</h2>
 
-        <form onSubmit={handleSubmit} className="edit-account-modal__form">
-          <label className="book-form__field">
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4.5">
+          <label className={fieldClass}>
             Nom
-            <input ref={nameRef} type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={isSubmitting} />
+            <input
+              ref={nameRef}
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
+              className={inputClass}
+            />
           </label>
 
-          <label className="book-form__field">
+          <label className={fieldClass}>
             Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isSubmitting} />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isSubmitting} className={inputClass} />
           </label>
 
-          <label className="book-form__field">
+          <label className={fieldClass}>
             Nouveau mot de passe
             <PasswordInput
               id="edit-account-password"
@@ -135,48 +176,44 @@ export function EditAccountModal({ account, onClose, onSaved, onPromoted }: Prop
               onFocus={() => setPasswordFocused(true)}
               onBlur={() => setPasswordFocused(false)}
             />
-            <span className="wizard__hint">Laisser vide pour ne pas changer le mot de passe.</span>
+            <span className="text-xs opacity-55">Laisser vide pour ne pas changer le mot de passe.</span>
             <PasswordStrengthPanel password={password} visible={passwordFocused && password.length > 0} />
           </label>
 
           {account.kind === 'user' ? (
-            <div className="edit-account-modal__toggles">
-              <label className="edit-account-modal__toggle">
-                <span>
-                  <strong>Compte actif</strong>
-                  <span>Un compte inactif ne peut pas se connecter.</span>
+            <div className="flex flex-col gap-3 border-t border-black/10 pt-1 dark:border-white/10">
+              <label className="flex items-center justify-between gap-4 rounded-2xl border border-black/10 px-4 py-3.5 dark:border-white/10">
+                <span className="flex flex-col gap-0.5">
+                  <strong className="text-[0.85rem]">Compte actif</strong>
+                  <span className="text-xs leading-snug opacity-55">Un compte inactif ne peut pas se connecter.</span>
                 </span>
-                <span className={`switch${isActive ? ' is-on' : ''}`} onClick={() => !isSubmitting && setIsActive((v) => !v)}>
-                  <span className="switch__thumb" />
-                </span>
+                <Switch isOn={isActive} onToggle={() => !isSubmitting && setIsActive((v) => !v)} />
               </label>
-              <label className="edit-account-modal__toggle">
-                <span>
-                  <strong>Administrateur</strong>
-                  <span>Accorde l'accès complet au panneau d'administration.</span>
+              <label className="flex items-center justify-between gap-4 rounded-2xl border border-black/10 px-4 py-3.5 dark:border-white/10">
+                <span className="flex flex-col gap-0.5">
+                  <strong className="text-[0.85rem]">Administrateur</strong>
+                  <span className="text-xs leading-snug opacity-55">Accorde l'accès complet au panneau d'administration.</span>
                 </span>
-                <span className={`switch${isAdmin ? ' is-on' : ''}`} onClick={() => !isSubmitting && setIsAdmin((v) => !v)}>
-                  <span className="switch__thumb" />
-                </span>
+                <Switch isOn={isAdmin} onToggle={() => !isSubmitting && setIsAdmin((v) => !v)} />
               </label>
 
-              <div className="edit-account-modal__promote">
+              <div className="pt-2">
                 {!promoteConfirmOpen ? (
-                  <button type="button" className="btn" onClick={() => setPromoteConfirmOpen(true)} disabled={isSubmitting}>
+                  <button type="button" onClick={() => setPromoteConfirmOpen(true)} disabled={isSubmitting} className={btnClass}>
                     Promouvoir en auteur
                   </button>
                 ) : (
-                  <div className="edit-account-modal__promote-confirm">
-                    <p>
+                  <div className="rounded-xl border border-black/10 px-4 py-3.5 text-[0.8rem] dark:border-white/10">
+                    <p className="m-0 mb-3 leading-relaxed opacity-75">
                       Crée un compte auteur avec le même email et mot de passe, puis désactive ce compte lecteur (réversible) —
                       sinon la connexion resterait bloquée sur l'ancien compte lecteur.
                     </p>
-                    {promoteError && <p className="review-form__error">{promoteError}</p>}
-                    <div className="edit-account-modal__promote-actions">
-                      <button type="button" className="btn" onClick={() => setPromoteConfirmOpen(false)} disabled={isPromoting}>
+                    {promoteError && <p className="text-sm text-rose-600">{promoteError}</p>}
+                    <div className="flex justify-end gap-2.5">
+                      <button type="button" onClick={() => setPromoteConfirmOpen(false)} disabled={isPromoting} className={btnClass}>
                         Annuler
                       </button>
-                      <button type="button" className="btn btn--primary" onClick={handlePromote} disabled={isPromoting}>
+                      <button type="button" onClick={handlePromote} disabled={isPromoting} className={btnPrimaryClass}>
                         {isPromoting ? 'Promotion…' : 'Confirmer la promotion'}
                       </button>
                     </div>
@@ -185,29 +222,24 @@ export function EditAccountModal({ account, onClose, onSaved, onPromoted }: Prop
               </div>
             </div>
           ) : (
-            <div className="edit-account-modal__toggles">
-              <label className="edit-account-modal__toggle">
-                <span>
-                  <strong>Compte vérifié</strong>
-                  <span>Distinct de la vérification KYC (gérée depuis l'onglet dédié).</span>
+            <div className="flex flex-col gap-3 border-t border-black/10 pt-1 dark:border-white/10">
+              <label className="flex items-center justify-between gap-4 rounded-2xl border border-black/10 px-4 py-3.5 dark:border-white/10">
+                <span className="flex flex-col gap-0.5">
+                  <strong className="text-[0.85rem]">Compte vérifié</strong>
+                  <span className="text-xs leading-snug opacity-55">Distinct de la vérification KYC (gérée depuis l'onglet dédié).</span>
                 </span>
-                <span
-                  className={`switch${isAccountVerified ? ' is-on' : ''}`}
-                  onClick={() => !isSubmitting && setIsAccountVerified((v) => !v)}
-                >
-                  <span className="switch__thumb" />
-                </span>
+                <Switch isOn={isAccountVerified} onToggle={() => !isSubmitting && setIsAccountVerified((v) => !v)} />
               </label>
             </div>
           )}
 
-          {error && <p className="review-form__error">{error}</p>}
+          {error && <p className="text-sm text-rose-600">{error}</p>}
 
-          <div className="modal__actions">
-            <button type="button" className="btn" onClick={onClose} disabled={isSubmitting}>
+          <div className="mt-2 flex justify-end gap-3">
+            <button type="button" onClick={onClose} disabled={isSubmitting} className={btnClass}>
               Annuler
             </button>
-            <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
+            <button type="submit" disabled={isSubmitting} className={btnPrimaryClass}>
               {isSubmitting ? 'Enregistrement…' : 'Enregistrer'}
             </button>
           </div>

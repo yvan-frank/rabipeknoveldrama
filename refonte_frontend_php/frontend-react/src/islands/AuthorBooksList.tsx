@@ -16,6 +16,9 @@ interface AuthorBook {
   _count: { chapters: number; likes: number; comments: number };
 }
 
+const badgeClass = 'inline-block rounded-full bg-black/10 px-2 py-0.5 text-[0.7rem] font-semibold dark:bg-white/10';
+const badgeFreeClass = 'inline-block rounded-full bg-brand-amber/20 px-2 py-0.5 text-[0.7rem] font-semibold text-brand-amber';
+
 // Équivalent de src/components/dashboard/author/AuthorBooksSection.tsx.
 export default function AuthorBooksList() {
   const [books, setBooks] = useState<AuthorBook[] | null>(null);
@@ -48,14 +51,14 @@ export default function AuthorBooksList() {
     }
   }
 
-  if (error) return <p className="review-form__error">{error}</p>;
-  if (books === null) return <p className="empty">Chargement…</p>;
+  if (error) return <p className="text-sm text-rose-600">{error}</p>;
+  if (books === null) return <p className="opacity-60">Chargement…</p>;
 
   if (books.length === 0) {
     return (
-      <div className="author-books-empty">
-        <p>Vous n'avez encore publié aucun livre.</p>
-        <a href="/espace-auteur/livres/nouveau" className="btn">
+      <div className="mt-6 rounded-2xl border border-dashed border-black/10 px-4 py-10 text-center dark:border-white/10">
+        <p className="mb-4 opacity-60">Vous n'avez encore publié aucun livre.</p>
+        <a href="/espace-auteur/livres/nouveau" className="inline-block rounded-lg px-5 py-2.5 text-sm no-underline">
           Publier votre premier livre
         </a>
       </div>
@@ -64,28 +67,37 @@ export default function AuthorBooksList() {
 
   return (
     <>
-      <div className="author-books-grid">
+      <div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
         {books.map((book) => (
-          <div key={book.id} className="author-book-card">
-            <div className="author-book-card__head">
-              <span className="dashboard-book__avatar">{book.title.slice(0, 1).toUpperCase()}</span>
-              <div className="dashboard-book__info">
-                <span className="dashboard-book__title">{book.title}</span>
-                <span className="dashboard-book__meta">{book.category.name}</span>
+          <div key={book.id} className="flex flex-col gap-3 rounded-2xl border border-black/10 p-4 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-amber to-brand-pink font-bold text-neutral-900">
+                {book.title.slice(0, 1).toUpperCase()}
+              </span>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap">{book.title}</span>
+                <span className="text-[0.7rem] opacity-55">{book.category.name}</span>
               </div>
             </div>
 
-            <div className="author-book-card__tags">
-              <span className="badge">
+            <div className="flex flex-wrap gap-1.5">
+              <span className={badgeClass}>
                 {book._count.chapters} chapitre{book._count.chapters > 1 ? 's' : ''}
               </span>
-              <span className="badge">{book.isFree ? 'Gratuit' : `${formatPrice(book.price)} FCFA`}</span>
-              {book.isPromotion && <span className="badge badge--free">Promo</span>}
+              <span className={badgeClass}>{book.isFree ? 'Gratuit' : `${formatPrice(book.price)} FCFA`}</span>
+              {book.isPromotion && <span className={badgeFreeClass}>Promo</span>}
             </div>
 
-            <div className="author-book-card__actions">
-              <a href={`/espace-auteur/livres/${book.id}`}>Gérer →</a>
-              <button type="button" className="author-book-card__delete" onClick={() => setBookToDelete(book)} aria-label="Supprimer">
+            <div className="mt-1 flex items-center justify-between">
+              <a href={`/espace-auteur/livres/${book.id}`} className="text-[0.85rem] font-semibold text-brand-amber no-underline">
+                Gérer →
+              </a>
+              <button
+                type="button"
+                onClick={() => setBookToDelete(book)}
+                aria-label="Supprimer"
+                className="rounded border-none bg-none p-1 text-base opacity-50 hover:bg-rose-600/10 hover:opacity-100"
+              >
                 🗑
               </button>
             </div>

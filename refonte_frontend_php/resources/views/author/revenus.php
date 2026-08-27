@@ -5,10 +5,10 @@
  * pas encore disponible), donc pas d'îlot React ici non plus.
  */
 ?>
-<section class="section">
+<section class="mx-auto max-w-6xl p-4">
   <h1>Revenus</h1>
-  <div class="dashboard-panel">
-    <p class="dashboard-panel__description">
+  <div class="rounded-[1.25rem] border border-black/10 px-6 py-5 dark:border-white/10">
+    <p class="mt-1 mb-4 text-sm opacity-60">
       Le suivi des ventes et des reversements sera ajouté à cette section une fois le parcours d'achat en ligne disponible.
     </p>
   </div>

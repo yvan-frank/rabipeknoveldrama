@@ -10,10 +10,10 @@ $legalLinks = [
     '/conditions-generales-de-vente' => 'Conditions générales de vente',
 ];
 ?>
-<footer class="site-footer">
-  <div class="site-footer__inner">
+<footer class="mt-12 border-t border-black/10 dark:border-white/10">
+  <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 text-sm opacity-75">
     <p>&copy; <?= date('Y') ?> RabipekNovel</p>
-    <nav class="site-footer__links">
+    <nav class="flex flex-wrap gap-4">
       <?php foreach ($legalLinks as $href => $label): ?>
         <a href="<?= View::e($href) ?>"><?= View::e($label) ?></a>
       <?php endforeach; ?>

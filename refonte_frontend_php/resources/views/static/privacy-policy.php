@@ -1,7 +1,7 @@
 <?php /** Équivalent de src/app/politique-confidentialite/page.tsx. */ ?>
-<div class="legal-page">
-  <h1>Politique de confidentialité &amp; conditions d'utilisation</h1>
-  <div class="legal-page__body">
+<div class="mx-auto max-w-3xl px-4 py-12">
+  <h1 class="mb-8 text-center text-2xl">Politique de confidentialité &amp; conditions d'utilisation</h1>
+  <div class="prose prose-sm max-w-none prose-a:text-brand-amber dark:prose-invert">
     <p>
       Toute personne qui accède au site www.rabipeknovel.com s'engage à respecter les présentes conditions
       d'utilisation, qui pourront pour certains services être complétées par des conditions particulières.

@@ -11,6 +11,9 @@ interface Props {
   query: Record<string, string>;
 }
 
+const inputClass =
+  'rounded border border-black/10 bg-white px-2.5 py-1.5 text-sm text-neutral-900 dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100';
+
 // Équivalent des filtres de src/app/livres/page.tsx. La liste elle-même
 // reste rendue côté PHP (SSR, cf. BooksController::index) : ce composant ne
 // fait que soumettre une navigation GET avec les paramètres choisis — pas de
@@ -52,20 +55,18 @@ export default function BookFilters({ action, query }: Props) {
   }
 
   return (
-    <form className="book-filters" onSubmit={handleSubmit}>
-      <label className="book-filters__field">
+    <form
+      className="my-6 flex flex-wrap items-end gap-3 rounded-xl border border-black/10 p-4 dark:border-white/10"
+      onSubmit={handleSubmit}
+    >
+      <label className="flex flex-col gap-1 text-xs opacity-75">
         Recherche
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Titre, auteur…"
-        />
+        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Titre, auteur…" className={inputClass} />
       </label>
 
-      <label className="book-filters__field">
+      <label className="flex flex-col gap-1 text-xs opacity-75">
         Catégorie
-        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass}>
           <option value="">Toutes</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
@@ -75,16 +76,19 @@ export default function BookFilters({ action, query }: Props) {
         </select>
       </label>
 
-      <label className="book-filters__field book-filters__checkbox">
+      <label className="flex flex-row items-center gap-1.5 text-xs opacity-75">
         <input type="checkbox" checked={isFree} onChange={(e) => setIsFree(e.target.checked)} />
         Gratuits uniquement
       </label>
 
-      <div className="book-filters__actions">
-        <button type="button" className="btn" onClick={handleReset}>
+      <div className="ml-auto flex gap-2">
+        <button type="button" onClick={handleReset} className="inline-block rounded-lg px-4 py-2 text-[0.8rem]">
           Réinitialiser
         </button>
-        <button type="submit" className="btn btn--primary">
+        <button
+          type="submit"
+          className="inline-block rounded-lg bg-neutral-900 px-4 py-2 text-[0.8rem] text-white dark:bg-neutral-100 dark:text-neutral-900"
+        >
           Filtrer
         </button>
       </div>

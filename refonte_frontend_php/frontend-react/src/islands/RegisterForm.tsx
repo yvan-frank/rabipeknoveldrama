@@ -44,6 +44,13 @@ const WIZARD_STEPS = [
   { title: 'Merci, nous vous connaissons mieux maintenant', description: "Ces quelques informations nous aident à mieux vous accompagner et à mettre en valeur votre profil auprès des lecteurs." },
 ];
 
+const fieldClass = 'flex flex-col gap-1.5 text-sm opacity-85';
+const inputClass =
+  'w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-brand-amber focus:ring-3 focus:ring-brand-amber/20 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100';
+const btnClass = 'inline-block rounded-lg px-5 py-2.5 text-sm disabled:opacity-60';
+const btnPrimaryClass =
+  'mt-1 inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900';
+
 // Équivalent de src/components/forms/RegisterForm.tsx : compte simple
 // (nom/email/mot de passe) ou, si "Je suis auteur" est coché, onboarding en
 // 4 étapes supplémentaires. POST /auth/register-author n'existe pas encore
@@ -158,43 +165,67 @@ export default function RegisterForm({ redirectTo }: Props) {
   }
 
   return (
-    <div className={`register-form${isWizard ? ' register-form--wizard' : ''}`}>
+    <div>
       {isWizard && currentStepMeta && (
-        <div className="wizard__panel-head" style={{ marginBottom: '1.5rem' }}>
+        <div className="mb-6 flex items-center gap-3">
           <div>
-            {currentStepMeta.eyebrow && <p className="about-pillars__eyebrow">{currentStepMeta.eyebrow}</p>}
+            {currentStepMeta.eyebrow && (
+              <p className="text-sm font-semibold tracking-[0.1em] text-brand-pink uppercase">{currentStepMeta.eyebrow}</p>
+            )}
             <h2>{currentStepMeta.title}</h2>
-            {currentStepMeta.description && <p className="dashboard-panel__description">{currentStepMeta.description}</p>}
+            {currentStepMeta.description && <p className="mt-1 text-[0.8rem] opacity-60">{currentStepMeta.description}</p>}
           </div>
         </div>
       )}
 
       {isWizard && (
-        <div className="wizard__steps" style={{ marginBottom: '1.5rem' }}>
+        <div className="mb-6 flex items-center">
           {WIZARD_STEPS.map((s, index) => (
-            <div key={s.title} className={`wizard__step${index === step ? ' is-current' : ''}${index < step ? ' is-done' : ''}`}>
-              <span className="wizard__step-badge">{index < step ? '✓' : index + 1}</span>
+            <div key={s.title} className="flex flex-1 flex-col items-center gap-1.5">
+              <span
+                className={`flex size-8 items-center justify-center rounded-full text-[0.85rem] font-semibold ${
+                  index === step
+                    ? 'bg-gradient-to-br from-brand-amber to-brand-pink text-neutral-900'
+                    : index < step
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-black/10 dark:bg-white/10'
+                }`}
+              >
+                {index < step ? '✓' : index + 1}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="auth-form">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {step === -1 && (
           <>
             {!form.isAuthor && (
-              <label className="book-form__field">
+              <label className={fieldClass}>
                 Nom
-                <input type="text" autoComplete="name" value={form.name} onChange={(e) => set('name', e.target.value)} />
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={form.name}
+                  onChange={(e) => set('name', e.target.value)}
+                  className={inputClass}
+                />
               </label>
             )}
 
-            <label className="book-form__field">
+            <label className={fieldClass}>
               Email
-              <input type="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
+              <input
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+                className={inputClass}
+              />
             </label>
 
-            <label className="book-form__field">
+            <label className={fieldClass}>
               Mot de passe
               <PasswordInput
                 id="password"
@@ -207,33 +238,33 @@ export default function RegisterForm({ redirectTo }: Props) {
               <PasswordStrengthPanel password={form.password} visible={passwordFocused} />
             </label>
 
-            <label className="book-form__field">
+            <label className={fieldClass}>
               Confirmer le mot de passe
               <PasswordInput id="confirmPassword" value={form.confirmPassword} onChange={(v) => set('confirmPassword', v)} autoComplete="new-password" />
             </label>
 
-            <label className="author-toggle">
-              <input type="checkbox" checked={form.isAuthor} onChange={(e) => set('isAuthor', e.target.checked)} />
-              <span>
-                <strong>✒ Je suis auteur</strong>
-                <span>Quelques questions en plus pour créer votre profil auteur.</span>
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-black/10 p-3.5 hover:border-brand-amber dark:border-white/10">
+              <input type="checkbox" checked={form.isAuthor} onChange={(e) => set('isAuthor', e.target.checked)} className="mt-0.5 shrink-0" />
+              <span className="flex flex-col gap-0.5">
+                <strong className="text-[0.875rem] font-semibold">✒ Je suis auteur</strong>
+                <span className="text-xs opacity-60">Quelques questions en plus pour créer votre profil auteur.</span>
               </span>
             </label>
 
-            {stepError && <p className="review-form__error">{stepError}</p>}
-            {submitError && <p className="review-form__error">{submitError}</p>}
+            {stepError && <p className="text-sm text-rose-600">{stepError}</p>}
+            {submitError && <p className="text-sm text-rose-600">{submitError}</p>}
 
             {form.isAuthor ? (
-              <button type="button" className="btn btn--primary" onClick={goToOnboarding}>
+              <button type="button" onClick={goToOnboarding} className={btnPrimaryClass}>
                 Continuer →
               </button>
             ) : (
-              <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
+              <button type="submit" disabled={isSubmitting} className={btnPrimaryClass}>
                 {isSubmitting ? 'Inscription…' : "S'inscrire"}
               </button>
             )}
 
-            <p className="empty">
+            <p className="opacity-60">
               Déjà un compte ? <a href="/connexion">Connectez-vous</a>
             </p>
           </>
@@ -241,41 +272,57 @@ export default function RegisterForm({ redirectTo }: Props) {
 
         {step === 0 && (
           <>
-            <label className="book-form__field">
+            <label className={fieldClass}>
               Nom complet
-              <input type="text" autoComplete="name" value={form.fullName} onChange={(e) => set('fullName', e.target.value)} />
+              <input
+                type="text"
+                autoComplete="name"
+                value={form.fullName}
+                onChange={(e) => set('fullName', e.target.value)}
+                className={inputClass}
+              />
             </label>
-            <label className="book-form__field">
+            <label className={fieldClass}>
               Nom pour les lecteurs
-              <input type="text" value={form.readerName} onChange={(e) => set('readerName', e.target.value)} />
-              <span className="wizard__hint">Le nom affiché publiquement sur vos livres.</span>
+              <input type="text" value={form.readerName} onChange={(e) => set('readerName', e.target.value)} className={inputClass} />
+              <span className="text-xs opacity-55">Le nom affiché publiquement sur vos livres.</span>
             </label>
           </>
         )}
 
         {step === 1 && (
-          <label className="book-form__field">
+          <label className={fieldClass}>
             <textarea
               rows={6}
               placeholder="Parlez-nous de votre parcours, votre style d'écriture, ce qui vous inspire…"
               value={form.about}
               onChange={(e) => set('about', e.target.value)}
+              className={`${inputClass} resize-y`}
             />
-            <span className="wizard__hint">
+            <span className="text-xs opacity-55">
               {countWords(form.about)}/{MAX_ABOUT_WORDS} mots
             </span>
           </label>
         )}
 
         {step === 2 && (
-          <div className="genre-picker">
+          <div className="grid grid-cols-2 gap-2.5">
             {categories.length === 0 ? (
-              <p className="empty">Chargement des genres…</p>
+              <p className="opacity-60">Chargement des genres…</p>
             ) : (
               categories.map((category) => {
                 const checked = form.genreIds.includes(category.id);
                 return (
-                  <button key={category.id} type="button" className={checked ? 'is-active' : ''} onClick={() => toggleGenre(category.id)}>
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => toggleGenre(category.id)}
+                    className={`rounded-xl border px-3.5 py-2.5 text-left text-[0.85rem] ${
+                      checked
+                        ? 'border-brand-amber bg-brand-amber/12 font-semibold'
+                        : 'border-black/10 bg-transparent text-inherit dark:border-white/10'
+                    }`}
+                  >
                     {checked ? '✓ ' : ''}
                     {category.name}
                   </button>
@@ -286,26 +333,26 @@ export default function RegisterForm({ redirectTo }: Props) {
         )}
 
         {step === 3 && (
-          <div className="register-form__congrats">
-            <span>🎉</span>
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-amber bg-brand-amber/8 p-8 text-center">
+            <span className="text-[2rem]">🎉</span>
             <p>Vous êtes prêt·e à publier votre premier livre et à rejoindre la communauté des auteurs RabipekNovel.</p>
           </div>
         )}
 
         {step >= 0 && (
           <>
-            {stepError && <p className="review-form__error">{stepError}</p>}
-            {submitError && <p className="review-form__error">{submitError}</p>}
-            <div className="wizard__nav">
-              <button type="button" className="btn" onClick={goBack}>
+            {stepError && <p className="text-sm text-rose-600">{stepError}</p>}
+            {submitError && <p className="text-sm text-rose-600">{submitError}</p>}
+            <div className="mt-6 flex justify-between">
+              <button type="button" onClick={goBack} className={btnClass}>
                 ← Précédent
               </button>
               {isLastWizardStep ? (
-                <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
+                <button type="submit" disabled={isSubmitting} className={btnPrimaryClass}>
                   {isSubmitting ? 'Inscription…' : "Profitez de l'écriture"}
                 </button>
               ) : (
-                <button type="button" className="btn btn--primary" onClick={goNext}>
+                <button type="button" onClick={goNext} className={btnPrimaryClass}>
                   Suivant →
                 </button>
               )}

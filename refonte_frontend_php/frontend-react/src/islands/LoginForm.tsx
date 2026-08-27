@@ -28,17 +28,28 @@ export default function LoginForm({ redirectTo }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="auth-form">
-      <label className="book-form__field">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1.5 text-sm opacity-85">
         Email
-        <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-brand-amber focus:ring-3 focus:ring-brand-amber/20 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100"
+        />
       </label>
-      <label className="book-form__field">
+      <label className="flex flex-col gap-1.5 text-sm opacity-85">
         Mot de passe
         <PasswordInput id="password" value={password} onChange={setPassword} autoComplete="current-password" required />
       </label>
-      {error && <p className="review-form__error">{error}</p>}
-      <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
+      {error && <p className="text-sm text-rose-600">{error}</p>}
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="mt-1 inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900"
+      >
         {isSubmitting ? 'Connexion…' : 'Se connecter'}
       </button>
     </form>

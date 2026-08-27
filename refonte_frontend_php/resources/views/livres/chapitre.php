@@ -13,9 +13,9 @@
 
 use App\Support\View;
 ?>
-<section class="section open-in-app">
+<section class="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center gap-4 p-4 text-center">
   <?php if (!empty($book['cover'])): ?>
-    <img src="<?= View::e($book['cover']) ?>" alt="" class="open-in-app__cover">
+    <img src="<?= View::e($book['cover']) ?>" alt="" class="aspect-[2/3] w-36 rounded-xl object-cover">
   <?php endif; ?>
 
   <h1>Continuez la lecture dans l'app RabipekNovel</h1>
@@ -37,5 +37,5 @@ use App\Support\View;
     <?php endif; ?>
   </noscript>
 
-  <a href="/livres/<?= View::e($book['slug'] ?? '') ?>" class="open-in-app__back">&larr; Retour à la fiche du livre</a>
+  <a href="/livres/<?= View::e($book['slug'] ?? '') ?>" class="mt-4 text-sm no-underline hover:underline">&larr; Retour à la fiche du livre</a>
 </section>

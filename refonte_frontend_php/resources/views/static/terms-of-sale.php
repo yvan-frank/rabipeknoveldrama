@@ -1,7 +1,7 @@
 <?php /** Équivalent de src/app/conditions-generales-de-vente/page.tsx. */ ?>
-<div class="legal-page">
-  <h1>Conditions générales de vente</h1>
-  <div class="legal-page__body">
+<div class="mx-auto max-w-3xl px-4 py-12">
+  <h1 class="mb-8 text-center text-2xl">Conditions générales de vente</h1>
+  <div class="prose prose-sm max-w-none prose-a:text-brand-amber dark:prose-invert">
     <h2>Article 1 — Prix</h2>
     <ol>
       <li>

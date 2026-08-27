@@ -236,24 +236,42 @@ erreur visible côté client, mais PHP ne reçoit aucun fichier : `$_FILES` vide
 `refonte_rabi_frontend/src/components/dashboard/author/CoverUploadField.tsx`
 (et `DocumentUploadField.tsx`, même règle pour `KycForm.tsx`).
 
-## Piège CSS à connaître : liste de `input[type=...]` incomplète
+## CSS : Tailwind, pas de fichier à éditer à la main
 
-`.book-form__field` stylait les champs via une liste explicite
-(`input[type="text"]`, `[type="number"]`, `[type="date"]`, `select`,
-`textarea`) — un type oublié (ici `email` et `password`) retombe sur le
-rendu brut du navigateur, qui jure visuellement à côté des champs stylés
-(exactement ce qui rendait `LoginForm`/`RegisterForm` moches). Corrigé avec
-`input:not([type="checkbox"], [type="radio"], [type="file"])`, qui couvre
-tout type de champ texte sans les énumérer un par un. Le `padding-right` de
-`.password-input input` (espace pour le bouton œil) est en `!important` :
-sa spécificité seule perdrait face à cette nouvelle règle plus générale.
+`public/css/site.css` est un fichier **généré** — ne jamais l'éditer
+directement, il est écrasé au prochain build. La source réelle est
+[`frontend-react/src/tailwind.css`](frontend-react/src/tailwind.css)
+(Tailwind CSS v4, config CSS-first via `@theme`/`@custom-variant`/`@source`,
+pas de `tailwind.config.js`). Le dark mode répond à la classe `.dark` sur
+`<html>` (script anti-flash dans `layout.php`), pas à `prefers-color-scheme`
+— d'où le `@custom-variant dark` explicite plutôt que la stratégie par
+défaut de Tailwind v4.
+
+Les vues PHP ne passent jamais par Vite (rendues côté serveur) : le CLI
+Tailwind autonome (`@tailwindcss/cli`, pas `@tailwindcss/vite`) compile
+directement vers `public/css/site.css`, avec des directives `@source`
+explicites pointant vers `resources/views` en plus de `frontend-react/src`
+— sans elles, le scanner de classes ne verrait jamais les classes utilisées
+dans les templates PHP. Depuis `frontend-react/` :
+
+```
+npm run css:build   # build one-shot (minifié)
+npm run css:watch   # recompile à chaque changement, pendant le dev
+```
+
+Chaque vue PHP et chaque composant/îlot React utilise des classes utilitaires
+Tailwind directement dans son JSX/HTML — aucune classe custom du style
+`.dashboard-panel` ou `.btn--primary` ne subsiste. Un plugin
+`@tailwindcss/typography` (`prose prose-sm ... dark:prose-invert`) est
+utilisé uniquement pour les pages légales (mentions, CGV, confidentialité) —
+long texte sémantique où étiqueter chaque élément serait absurde.
 
 ## Formulaires de connexion/inscription
 
 [LoginForm](frontend-react/src/islands/LoginForm.tsx) et
-[RegisterForm](frontend-react/src/islands/RegisterForm.tsx) sont maintenant
-de vrais composants stylés (`.auth-form`, `.book-form__field`), pas des
-`<label>` bruts en `style` inline. `RegisterForm` porte le flow complet de la
+[RegisterForm](frontend-react/src/islands/RegisterForm.tsx) sont de vrais
+composants stylés (classes utilitaires Tailwind), pas des `<label>` bruts en
+`style` inline. `RegisterForm` porte le flow complet de la
 source : compte simple (nom/email/mot de passe + confirmation +
 [PasswordStrengthPanel](frontend-react/src/components/PasswordStrengthPanel.tsx)
 en direct) ou, si "Je suis auteur" est coché, un onboarding en 4 étapes

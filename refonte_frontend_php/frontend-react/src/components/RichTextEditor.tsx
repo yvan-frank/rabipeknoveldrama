@@ -9,6 +9,16 @@ interface Props {
   onChange: (html: string) => void;
 }
 
+const wrapperClass =
+  'overflow-hidden rounded-xl border border-black/10 bg-white dark:border-white/10 dark:bg-neutral-900 ' +
+  '[&_.ProseMirror]:min-h-60 [&_.ProseMirror]:cursor-text [&_.ProseMirror]:px-[1.1rem] [&_.ProseMirror]:py-4 ' +
+  '[&_.ProseMirror]:text-[0.9rem] [&_.ProseMirror]:leading-[1.75] [&_.ProseMirror]:outline-none ' +
+  '[&_.ProseMirror_h2]:mt-3.5 [&_.ProseMirror_h2]:mb-1.5 [&_.ProseMirror_h2]:text-[1.2rem] [&_.ProseMirror_h2]:font-bold ' +
+  '[&_.ProseMirror_h2:first-child]:mt-0 [&_.ProseMirror_p]:mb-2.5 ' +
+  '[&_.ProseMirror_ul]:mb-2.5 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-6 ' +
+  '[&_.ProseMirror_ol]:mb-2.5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-6 ' +
+  '[&_.ProseMirror_mark]:rounded [&_.ProseMirror_mark]:bg-brand-amber/45 [&_.ProseMirror_mark]:px-0.5';
+
 // Port fidèle de
 // refonte_rabi_frontend/src/components/dashboard/author/RichTextEditor.tsx :
 // même éditeur Tiptap (gras, italique, titre H2, listes, surlignage,
@@ -24,17 +34,21 @@ export function RichTextEditor({ content, onChange }: Props) {
     immediatelyRender: false,
     onUpdate: ({ editor: instance }) => onChange(instance.getHTML()),
     editorProps: {
-      attributes: { class: 'rte__content' },
+      attributes: {},
     },
   });
 
   if (!editor) {
-    return <div className="rte__loading" />;
+    return <div className="min-h-60 rounded-xl border border-black/10 bg-black/[0.04] dark:border-white/10 dark:bg-white/[0.04]" />;
   }
 
   return (
-    <div className="rte">
-      <div className="rte__toolbar" role="toolbar" aria-label="Mise en forme du texte">
+    <div className={wrapperClass}>
+      <div
+        className="flex flex-wrap items-center gap-1 border-b border-black/10 bg-black/[0.04] px-2.5 py-2 dark:border-white/10 dark:bg-white/[0.04]"
+        role="toolbar"
+        aria-label="Mise en forme du texte"
+      >
         <ToolbarButton active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} label="Gras">
           <Bold size={16} strokeWidth={2.25} />
         </ToolbarButton>
@@ -45,7 +59,7 @@ export function RichTextEditor({ content, onChange }: Props) {
           <Heading2 size={17} strokeWidth={2.1} />
         </ToolbarButton>
 
-        <span className="rte__divider" />
+        <span className="mx-1 h-5.5 w-px shrink-0 bg-black/10 dark:bg-white/10" />
 
         <ToolbarButton active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} label="Liste à puces">
           <List size={16} strokeWidth={2.1} />
@@ -57,7 +71,7 @@ export function RichTextEditor({ content, onChange }: Props) {
           <Highlighter size={16} strokeWidth={2.1} />
         </ToolbarButton>
 
-        <span className="rte__divider" />
+        <span className="mx-1 h-5.5 w-px shrink-0 bg-black/10 dark:bg-white/10" />
 
         <ToolbarButton active={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()} label="Aligner à gauche">
           <AlignLeft size={16} strokeWidth={2.1} />
@@ -76,7 +90,16 @@ export function RichTextEditor({ content, onChange }: Props) {
 
 function ToolbarButton({ active, onClick, label, children }: { active: boolean; onClick: () => void; label: string; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={label} aria-pressed={active} className={`rte__btn${active ? ' is-active' : ''}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      aria-pressed={active}
+      className={`flex size-8.5 items-center justify-center rounded-lg border-none text-inherit transition-colors ${
+        active ? 'bg-gradient-to-br from-brand-amber to-brand-pink text-neutral-900 opacity-100' : 'bg-none opacity-75 hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10'
+      }`}
+    >
       {children}
     </button>
   );

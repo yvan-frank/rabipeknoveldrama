@@ -1,7 +1,7 @@
 <?php /** Équivalent de src/app/mentions-legales/page.tsx. */ ?>
-<div class="legal-page">
-  <h1>Mentions légales de RabipekNovel</h1>
-  <div class="legal-page__body">
+<div class="mx-auto max-w-3xl px-4 py-12">
+  <h1 class="mb-8 text-center text-2xl">Mentions légales de RabipekNovel</h1>
+  <div class="prose prose-sm max-w-none prose-a:text-brand-amber dark:prose-invert">
     <p>
       En vertu de l'article 6 de la loi <strong>n° 2004-575 du 21 juin 2004</strong> pour la confiance dans
       l'économie numérique, il est précisé aux utilisateurs du site www.rabipeknovel.com l'identité des

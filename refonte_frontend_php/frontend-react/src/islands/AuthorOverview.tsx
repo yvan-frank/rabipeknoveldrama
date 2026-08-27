@@ -33,8 +33,8 @@ export default function AuthorOverview() {
     };
   }, []);
 
-  if (error) return <p className="author-overview__error">{error}</p>;
-  if (books === null) return <p className="empty">Chargement…</p>;
+  if (error) return <p className="text-rose-600">{error}</p>;
+  if (books === null) return <p className="opacity-60">Chargement…</p>;
 
   const totals = books.reduce(
     (acc, book) => ({
@@ -47,45 +47,47 @@ export default function AuthorOverview() {
   );
 
   return (
-    <div className="author-overview">
-      <div className="author-overview__stats">
-        <div className="author-overview__stat">
-          <strong>{books.length}</strong>
-          <span>Livre{books.length > 1 ? 's' : ''}</span>
+    <div>
+      <div className="my-6 grid grid-cols-[repeat(auto-fit,minmax(100px,1fr))] gap-3">
+        <div className="rounded-xl border border-black/10 p-3.5 text-center dark:border-white/10">
+          <strong className="block text-2xl">{books.length}</strong>
+          <span className="text-xs opacity-65">Livre{books.length > 1 ? 's' : ''}</span>
         </div>
-        <div className="author-overview__stat">
-          <strong>{totals.chapters}</strong>
-          <span>Chapitres</span>
+        <div className="rounded-xl border border-black/10 p-3.5 text-center dark:border-white/10">
+          <strong className="block text-2xl">{totals.chapters}</strong>
+          <span className="text-xs opacity-65">Chapitres</span>
         </div>
-        <div className="author-overview__stat">
-          <strong>{totals.views}</strong>
-          <span>Vues</span>
+        <div className="rounded-xl border border-black/10 p-3.5 text-center dark:border-white/10">
+          <strong className="block text-2xl">{totals.views}</strong>
+          <span className="text-xs opacity-65">Vues</span>
         </div>
-        <div className="author-overview__stat">
-          <strong>{totals.likes}</strong>
-          <span>Likes</span>
+        <div className="rounded-xl border border-black/10 p-3.5 text-center dark:border-white/10">
+          <strong className="block text-2xl">{totals.likes}</strong>
+          <span className="text-xs opacity-65">Likes</span>
         </div>
-        <div className="author-overview__stat">
-          <strong>{totals.comments}</strong>
-          <span>Avis</span>
+        <div className="rounded-xl border border-black/10 p-3.5 text-center dark:border-white/10">
+          <strong className="block text-2xl">{totals.comments}</strong>
+          <span className="text-xs opacity-65">Avis</span>
         </div>
       </div>
 
       {books.length === 0 ? (
-        <p className="empty">Vous n'avez encore publié aucun livre.</p>
+        <p className="opacity-60">Vous n'avez encore publié aucun livre.</p>
       ) : (
-        <ul className="author-overview__books">
+        <ul className="m-0 flex list-none flex-col gap-3 p-0">
           {books.map((book) => (
-            <li key={book.id}>
-              {book.cover && <img src={book.cover} alt="" />}
-              <div className="author-overview__book-info">
-                <a href={`/espace-auteur/livres/${book.id}`}>{book.title}</a>
-                <span>
+            <li key={book.id} className="flex items-center gap-3.5 rounded-xl border border-black/10 px-3.5 py-2.5 dark:border-white/10">
+              {book.cover && <img src={book.cover} alt="" className="h-[66px] w-11 shrink-0 rounded object-cover" />}
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <a href={`/espace-auteur/livres/${book.id}`} className="font-semibold no-underline">
+                  {book.title}
+                </a>
+                <span className="text-xs opacity-60">
                   {book._count.chapters} chapitre{book._count.chapters > 1 ? 's' : ''} · {book.viewStats?.viewCount ?? 0} vues ·{' '}
                   {book._count.likes} likes
                 </span>
               </div>
-              <a href={`/livres/${book.slug}`} className="author-overview__book-view">
+              <a href={`/livres/${book.slug}`} className="text-[0.8rem] whitespace-nowrap no-underline">
                 Voir la fiche
               </a>
             </li>

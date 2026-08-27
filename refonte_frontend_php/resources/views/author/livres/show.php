@@ -4,6 +4,6 @@
  * @var string $bookId
  */
 ?>
-<section class="section">
+<section class="mx-auto max-w-6xl p-4">
   <?= \App\Support\View::island('BookManageDashboard', ['bookId' => $bookId]) ?>
 </section>

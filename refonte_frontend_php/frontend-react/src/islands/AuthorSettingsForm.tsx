@@ -12,12 +12,12 @@ export default function AuthorSettingsForm() {
   }, []);
 
   return (
-    <div className="dashboard-panel">
-      <p className="dashboard-panel__description">Vos informations de connexion et de profil public.</p>
-      <div className="author-settings__card">
-        <span className="dashboard-panel__description">Adresse e-mail</span>
-        <p className="author-settings__email">{user === undefined ? '…' : (user?.email ?? '—')}</p>
-        <p className="empty">La modification du profil public (nom, biographie, photo, réseaux sociaux) sera disponible prochainement.</p>
+    <div className="rounded-[1.25rem] border border-black/10 px-6 py-5 dark:border-white/10">
+      <p className="mt-1 mb-4 text-sm opacity-60">Vos informations de connexion et de profil public.</p>
+      <div className="mt-5 rounded-2xl border border-black/10 p-5 dark:border-white/10">
+        <span className="mt-1 mb-4 text-sm opacity-60">Adresse e-mail</span>
+        <p className="mt-1 mb-5 font-semibold">{user === undefined ? '…' : (user?.email ?? '—')}</p>
+        <p className="opacity-60">La modification du profil public (nom, biographie, photo, réseaux sociaux) sera disponible prochainement.</p>
       </div>
     </div>
   );

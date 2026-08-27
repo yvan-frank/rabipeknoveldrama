@@ -8,7 +8,7 @@ interface Props {
 // que chaque ilot reel est implemente au fil de l'eau.
 export default function Placeholder({ name }: Props) {
   return (
-    <div style={{ padding: '0.75rem 1rem', border: '1px dashed var(--border)', borderRadius: '0.5rem', fontSize: '0.8rem', opacity: 0.6 }}>
+    <div className="rounded-lg border border-dashed border-black/10 px-4 py-3 text-sm opacity-60 dark:border-white/10">
       Îlot React « {name} » à implémenter.
     </div>
   );

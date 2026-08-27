@@ -3,8 +3,8 @@
 
 use App\Support\View;
 ?>
-<section class="section auth-page">
-  <h1>Connexion</h1>
+<section class="mx-auto max-w-lg px-4 py-12">
+  <h1 class="mb-7 text-center">Connexion</h1>
   <?= View::island('LoginForm', ['redirectTo' => $redirectTo]) ?>
-  <p>Pas encore de compte ? <a href="/inscription">Inscrivez-vous</a></p>
+  <p class="mt-5 text-center text-sm opacity-70">Pas encore de compte ? <a href="/inscription" class="text-brand-amber">Inscrivez-vous</a></p>
 </section>

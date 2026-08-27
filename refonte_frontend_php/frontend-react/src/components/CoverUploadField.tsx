@@ -43,8 +43,8 @@ export function CoverUploadField({ value, onChange, error }: Props) {
   }
 
   return (
-    <div className="cover-upload">
-      <span className="book-form__field-label">Image de couverture</span>
+    <div className="flex flex-col gap-2">
+      <span className="text-[0.8rem] opacity-85">Image de couverture</span>
       <div
         role="button"
         tabIndex={0}
@@ -56,11 +56,13 @@ export function CoverUploadField({ value, onChange, error }: Props) {
         }}
         onDragLeave={() => setIsDraggingOver(false)}
         onDrop={handleDrop}
-        className={`cover-upload__zone${isDraggingOver ? ' is-dragging' : ''}`}
+        className={`flex min-h-40 flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
+          isDraggingOver ? 'border-brand-amber bg-brand-amber/5' : 'border-black/10 dark:border-white/10'
+        }`}
       >
         {value ? (
-          <div className="cover-upload__preview">
-            <img src={value} alt="Couverture" />
+          <div className="relative">
+            <img src={value} alt="Couverture" className="h-40 w-28 rounded-[0.6rem] object-cover shadow-[0_8px_20px_rgb(0_0_0/20%)]" />
             <button
               type="button"
               onClick={(e) => {
@@ -68,24 +70,29 @@ export function CoverUploadField({ value, onChange, error }: Props) {
                 onChange('');
               }}
               aria-label="Retirer l'image"
+              className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full border-none bg-neutral-900 text-sm leading-none text-white"
             >
               ×
             </button>
           </div>
         ) : isUploading ? (
-          <span className="cover-upload__spinner">Envoi…</span>
+          <span className="text-[0.8rem] opacity-60">Envoi…</span>
         ) : (
           <>
-            <span className="cover-upload__icon">🖼️</span>
-            <p>Glissez une image ici ou cliquez pour la choisir</p>
-            <p className="cover-upload__hint">JPG, PNG ou WebP — 5 Mo max</p>
+            <span className="text-2xl">🖼️</span>
+            <p className="m-0 text-sm opacity-75">Glissez une image ici ou cliquez pour la choisir</p>
+            <p className="m-0 text-xs opacity-50">JPG, PNG ou WebP — 5 Mo max</p>
           </>
         )}
-        {isUploading && <p className="cover-upload__uploading">Envoi en cours…</p>}
+        {isUploading && <p className="m-0 text-[0.8rem] opacity-60">Envoi en cours…</p>}
       </div>
 
       {value && !isUploading && (
-        <button type="button" className="cover-upload__change" onClick={() => inputRef.current?.click()}>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="self-start border-none bg-none p-0 text-xs text-brand-amber underline"
+        >
           Changer l'image
         </button>
       )}
@@ -94,7 +101,7 @@ export function CoverUploadField({ value, onChange, error }: Props) {
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        className="cover-upload__input"
+        className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) void uploadFile(file);
@@ -102,7 +109,7 @@ export function CoverUploadField({ value, onChange, error }: Props) {
         }}
       />
 
-      {(uploadError || error) && <p className="review-form__error">{uploadError ?? error}</p>}
+      {(uploadError || error) && <p className="text-sm text-rose-600">{uploadError ?? error}</p>}
     </div>
   );
 }

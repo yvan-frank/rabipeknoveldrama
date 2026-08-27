@@ -3,7 +3,7 @@
 
 use App\Support\View;
 ?>
-<section class="section auth-page">
-  <h1>Inscription</h1>
+<section class="mx-auto max-w-lg px-4 py-12">
+  <h1 class="mb-7 text-center">Inscription</h1>
   <?= View::island('RegisterForm', ['redirectTo' => '/tableau-de-bord']) ?>
 </section>

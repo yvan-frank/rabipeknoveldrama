@@ -20,14 +20,7 @@ export default function ThemeToggle() {
       type="button"
       onClick={() => setIsDark((v) => !v)}
       aria-label={isDark ? 'Activer le mode clair' : 'Activer le mode sombre'}
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: '9999px',
-        border: '1px solid var(--border)',
-        background: 'transparent',
-        cursor: 'pointer',
-      }}
+      className="flex size-8 items-center justify-center rounded-full border border-black/10 bg-transparent text-sm dark:border-white/10"
     >
       {isDark ? '☀️' : '🌙'}
     </button>

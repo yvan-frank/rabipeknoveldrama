@@ -33,11 +33,19 @@ export function ChipsInput({ value, onChange, placeholder }: Props) {
   }
 
   return (
-    <div className="chips-input">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 dark:border-white/10 dark:bg-neutral-900">
       {value.map((chip) => (
-        <span key={chip} className="chips-input__chip">
+        <span
+          key={chip}
+          className="inline-flex items-center gap-1 rounded-full bg-brand-amber/15 px-2.5 py-1 text-xs font-semibold text-brand-amber"
+        >
           {chip}
-          <button type="button" onClick={() => onChange(value.filter((v) => v !== chip))} aria-label={`Retirer ${chip}`}>
+          <button
+            type="button"
+            onClick={() => onChange(value.filter((v) => v !== chip))}
+            aria-label={`Retirer ${chip}`}
+            className="border-none bg-transparent p-0 text-sm leading-none text-inherit opacity-70 hover:opacity-100"
+          >
             ×
           </button>
         </span>
@@ -48,6 +56,7 @@ export function ChipsInput({ value, onChange, placeholder }: Props) {
         onKeyDown={handleKeyDown}
         onBlur={commitDraft}
         placeholder={value.length === 0 ? placeholder : undefined}
+        className="min-w-32 flex-1 border-none bg-transparent p-1 text-sm text-neutral-900 outline-none dark:text-neutral-100"
       />
     </div>
   );

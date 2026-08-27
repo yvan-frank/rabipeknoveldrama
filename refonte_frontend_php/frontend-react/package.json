@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "css:build": "tailwindcss -i ./src/tailwind.css -o ../public/css/site.css --minify",
+    "css:watch": "tailwindcss -i ./src/tailwind.css -o ../public/css/site.css --watch"
   },
   "dependencies": {
     "@tiptap/extension-highlight": "^3.29.2",
@@ -20,9 +22,12 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "@tailwindcss/typography": "^0.5.20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5",
     "vite": "^6.0.0"
   }
