@@ -58,15 +58,21 @@ final class View
      * partials/island.php et frontend-react/src/main.tsx.
      *
      * @param array<string,mixed> $props
+     * @param string $skeleton HTML brut affiché tant que React n'a pas
+     *   hydraté le point de montage (remplacé automatiquement au premier
+     *   root.render, cf. main.tsx) — jamais échappé, donc réservé à un
+     *   balisage statique écrit à la main dans nos vues, jamais à une donnée
+     *   dynamique/utilisateur.
      */
-    public static function island(string $component, array $props = []): string
+    public static function island(string $component, array $props = [], string $skeleton = ''): string
     {
         $encoded = $props === [] ? '{}' : json_encode($props, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $json = htmlspecialchars($encoded ?: '{}', ENT_QUOTES, 'UTF-8');
         return sprintf(
-            '<div data-island="%s" data-props="%s"></div>',
+            '<div data-island="%s" data-props="%s">%s</div>',
             self::e($component),
-            $json
+            $json,
+            $skeleton
         );
     }
 }

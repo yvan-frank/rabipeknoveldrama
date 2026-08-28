@@ -38,13 +38,19 @@ use App\Support\Vite;
   </script>
 </head>
 <body>
-  <?php if (empty($hideChrome)): ?>
-  <?php require __DIR__ . '/partials/header.php'; ?>
-  <?php endif; ?>
-  <main><?= $content ?></main>
-  <?php if (empty($hideChrome)): ?>
-  <?php require __DIR__ . '/partials/footer.php'; ?>
-  <?php endif; ?>
+  <!-- Racine échangée par la navigation pjax (cf. frontend-react/src/pjax.ts)
+       à chaque clic sur un lien interne : header/footer inclus dedans pour
+       que le hideChrome de la page cible (tableau-de-bord, admin, lecture...)
+       s'applique aussi sans recharger la page. -->
+  <div id="pjax-root">
+    <?php if (empty($hideChrome)): ?>
+    <?php require __DIR__ . '/partials/header.php'; ?>
+    <?php endif; ?>
+    <main><?= $content ?></main>
+    <?php if (empty($hideChrome)): ?>
+    <?php require __DIR__ . '/partials/footer.php'; ?>
+    <?php endif; ?>
+  </div>
   <?= Vite::tags() ?>
 </body>
 </html>

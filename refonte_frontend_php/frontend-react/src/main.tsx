@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { resolveIsland } from './islands/registry';
 import Placeholder from './islands/Placeholder';
+import { initPjax } from './pjax';
 
 // Monte chaque <div data-island="Name" data-props="{...}"> présent sur la
 // page (cf. App\Support\View::island côté PHP) — équivalent minimal d'une
@@ -45,3 +46,7 @@ if (document.readyState === 'loading') {
 } else {
   mountIslands();
 }
+
+// Navigation sans rechargement complet (cf. pjax.ts) : réutilise
+// mountIslands pour hydrater les îlots de chaque nouvelle page échangée.
+initPjax(mountIslands);

@@ -46,4 +46,13 @@
   [data-island] {
     min-height: 1px;
   }
+  /* Rangées de cartes en scroll horizontal (accueil) : la scrollbar native
+     casse l'effet "carrousel" sur desktop sans apporter d'affordance utile
+     (le geste tactile/molette suffit). */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }

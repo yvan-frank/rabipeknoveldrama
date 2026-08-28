@@ -30,11 +30,22 @@ $currentPath = rtrim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_
         ><?= View::e($label) ?></a>
       <?php endforeach; ?>
 
-      <?= View::island('AccountNav', ['loginHref' => '/connexion', 'registerHref' => '/inscription']) ?>
+      <?= View::island(
+        'AccountNav',
+        ['loginHref' => '/connexion', 'registerHref' => '/inscription'],
+        '<div class="flex animate-pulse items-center gap-4">'
+          . '<div class="h-4 w-16 rounded bg-black/10 dark:bg-white/10"></div>'
+          . '<div class="h-7 w-20 rounded-lg bg-black/10 dark:bg-white/10"></div>'
+        . '</div>'
+      ) ?>
     </nav>
 
     <div class="flex items-center gap-3">
-      <?= View::island('ThemeToggle') ?>
+      <?= View::island(
+        'ThemeToggle',
+        [],
+        '<div class="size-8 animate-pulse rounded-full bg-black/10 dark:bg-white/10"></div>'
+      ) ?>
       <label
         for="nav-toggle"
         aria-label="Ouvrir le menu"
@@ -53,7 +64,14 @@ $currentPath = rtrim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_
     <?php endforeach; ?>
 
     <div class="mt-2 border-t border-black/10 pt-3 dark:border-white/10">
-      <?= View::island('AccountNav', ['loginHref' => '/connexion', 'registerHref' => '/inscription']) ?>
+      <?= View::island(
+        'AccountNav',
+        ['loginHref' => '/connexion', 'registerHref' => '/inscription'],
+        '<div class="flex animate-pulse items-center gap-4">'
+          . '<div class="h-4 w-16 rounded bg-black/10 dark:bg-white/10"></div>'
+          . '<div class="h-7 w-20 rounded-lg bg-black/10 dark:bg-white/10"></div>'
+        . '</div>'
+      ) ?>
     </div>
   </nav>
 </header>
