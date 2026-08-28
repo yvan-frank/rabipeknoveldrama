@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth;
 
+use App\Config\Env;
 use App\Http\Request;
 use App\Support\View;
 
@@ -19,11 +20,16 @@ final class AuthController
     {
         View::render('auth.connexion', [
             'redirectTo' => $request->query['redirect'] ?? '/tableau-de-bord',
+            'hideChrome' => true,
+            'playStoreUrl' => Env::playStoreUrl(),
         ], 'Connexion | RabipekNovel');
     }
 
     public function register(Request $request): void
     {
-        View::render('auth.inscription', [], 'Inscription | RabipekNovel');
+        View::render('auth.inscription', [
+            'hideChrome' => true,
+            'playStoreUrl' => Env::playStoreUrl(),
+        ], 'Inscription | RabipekNovel');
     }
 }

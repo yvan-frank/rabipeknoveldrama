@@ -48,7 +48,7 @@ export default function LoginForm({ redirectTo }: Props) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-1 inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900"
+        className="mt-1 inline-block rounded-full bg-brand-amber px-5 py-3 text-sm font-semibold text-neutral-900 transition hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
       >
         {isSubmitting ? 'Connexion…' : 'Se connecter'}
       </button>

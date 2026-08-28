@@ -47,9 +47,9 @@ const WIZARD_STEPS = [
 const fieldClass = 'flex flex-col gap-1.5 text-sm opacity-85';
 const inputClass =
   'w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-brand-amber focus:ring-3 focus:ring-brand-amber/20 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100';
-const btnClass = 'inline-block rounded-lg px-5 py-2.5 text-sm disabled:opacity-60';
+const btnClass = 'inline-block rounded-full border border-black/10 px-5 py-3 text-sm disabled:opacity-60 dark:border-white/15';
 const btnPrimaryClass =
-  'mt-1 inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900';
+  'mt-1 inline-block rounded-full bg-brand-amber px-5 py-3 text-sm font-semibold text-neutral-900 transition hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100';
 
 // Équivalent de src/components/forms/RegisterForm.tsx : compte simple
 // (nom/email/mot de passe) ou, si "Je suis auteur" est coché, onboarding en
@@ -264,8 +264,11 @@ export default function RegisterForm({ redirectTo }: Props) {
               </button>
             )}
 
-            <p className="opacity-60">
-              Déjà un compte ? <a href="/connexion">Connectez-vous</a>
+            <p className="mt-2 text-center text-sm opacity-70">
+              Déjà un compte ?{' '}
+              <a href="/connexion" className="font-semibold text-brand-amber no-underline hover:underline">
+                Connectez-vous
+              </a>
             </p>
           </>
         )}
