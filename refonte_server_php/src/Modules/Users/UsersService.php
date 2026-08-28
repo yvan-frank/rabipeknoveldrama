@@ -6,6 +6,7 @@ namespace App\Modules\Users;
 
 use App\Lib\Database;
 use App\Utils\ApiError;
+use App\Utils\UserCode;
 use PDO;
 use Throwable;
 
@@ -27,14 +28,14 @@ final class UsersService
         $db = self::db();
 
         $stmt = $db->prepare(
-            'SELECT ' . self::PUBLIC_USER_SELECT . ' FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit OFFSET :offset',
+            'SELECT ' . self::PUBLIC_USER_SELECT . ' FROM users WHERE deleted_at IS NULL AND is_guest = 0 ORDER BY created_at DESC LIMIT :limit OFFSET :offset',
         );
         $stmt->bindValue('limit', $pageSize, PDO::PARAM_INT);
         $stmt->bindValue('offset', ($page - 1) * $pageSize, PDO::PARAM_INT);
         $stmt->execute();
         $items = array_map(self::mapPublicUser(...), $stmt->fetchAll());
 
-        $countStmt = $db->query('SELECT COUNT(*) FROM users WHERE deleted_at IS NULL');
+        $countStmt = $db->query('SELECT COUNT(*) FROM users WHERE deleted_at IS NULL AND is_guest = 0');
 
         return ['items' => $items, 'total' => (int) $countStmt->fetchColumn(), 'page' => $page, 'pageSize' => $pageSize];
     }
@@ -420,7 +421,7 @@ final class UsersService
     {
         $db = self::db();
 
-        $usersStmt = $db->query('SELECT ' . self::PUBLIC_USER_SELECT . ' FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 6');
+        $usersStmt = $db->query('SELECT ' . self::PUBLIC_USER_SELECT . ' FROM users WHERE deleted_at IS NULL AND is_guest = 0 ORDER BY created_at DESC LIMIT 6');
         $recentUsers = array_map(self::mapPublicUser(...), $usersStmt->fetchAll());
 
         $authorsStmt = $db->query(
@@ -456,7 +457,7 @@ final class UsersService
         ], $booksStmt->fetchAll());
 
         $countQueries = [
-            'users' => 'SELECT COUNT(*) FROM users WHERE deleted_at IS NULL',
+            'users' => 'SELECT COUNT(*) FROM users WHERE deleted_at IS NULL AND is_guest = 0',
             'authors' => 'SELECT COUNT(*) FROM author',
             'books' => 'SELECT COUNT(*) FROM books',
             'chapters' => 'SELECT COUNT(*) FROM chapters',
@@ -510,6 +511,7 @@ final class UsersService
     {
         return [
             'id' => (int) $row['id'],
+            'userCode' => UserCode::format((int) $row['id']),
             'name' => $row['name'],
             'email' => $row['email'],
             'isAdmin' => (bool) $row['is_admin'],

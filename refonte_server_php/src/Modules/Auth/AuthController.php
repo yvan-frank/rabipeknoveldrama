@@ -7,6 +7,8 @@ namespace App\Modules\Auth;
 use App\Config\Env;
 use App\Http\Request;
 use App\Http\Response;
+use App\Utils\ApiError;
+use App\Utils\Jwt;
 use App\Utils\Validator;
 
 /**
@@ -19,7 +21,7 @@ final class AuthController
     public static function register(Request $request): void
     {
         $input = Validator::validate($request->body, AuthSchema::register());
-        $result = AuthService::register($input);
+        $result = AuthService::register($input, self::currentGuestUserId($request));
 
         Response::cookie(Env::cookieName(), $result['token'], self::COOKIE_MAX_AGE);
         Response::success([
@@ -27,6 +29,27 @@ final class AuthController
             'accessToken' => $result['accessToken'],
             'refreshToken' => $result['refreshToken'],
         ], 201);
+    }
+
+    /**
+     * Si le visiteur possédait déjà un compte invité (cookie posé par
+     * AuthMiddleware::guestOrAuth), son id est réutilisé par
+     * AuthService::register pour conserver les points acquis avant inscription.
+     */
+    private static function currentGuestUserId(Request $request): ?int
+    {
+        $token = $request->bearerToken() ?? ($request->cookies[Env::cookieName()] ?? null);
+        if ($token === null) {
+            return null;
+        }
+
+        try {
+            $payload = Jwt::verify($token, Env::jwtSecret());
+        } catch (ApiError) {
+            return null;
+        }
+
+        return ($payload['role'] ?? null) === 'guest' ? (int) $payload['id'] : null;
     }
 
     public static function login(Request $request): void

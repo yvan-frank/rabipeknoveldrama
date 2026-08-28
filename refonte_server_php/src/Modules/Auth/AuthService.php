@@ -8,6 +8,7 @@ use App\Config\Env;
 use App\Lib\Database;
 use App\Utils\ApiError;
 use App\Utils\Jwt;
+use App\Utils\UserCode;
 use PDO;
 
 /**
@@ -26,8 +27,34 @@ final class AuthService
         return Database::connection();
     }
 
-    /** @param array{name:string,email:string,password:string} $input */
-    public static function register(array $input): array
+    /**
+     * Crée un compte invité (sans email/mot de passe) permettant d'obtenir
+     * des bonus et de compléter des tâches sans inscription préalable.
+     */
+    public static function createGuest(): array
+    {
+        $db = self::db();
+
+        $stmt = $db->prepare('INSERT INTO users (name, email, password, is_admin, is_guest, is_active, points_balance, created_at, updated_at)
+            VALUES (NULL, NULL, NULL, 0, 1, 1, 0, NOW(), NOW())');
+        $stmt->execute();
+
+        $id = (int) $db->lastInsertId();
+
+        return [
+            'id' => $id,
+            'userCode' => UserCode::format($id),
+            'email' => null,
+            'role' => 'guest',
+        ];
+    }
+
+    /**
+     * @param array{name:string,email:string,password:string} $input
+     * @param int|null $guestUserId compte invité courant (cookie), converti
+     *   en compte réel plutôt que recréé, pour conserver ses points acquis.
+     */
+    public static function register(array $input, ?int $guestUserId = null): array
     {
         $db = self::db();
 
@@ -38,21 +65,45 @@ final class AuthService
 
         $passwordHash = password_hash($input['password'], PASSWORD_BCRYPT, ['cost' => self::SALT_COST]);
 
-        $stmt = $db->prepare('INSERT INTO users (name, email, password, is_admin, is_active, points_balance, created_at, updated_at)
-            VALUES (:name, :email, :password, 0, 1, 0, NOW(), NOW())');
-        $stmt->execute([
-            'name' => $input['name'],
-            'email' => $input['email'],
-            'password' => $passwordHash,
-        ]);
+        $guestRow = $guestUserId !== null ? self::findGuestById($db, $guestUserId) : false;
+
+        if ($guestRow !== false) {
+            $stmt = $db->prepare('UPDATE users SET name = :name, email = :email, password = :password, is_guest = 0, is_active = 1, updated_at = NOW()
+                WHERE id_user = :id');
+            $stmt->execute([
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'password' => $passwordHash,
+                'id' => $guestUserId,
+            ]);
+
+            $userId = $guestUserId;
+        } else {
+            $stmt = $db->prepare('INSERT INTO users (name, email, password, is_admin, is_active, points_balance, created_at, updated_at)
+                VALUES (:name, :email, :password, 0, 1, 0, NOW(), NOW())');
+            $stmt->execute([
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'password' => $passwordHash,
+            ]);
+
+            $userId = (int) $db->lastInsertId();
+        }
 
         $authUser = [
-            'id' => (int) $db->lastInsertId(),
+            'id' => $userId,
             'email' => $input['email'],
             'role' => 'user',
         ];
 
         return self::issueSession($authUser);
+    }
+
+    private static function findGuestById(PDO $db, int $userId): array|false
+    {
+        $stmt = $db->prepare('SELECT id_user FROM users WHERE id_user = :id AND is_guest = 1 AND deleted_at IS NULL LIMIT 1');
+        $stmt->execute(['id' => $userId]);
+        return $stmt->fetch();
     }
 
     /** @param array{email:string,password:string} $input */
@@ -162,6 +213,7 @@ final class AuthService
 
             return [
                 'id' => (int) $row['id_author'],
+                'userCode' => UserCode::format((int) $row['id_author']),
                 'email' => $row['email'],
                 'role' => 'author',
                 'authorId' => (int) $row['id_author'],
@@ -177,6 +229,7 @@ final class AuthService
 
         return [
             'id' => (int) $row['id_user'],
+            'userCode' => UserCode::format((int) $row['id_user']),
             'email' => $row['email'],
             'role' => ((bool) $row['is_admin']) ? 'admin' : 'user',
         ];
@@ -185,6 +238,7 @@ final class AuthService
     /** @param array{id:int,email:string,role:string} $authUser */
     private static function issueSession(array $authUser): array
     {
+        $authUser['userCode'] = UserCode::format($authUser['id']);
         $db = self::db();
         $token = Jwt::sign($authUser, Env::jwtSecret(), Env::durationSeconds('JWT_EXPIRES_IN', '7d'));
         $accessToken = Jwt::sign($authUser, Env::jwtSecret(), Env::durationSeconds('JWT_ACCESS_EXPIRES_IN', '15m'));

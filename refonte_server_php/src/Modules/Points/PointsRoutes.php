@@ -14,7 +14,9 @@ final class PointsRoutes
 {
     public static function register(Router $router): void
     {
-        $auth = [AuthMiddleware::requireAuth(...)];
+        // guestOrAuth : un visiteur non authentifié obtient un compte invité
+        // à la volée pour pouvoir gagner des points/compléter les tâches.
+        $auth = [AuthMiddleware::guestOrAuth(...)];
 
         $router->get('/balance', [PointsController::class, 'balance'], $auth);
         $router->get('/transactions', [PointsController::class, 'listTransactions'], $auth);
