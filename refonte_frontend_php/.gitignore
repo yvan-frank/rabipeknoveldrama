@@ -1,7 +1,5 @@
 /vendor/
 /.env
-/public/build/
-!/public/build/.gitkeep
 /public/hot
 /frontend-react/node_modules/
 /frontend-react/dist/

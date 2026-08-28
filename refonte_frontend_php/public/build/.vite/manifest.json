@@ -1,0 +1,256 @@
+{
+  "_ChipsInput-BPnChVwG.js": {
+    "file": "assets/ChipsInput-BPnChVwG.js",
+    "name": "ChipsInput",
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "_DeleteConfirm-L2dwnR1o.js": {
+    "file": "assets/DeleteConfirm-L2dwnR1o.js",
+    "name": "DeleteConfirm",
+    "imports": [
+      "src/main.tsx"
+    ]
+  },
+  "_PasswordInput-CVHxYcs7.js": {
+    "file": "assets/PasswordInput-CVHxYcs7.js",
+    "name": "PasswordInput",
+    "imports": [
+      "src/main.tsx"
+    ]
+  },
+  "_PasswordStrengthPanel-Df7L1Cdm.js": {
+    "file": "assets/PasswordStrengthPanel-Df7L1Cdm.js",
+    "name": "PasswordStrengthPanel",
+    "imports": [
+      "src/main.tsx"
+    ]
+  },
+  "_apiClient-DKP88ytM.js": {
+    "file": "assets/apiClient-DKP88ytM.js",
+    "name": "apiClient"
+  },
+  "_formatPrice-JwSsmrq3.js": {
+    "file": "assets/formatPrice-JwSsmrq3.js",
+    "name": "formatPrice"
+  },
+  "src/islands/AccountNav.tsx": {
+    "file": "assets/AccountNav-UG6_mbl7.js",
+    "name": "AccountNav",
+    "src": "src/islands/AccountNav.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/AdminPanel.tsx": {
+    "file": "assets/AdminPanel-CqrdirFV.js",
+    "name": "AdminPanel",
+    "src": "src/islands/AdminPanel.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js",
+      "_formatPrice-JwSsmrq3.js",
+      "_PasswordInput-CVHxYcs7.js",
+      "_PasswordStrengthPanel-Df7L1Cdm.js"
+    ]
+  },
+  "src/islands/AuthorBooksList.tsx": {
+    "file": "assets/AuthorBooksList-BV-pkqzS.js",
+    "name": "AuthorBooksList",
+    "src": "src/islands/AuthorBooksList.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js",
+      "_formatPrice-JwSsmrq3.js",
+      "_DeleteConfirm-L2dwnR1o.js"
+    ]
+  },
+  "src/islands/AuthorOverview.tsx": {
+    "file": "assets/AuthorOverview-WsZPk643.js",
+    "name": "AuthorOverview",
+    "src": "src/islands/AuthorOverview.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/AuthorReviews.tsx": {
+    "file": "assets/AuthorReviews-UPTmM9mt.js",
+    "name": "AuthorReviews",
+    "src": "src/islands/AuthorReviews.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/AuthorSettingsForm.tsx": {
+    "file": "assets/AuthorSettingsForm-CDYwtGkT.js",
+    "name": "AuthorSettingsForm",
+    "src": "src/islands/AuthorSettingsForm.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/AuthorStats.tsx": {
+    "file": "assets/AuthorStats-CMzue_-4.js",
+    "name": "AuthorStats",
+    "src": "src/islands/AuthorStats.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/BookActions.tsx": {
+    "file": "assets/BookActions-Dv_vpGZO.js",
+    "name": "BookActions",
+    "src": "src/islands/BookActions.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js",
+      "_formatPrice-JwSsmrq3.js"
+    ]
+  },
+  "src/islands/BookFilters.tsx": {
+    "file": "assets/BookFilters-CKjuSw5D.js",
+    "name": "BookFilters",
+    "src": "src/islands/BookFilters.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/BookManageDashboard.tsx": {
+    "file": "assets/BookManageDashboard-CSCxYKzf.js",
+    "name": "BookManageDashboard",
+    "src": "src/islands/BookManageDashboard.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js",
+      "_formatPrice-JwSsmrq3.js",
+      "_ChipsInput-BPnChVwG.js",
+      "_DeleteConfirm-L2dwnR1o.js"
+    ]
+  },
+  "src/islands/BookWizard.tsx": {
+    "file": "assets/BookWizard-BAIPtfM9.js",
+    "name": "BookWizard",
+    "src": "src/islands/BookWizard.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js",
+      "_ChipsInput-BPnChVwG.js"
+    ]
+  },
+  "src/islands/Dashboard.tsx": {
+    "file": "assets/Dashboard-19GC-Apa.js",
+    "name": "Dashboard",
+    "src": "src/islands/Dashboard.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/KycForm.tsx": {
+    "file": "assets/KycForm-xH4j9Bq3.js",
+    "name": "KycForm",
+    "src": "src/islands/KycForm.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/LoginForm.tsx": {
+    "file": "assets/LoginForm-D4k2B_Um.js",
+    "name": "LoginForm",
+    "src": "src/islands/LoginForm.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js",
+      "_PasswordInput-CVHxYcs7.js"
+    ]
+  },
+  "src/islands/OpenInApp.tsx": {
+    "file": "assets/OpenInApp-CAZ8Ipl3.js",
+    "name": "OpenInApp",
+    "src": "src/islands/OpenInApp.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx"
+    ]
+  },
+  "src/islands/RegisterForm.tsx": {
+    "file": "assets/RegisterForm-USOvZFWA.js",
+    "name": "RegisterForm",
+    "src": "src/islands/RegisterForm.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js",
+      "_PasswordInput-CVHxYcs7.js",
+      "_PasswordStrengthPanel-Df7L1Cdm.js"
+    ]
+  },
+  "src/islands/ReviewForm.tsx": {
+    "file": "assets/ReviewForm-Bz5RqUdR.js",
+    "name": "ReviewForm",
+    "src": "src/islands/ReviewForm.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-DKP88ytM.js"
+    ]
+  },
+  "src/islands/ThemeToggle.tsx": {
+    "file": "assets/ThemeToggle-iIE9Q05_.js",
+    "name": "ThemeToggle",
+    "src": "src/islands/ThemeToggle.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx"
+    ]
+  },
+  "src/main.tsx": {
+    "file": "assets/main-BFcukmWj.js",
+    "name": "main",
+    "src": "src/main.tsx",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/islands/ThemeToggle.tsx",
+      "src/islands/AccountNav.tsx",
+      "src/islands/LoginForm.tsx",
+      "src/islands/RegisterForm.tsx",
+      "src/islands/OpenInApp.tsx",
+      "src/islands/BookActions.tsx",
+      "src/islands/AuthorOverview.tsx",
+      "src/islands/BookFilters.tsx",
+      "src/islands/ReviewForm.tsx",
+      "src/islands/Dashboard.tsx",
+      "src/islands/AdminPanel.tsx",
+      "src/islands/AuthorBooksList.tsx",
+      "src/islands/BookWizard.tsx",
+      "src/islands/BookManageDashboard.tsx",
+      "src/islands/AuthorReviews.tsx",
+      "src/islands/KycForm.tsx",
+      "src/islands/AuthorSettingsForm.tsx",
+      "src/islands/AuthorStats.tsx"
+    ]
+  }
+}
