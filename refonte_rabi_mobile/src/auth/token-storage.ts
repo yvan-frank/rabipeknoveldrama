@@ -6,6 +6,10 @@ import type { AuthTokens } from '../api/types';
 // section sécurité locale).
 const ACCESS_TOKEN_KEY = 'rabipek_access_token';
 const REFRESH_TOKEN_KEY = 'rabipek_refresh_token';
+// Jeton invité (cf. AuthMiddleware::guestOrAuth côté serveur, header
+// X-Guest-Token) : un simple JWT longue durée sans refresh token associé,
+// utilisé en Bearer tant qu'aucun compte réel n'est connecté.
+const GUEST_TOKEN_KEY = 'rabipek_guest_token';
 
 export async function saveTokens(tokens: AuthTokens): Promise<void> {
   await Promise.all([
@@ -36,4 +40,16 @@ export async function clearTokens(): Promise<void> {
     SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
     SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
   ]);
+}
+
+export async function saveGuestToken(token: string): Promise<void> {
+  await SecureStore.setItemAsync(GUEST_TOKEN_KEY, token);
+}
+
+export async function getGuestToken(): Promise<string | null> {
+  return SecureStore.getItemAsync(GUEST_TOKEN_KEY);
+}
+
+export async function clearGuestToken(): Promise<void> {
+  await SecureStore.deleteItemAsync(GUEST_TOKEN_KEY);
 }

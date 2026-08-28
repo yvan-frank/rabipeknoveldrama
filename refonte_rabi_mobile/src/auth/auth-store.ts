@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { loginRequest, logoutRequest, registerRequest, type LoginPayload, type RegisterPayload } from '../api/auth';
 import { apiClient, setOnAuthExpired } from '../api/client';
 import type { ApiEnvelope, AuthResponse, AuthUser } from '../api/types';
-import { clearTokens, getRefreshToken, loadTokens, saveTokens } from './token-storage';
+import { clearGuestToken, clearTokens, getRefreshToken, loadTokens, saveTokens } from './token-storage';
 
 type AuthStatus = 'bootstrapping' | 'guest' | 'authenticated';
 
@@ -46,12 +46,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (payload) => {
     const { user, accessToken, refreshToken } = await loginRequest(payload);
     await saveTokens({ accessToken, refreshToken });
+    await clearGuestToken();
     set({ status: 'authenticated', user });
   },
 
   register: async (payload) => {
+    // Le jeton invité éventuellement attaché par apiClient est lu côté
+    // serveur pour convertir ce compte invité en compte réel (mêmes points) —
+    // cf. AuthService::register($input, $guestUserId). Une fois l'inscription
+    // faite, ce jeton est caduc : on le purge pour ne plus l'envoyer.
     const { user, accessToken, refreshToken } = await registerRequest(payload);
     await saveTokens({ accessToken, refreshToken });
+    await clearGuestToken();
     set({ status: 'authenticated', user });
   },
 

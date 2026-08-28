@@ -1,6 +1,13 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { env } from '../config/env';
-import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from '../auth/token-storage';
+import {
+  clearTokens,
+  getAccessToken,
+  getGuestToken,
+  getRefreshToken,
+  saveGuestToken,
+  saveTokens,
+} from '../auth/token-storage';
 import type { ApiEnvelope, AuthTokens } from './types';
 
 // Contrairement au web (cookie httpOnly, cf. refonte_rabi_frontend/src/lib/api-client.ts),
@@ -16,9 +23,28 @@ apiClient.interceptors.request.use(async (config) => {
   const accessToken = await getAccessToken();
   if (accessToken) {
     config.headers.set('Authorization', `Bearer ${accessToken}`);
+    return config;
+  }
+
+  // Aucun compte connecté : on retombe sur le jeton invité (cf.
+  // AuthMiddleware::guestOrAuth) s'il en existe déjà un, pour rester
+  // identifié comme le même visiteur d'une requête à l'autre.
+  const guestToken = await getGuestToken();
+  if (guestToken) {
+    config.headers.set('Authorization', `Bearer ${guestToken}`);
   }
   return config;
 });
+
+// Le serveur pose X-Guest-Token quand guestOrAuth vient de créer/renouveler
+// un compte invité — on le persiste pour que la requête suivante s'identifie
+// avec le même visiteur au lieu d'en recréer un nouveau à chaque appel.
+function captureGuestToken(response: AxiosResponse): void {
+  const guestToken = response.headers?.['x-guest-token'];
+  if (typeof guestToken === 'string' && guestToken.length > 0) {
+    saveGuestToken(guestToken).catch(() => undefined);
+  }
+}
 
 // L'access token expire après 15 min (JWT_ACCESS_EXPIRES_IN) : sur un 401, on
 // tente une unique fois un rafraîchissement via le refresh token avant
@@ -50,8 +76,15 @@ interface RetriableConfig extends InternalAxiosRequestConfig {
 }
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    captureGuestToken(response);
+    return response;
+  },
   async (error: AxiosError) => {
+    if (error.response) {
+      captureGuestToken(error.response);
+    }
+
     const config = error.config as RetriableConfig | undefined;
     if (error.response?.status !== 401 || !config || config._retried) {
       throw error;
