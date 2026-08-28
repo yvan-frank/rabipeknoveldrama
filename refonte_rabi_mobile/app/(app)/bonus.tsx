@@ -484,7 +484,7 @@ export default function BonusScreen() {
     if (!isGuest) return false;
     showAlert('Connexion requise', 'Connectez-vous pour gagner et suivre vos bonus.', [
       { text: 'Annuler', style: 'cancel' },
-      { text: 'Se connecter', onPress: () => router.push('/(auth)/login') },
+      { text: 'Se connecter', onPress: () => router.push('/(auth)') },
     ]);
     return true;
   }

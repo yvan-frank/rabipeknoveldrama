@@ -96,10 +96,17 @@ const config: ExpoConfig = {
         iosAppId: 'ca-app-pub-3940256099942544~1458002511',
       },
     ],
+    // Android : résolu automatiquement via google-services.json (déjà
+    // présent pour les push FCM). iOS : nécessiterait un `iosUrlScheme`
+    // dérivé d'un client OAuth iOS dédié — pas encore créé (app pas publiée
+    // sur l'App Store, cf. APP_STORE_URL vide), Google Sign-In reste donc
+    // Android-only tant qu'il n'existe pas.
+    '@react-native-google-signin/google-signin',
   ],
   extra: {
     appEnv: APP_ENV,
     apiUrl: API_URL_BY_ENV[APP_ENV] ?? API_URL_BY_ENV.dev,
+    googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
       "eas": {
           "projectId": "f0ab758c-40a7-42da-913c-d81048cf5694"
       }

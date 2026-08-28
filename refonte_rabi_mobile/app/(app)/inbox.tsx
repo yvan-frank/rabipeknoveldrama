@@ -113,7 +113,7 @@ export default function InboxScreen() {
         <Text style={[typography.body, { color: colors.textMuted, textAlign: 'center', marginBottom: spacing.lg }]}>
           Connectez-vous pour contacter le support et suivre vos réponses.
         </Text>
-        <Button label="S'identifier" onPress={() => router.push('/(auth)/login')} />
+        <Button label="S'identifier" onPress={() => router.push('/(auth)')} />
       </View>
     );
   }

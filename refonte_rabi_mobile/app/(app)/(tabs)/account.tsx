@@ -145,7 +145,7 @@ export default function AccountScreen() {
               ) : null}
             </View>
             {isGuest ? (
-              <Pressable onPress={() => router.push('/(auth)/login')} style={[styles.pillButton, { borderColor: colors.accent }]}>
+              <Pressable onPress={() => router.push('/(auth)')} style={[styles.pillButton, { borderColor: colors.accent }]}>
                 <Text style={[typography.captionSemiBold, { color: colors.accent }]}>S&apos;identifier</Text>
               </Pressable>
             ) : null}

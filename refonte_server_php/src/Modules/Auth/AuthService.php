@@ -7,6 +7,7 @@ namespace App\Modules\Auth;
 use App\Config\Env;
 use App\Lib\Database;
 use App\Utils\ApiError;
+use App\Utils\GoogleTokenVerifier;
 use App\Utils\Jwt;
 use App\Utils\UserCode;
 use PDO;
@@ -64,39 +65,58 @@ final class AuthService
         }
 
         $passwordHash = password_hash($input['password'], PASSWORD_BCRYPT, ['cost' => self::SALT_COST]);
+        $userId = self::upsertRealUser($db, $guestUserId, $input['name'], $input['email'], $passwordHash);
 
+        return self::issueSession(['id' => $userId, 'email' => $input['email'], 'role' => 'user']);
+    }
+
+    /**
+     * @param int|null $guestUserId compte invité courant (cookie/bearer),
+     *   fusionné comme pour register() si aucun compte n'existe déjà avec
+     *   cet email — mêmes règles de conservation des points acquis.
+     */
+    public static function loginWithGoogle(string $idToken, ?int $guestUserId = null): array
+    {
+        $profile = GoogleTokenVerifier::verify($idToken, Env::googleClientId());
+        $db = self::db();
+
+        $existing = self::findUserByEmail($db, $profile['email']);
+        if ($existing !== false) {
+            return self::issueSession([
+                'id' => (int) $existing['id_user'],
+                'email' => $existing['email'],
+                'role' => ((bool) $existing['is_admin']) ? 'admin' : 'user',
+            ]);
+        }
+
+        // Pas de mot de passe pour un compte créé via Google : password reste
+        // NULL (comme un invité), la connexion classique par email/mot de
+        // passe est donc naturellement indisponible pour ce compte (cf. garde
+        // dans login() ci-dessous).
+        $name = is_string($profile['name']) && $profile['name'] !== '' ? $profile['name'] : explode('@', $profile['email'])[0];
+        $userId = self::upsertRealUser($db, $guestUserId, $name, $profile['email'], null);
+
+        return self::issueSession(['id' => $userId, 'email' => $profile['email'], 'role' => 'user']);
+    }
+
+    /** Convertit le compte invité courant en compte réel, ou en crée un nouveau. */
+    private static function upsertRealUser(PDO $db, ?int $guestUserId, string $name, string $email, ?string $passwordHash): int
+    {
         $guestRow = $guestUserId !== null ? self::findGuestById($db, $guestUserId) : false;
 
         if ($guestRow !== false) {
             $stmt = $db->prepare('UPDATE users SET name = :name, email = :email, password = :password, is_guest = 0, is_active = 1, updated_at = NOW()
                 WHERE id_user = :id');
-            $stmt->execute([
-                'name' => $input['name'],
-                'email' => $input['email'],
-                'password' => $passwordHash,
-                'id' => $guestUserId,
-            ]);
+            $stmt->execute(['name' => $name, 'email' => $email, 'password' => $passwordHash, 'id' => $guestUserId]);
 
-            $userId = $guestUserId;
-        } else {
-            $stmt = $db->prepare('INSERT INTO users (name, email, password, is_admin, is_active, points_balance, created_at, updated_at)
-                VALUES (:name, :email, :password, 0, 1, 0, NOW(), NOW())');
-            $stmt->execute([
-                'name' => $input['name'],
-                'email' => $input['email'],
-                'password' => $passwordHash,
-            ]);
-
-            $userId = (int) $db->lastInsertId();
+            return $guestUserId;
         }
 
-        $authUser = [
-            'id' => $userId,
-            'email' => $input['email'],
-            'role' => 'user',
-        ];
+        $stmt = $db->prepare('INSERT INTO users (name, email, password, is_admin, is_active, points_balance, created_at, updated_at)
+            VALUES (:name, :email, :password, 0, 1, 0, NOW(), NOW())');
+        $stmt->execute(['name' => $name, 'email' => $email, 'password' => $passwordHash]);
 
-        return self::issueSession($authUser);
+        return (int) $db->lastInsertId();
     }
 
     private static function findGuestById(PDO $db, int $userId): array|false
@@ -113,7 +133,10 @@ final class AuthService
         $row = self::findUserByEmail($db, $input['email']);
 
         if ($row !== false) {
-            if (!password_verify($input['password'], $row['password'])) {
+            // password NULL : compte créé via Google (cf. loginWithGoogle),
+            // jamais de mot de passe à vérifier — password_verify(x, null)
+            // est une dépréciation PHP 8.1+ à éviter, pas juste un faux négatif.
+            if ($row['password'] === null || !password_verify($input['password'], $row['password'])) {
                 throw ApiError::unauthorized('Email ou mot de passe incorrect');
             }
 

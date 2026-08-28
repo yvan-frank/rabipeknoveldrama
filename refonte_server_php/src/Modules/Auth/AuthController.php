@@ -52,6 +52,19 @@ final class AuthController
         return ($payload['role'] ?? null) === 'guest' ? (int) $payload['id'] : null;
     }
 
+    public static function google(Request $request): void
+    {
+        $input = Validator::validate($request->body, AuthSchema::google());
+        $result = AuthService::loginWithGoogle($input['idToken'], self::currentGuestUserId($request));
+
+        Response::cookie(Env::cookieName(), $result['token'], self::COOKIE_MAX_AGE);
+        Response::success([
+            'user' => $result['user'],
+            'accessToken' => $result['accessToken'],
+            'refreshToken' => $result['refreshToken'],
+        ]);
+    }
+
     public static function login(Request $request): void
     {
         $input = Validator::validate($request->body, AuthSchema::login());

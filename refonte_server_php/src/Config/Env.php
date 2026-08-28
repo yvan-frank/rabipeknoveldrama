@@ -165,6 +165,13 @@ final class Env
         return self::required('JWT_SECRET');
     }
 
+    // Audience attendue sur le idToken Google (mobile) — doit être identique
+    // au GOOGLE_CLIENT_ID de refonte_rabi_mobile/.env.local.
+    public static function googleClientId(): string
+    {
+        return self::required('GOOGLE_CLIENT_ID');
+    }
+
     // "7d", "15m", "3600" (secondes brutes), "1h" -> secondes.
     public static function durationSeconds(string $key, string $default): int
     {

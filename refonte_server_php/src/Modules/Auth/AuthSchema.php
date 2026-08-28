@@ -34,4 +34,11 @@ final class AuthSchema
             'refreshToken' => ['required', 'string', 'min:20'],
         ];
     }
+
+    public static function google(): array
+    {
+        return [
+            'idToken' => ['required', 'string', 'min:20'],
+        ];
+    }
 }

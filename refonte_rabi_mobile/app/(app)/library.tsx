@@ -65,7 +65,7 @@ export default function LibraryScreen() {
           <Text style={[typography.body, { color: colors.textMuted, textAlign: 'center', marginBottom: spacing.lg }]}>
             Connectez-vous pour retrouver vos livres achetés et votre progression de lecture.
           </Text>
-          <Button label="S'identifier" onPress={() => router.push('/(auth)/login')} />
+          <Button label="S'identifier" onPress={() => router.push('/(auth)')} />
         </View>
       ) : (
         <FlatList

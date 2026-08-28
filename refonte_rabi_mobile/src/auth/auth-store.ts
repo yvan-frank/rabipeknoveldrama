@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { loginRequest, logoutRequest, registerRequest, type LoginPayload, type RegisterPayload } from '../api/auth';
+import { googleLoginRequest, loginRequest, logoutRequest, registerRequest, type LoginPayload, type RegisterPayload } from '../api/auth';
 import { apiClient, setOnAuthExpired } from '../api/client';
 import type { ApiEnvelope, AuthResponse, AuthUser } from '../api/types';
+import { signInWithGoogle } from './google-signin';
 import { clearGuestToken, clearTokens, getRefreshToken, loadTokens, saveTokens } from './token-storage';
 
 type AuthStatus = 'bootstrapping' | 'guest' | 'authenticated';
@@ -12,6 +13,8 @@ interface AuthState {
   bootstrap: () => Promise<void>;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  // false = l'utilisateur a annulé le sélecteur de compte Google (pas une erreur).
+  loginWithGoogle: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -59,6 +62,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     await saveTokens({ accessToken, refreshToken });
     await clearGuestToken();
     set({ status: 'authenticated', user });
+  },
+
+  loginWithGoogle: async () => {
+    const idToken = await signInWithGoogle();
+    if (idToken === null) return false; // sélecteur de compte annulé par l'utilisateur
+
+    // Même logique de fusion du compte invité que register() : le jeton
+    // invité éventuel est attaché par apiClient et lu côté serveur.
+    const { user, accessToken, refreshToken } = await googleLoginRequest(idToken);
+    await saveTokens({ accessToken, refreshToken });
+    await clearGuestToken();
+    set({ status: 'authenticated', user });
+    return true;
   },
 
   logout: async () => {
