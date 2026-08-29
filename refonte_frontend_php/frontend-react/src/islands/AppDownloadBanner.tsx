@@ -5,30 +5,20 @@ interface Props {
   appStoreUrl: string | null;
 }
 
-const DISMISSED_KEY = 'rabipek-app-banner-dismissed';
 // En dessous de ce seuil (px depuis le haut), on ne montre jamais le bandeau
 // — évite qu'un minuscule scroll accidentel sur la page d'accueil le déclenche.
 const SCROLL_THRESHOLD = 120;
 
 // Bandeau d'invitation à installer l'app, collé en bas de l'écran : apparaît
-// en scrollant vers le bas, disparaît en remontant — comportement demandé
-// tel quel (inverse du pattern "barre qui se cache pour lire" habituel).
+// en scrollant vers le bas, disparaît en remontant. Pas de bouton de
+// fermeture — doit rester disponible en permanence sur les pages publiques,
+// pas d'état "fermé pour toujours" à mémoriser.
 export default function AppDownloadBanner({ playStoreUrl, appStoreUrl }: Props) {
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
-    try {
-      setDismissed(localStorage.getItem(DISMISSED_KEY) === '1');
-    } catch {
-      // stockage indisponible (navigation privée) - le bandeau reste actif
-    }
     lastScrollY.current = window.scrollY;
-  }, []);
-
-  useEffect(() => {
-    if (dismissed) return;
 
     // Pas de throttle par requestAnimationFrame ici : un rAF jamais déclenché
     // (onglet en arrière-plan, navigateur qui le suspend) laisserait le
@@ -43,19 +33,7 @@ export default function AppDownloadBanner({ playStoreUrl, appStoreUrl }: Props) 
 
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [dismissed]);
-
-  function handleDismiss() {
-    setDismissed(true);
-    setVisible(false);
-    try {
-      localStorage.setItem(DISMISSED_KEY, '1');
-    } catch {
-      // tant pis, réapparaîtra à la prochaine visite
-    }
-  }
-
-  if (dismissed) return null;
+  }, []);
 
   return (
     <div
@@ -79,14 +57,6 @@ export default function AppDownloadBanner({ playStoreUrl, appStoreUrl }: Props) 
         >
           Installer
         </a>
-        <button
-          type="button"
-          onClick={handleDismiss}
-          aria-label="Fermer"
-          className="shrink-0 rounded-full p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white"
-        >
-          ✕
-        </button>
       </div>
     </div>
   );
