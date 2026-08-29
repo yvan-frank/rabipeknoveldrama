@@ -18,7 +18,7 @@ const config: ExpoConfig = {
   name: APP_ENV === 'prod' ? 'RabipekNovel' : `Rabipek (${APP_ENV})`,
   slug: 'rabipek',
   scheme: 'rabipek',
-  version: '1.0.0',
+  version: '2.7.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
