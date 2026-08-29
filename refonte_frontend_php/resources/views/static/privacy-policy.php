@@ -1,110 +1,142 @@
-<?php /** Équivalent de src/app/politique-confidentialite/page.tsx. */ ?>
+<?php /** Politique de confidentialité — distincte des CGU (/conditions-utilisation) et des mentions légales (/mentions-legales). */ ?>
 <div class="mx-auto max-w-3xl px-4 py-12">
-  <h1 class="mb-8 text-center text-2xl">Politique de confidentialité &amp; conditions d'utilisation</h1>
+  <h1 class="mb-8 text-center text-2xl">Politique de confidentialité</h1>
   <div class="prose prose-sm max-w-none prose-a:text-brand-amber dark:prose-invert">
     <p>
-      Toute personne qui accède au site www.rabipeknovel.com s'engage à respecter les présentes conditions
-      d'utilisation, qui pourront pour certains services être complétées par des conditions particulières.
-      Les données diffusées sur le réseau Internet peuvent être réglementées en termes d'usage ou être
-      protégées par un droit de propriété. Toute personne est responsable des données qu'elle diffuse,
-      utilise et/ou transfère et s'engage à ce titre à respecter la réglementation en vigueur, notamment
-      celle relative aux contenus manifestement illicites ou à la protection des droits des tiers. Rabipek
-      n'est pas responsable de l'usage des données, du contenu diffusé ou des prestations d'une
-      autre personne qui, notamment, ne respecterait pas la réglementation en vigueur.
+      Cette politique explique quelles données personnelles RabipekNovel collecte via le site et l'application
+      mobile RabipekNovel (le « Service »), pourquoi, combien de temps elles sont conservées, avec qui elles sont
+      partagées, et comment les consulter, corriger ou supprimer. Elle est distincte des
+      <a href="/conditions-utilisation">conditions générales d'utilisation</a>, qui régissent l'usage du Service, et
+      des <a href="/mentions-legales">mentions légales</a>, qui identifient l'éditeur du site.
     </p>
 
-    <h3>Accès au site</h3>
+    <h2>Article 1 — Responsable du traitement</h2>
     <p>
-      Le site www.rabipeknovel.com est accessible à l'utilisateur 24h/24, 7j/7 sauf précisions contraires. La
-      responsabilité de RabipekNovel ne peut être engagée en raison d'une indisponibilité technique de la
-      connexion, qu'elle soit due notamment à un cas de force majeure, à une maintenance, à une mise à jour, à
-      une modification du site, à une intervention de l'hébergeur, à une grève interne ou externe, à une
-      panne de réseau, à une coupure d'alimentation électrique, ou encore à une mauvaise configuration ou
-      utilisation de l'ordinateur de l'utilisateur.
+      Le responsable du traitement des données décrites ci-dessous est <strong>RabipekNovel SARL</strong>
+      (RCCM CM-DLA-03-2024-B12-00323), Logpom, derrière station Neptune. Pour toute question relative à vos
+      données personnelles, vous pouvez écrire à
+      <a href="mailto:rabipeknovel@gmail.com">rabipeknovel@gmail.com</a> ou
+      <a href="mailto:rabipek@yahoo.fr">rabipek@yahoo.fr</a>.
     </p>
 
-    <h3>Droits d'auteur</h3>
-    <p>
-      La totalité des éléments du site www.rabipeknovel.com, notamment les textes, présentations, illustrations,
-      photographies, documents téléchargeables, représentations iconographiques, marques commerciales,
-      arborescences et mises en forme sont, sauf documents publics et précisions complémentaires, la propriété
-      intellectuelle exclusive de RabipekNovel ou de ses partenaires. Leurs représentations, reproductions,
-      imbrications, diffusions et rediffusions, partielles ou totales, sont interdites conformément aux
-      dispositions de l'article L. 122-4 du Code de la propriété intellectuelle. En tout état de cause, sur
-      toute copie autorisée de tout ou partie du contenu du site, devra figurer la mention « Copyright RabipekNovel
-      — tous droits réservés ».
-    </p>
-
-    <h3>Validité des informations fournies</h3>
-    <p>Dans l'hypothèse où l'utilisateur serait amené à fournir des informations, il s'engage à :</p>
+    <h2>Article 2 — Données collectées</h2>
+    <p>Selon la façon dont vous utilisez le Service, RabipekNovel collecte :</p>
     <ul>
       <li>
-        délivrer des informations réelles, exactes, à jour au moment de leur saisie dans le formulaire
-        d'inscription du service, et notamment à ne pas utiliser de faux noms ou adresses ;
+        <strong>Compte créé par email</strong> : nom affiché, adresse email, mot de passe (stocké sous forme
+        chiffrée, jamais en clair), adresse IP au moment de l'inscription.
       </li>
-      <li>maintenir à jour les données d'inscription en vue de garantir en permanence leur caractère réel, exact et à jour ;</li>
       <li>
-        ne pas rendre disponible ou distribuer des informations illégales, répréhensibles (telles que des
-        informations diffamatoires ou obscènes) ou encore nuisibles (telles que les virus).
+        <strong>Connexion avec Google</strong> : nom et adresse email transmis par Google au moment de la
+        connexion. RabipekNovel ne reçoit ni ne conserve votre mot de passe Google, ni votre photo de profil
+        Google.
+      </li>
+      <li>
+        <strong>Compte invité</strong> : une partie du catalogue est accessible sans inscription. Un identifiant
+        « invité » est alors généré côté serveur, sans email ni mot de passe, uniquement pour mémoriser votre
+        progression et vos points de bonus le temps de votre visite ou jusqu'à ce que vous créiez un vrai compte.
+      </li>
+      <li>
+        <strong>Compte auteur et vérification d'identité (KYC)</strong> : pour publier un livre, un auteur doit
+        fournir nom complet, civilité, pays, adresse, numéro de téléphone, un document d'identité (carte
+        nationale, passeport ou équivalent) et, le cas échéant, une photo de ce document. Cette vérification sert
+        uniquement à limiter les usages frauduleux du compte auteur et n'est jamais utilisée à d'autres fins.
+      </li>
+      <li>
+        <strong>Notifications</strong> : si vous autorisez les notifications sur l'application mobile, un
+        identifiant technique (« jeton push ») fourni par votre appareil est associé à votre compte pour vous
+        envoyer des notifications (nouveau chapitre, réponse à un avis, etc.).
+      </li>
+      <li>
+        <strong>Données techniques et de lecture</strong> : pages et livres consultés, pays et type d'appareil
+        approximatifs, horodatage — utilisées de façon agrégée pour mesurer l'audience et améliorer le catalogue,
+        sans profil publicitaire ni revente à des tiers.
       </li>
     </ul>
     <p>
-      En cas de violation de ces dispositions, RabipekNovel sera en mesure de suspendre ou de résilier
-      l'accès de l'utilisateur aux services à ses torts exclusifs.
+      RabipekNovel ne collecte aucune donnée bancaire ou de paiement : les fonctionnalités d'achat de points et
+      d'abonnement affichées dans l'application ne sont pas encore actives.
     </p>
 
-    <h3>Limitation de responsabilité — conduite de l'utilisateur</h3>
+    <h2>Article 3 — Finalités et base du traitement</h2>
+    <p>Ces données sont utilisées pour :</p>
+    <ul>
+      <li>créer et sécuriser votre compte, et vous permettre de vous reconnecter (exécution du contrat de service) ;</li>
+      <li>mémoriser votre progression de lecture et votre solde de points ;</li>
+      <li>vérifier l'identité des auteurs avant publication, pour limiter la fraude et l'usurpation d'identité ;</li>
+      <li>vous envoyer des notifications que vous avez autorisées ;</li>
+      <li>mesurer l'audience et améliorer le Service ;</li>
+      <li>répondre à nos obligations légales, notamment en cas de demande d'une autorité compétente.</li>
+    </ul>
+
+    <h2>Article 4 — Durée de conservation</h2>
+    <ul>
+      <li>Les données d'un compte actif sont conservées tant que le compte existe.</li>
+      <li>
+        Un compte invité inactif et non converti en compte permanent est purgé automatiquement après une période
+        d'inactivité prolongée.
+      </li>
+      <li>
+        En cas de suppression de compte (voir Article 7), les données sont désactivées immédiatement puis
+        supprimées définitivement à l'issue d'un délai limité, sauf obligation légale de conservation plus longue
+        (par exemple en cas de litige en cours).
+      </li>
+      <li>Les documents d'identité fournis pour la vérification KYC sont conservés le temps nécessaire à cette vérification et à la lutte contre la fraude, puis supprimés.</li>
+    </ul>
+
+    <h2>Article 5 — Partage des données</h2>
     <p>
-      L'utilisateur admet expressément utiliser le site www.rabipeknovel.com à ses propres risques et sous sa
-      responsabilité exclusive. Le site fournit à l'utilisateur des informations à titre indicatif, en
-      l'état, avec toutes leurs imperfections. En tout état de cause, RabipekNovel ne pourra en aucun cas
-      être tenue responsable :
+      RabipekNovel ne vend ni ne loue vos données personnelles. Elles peuvent être partagées uniquement avec :
     </p>
     <ul>
-      <li>
-        de tout dommage direct ou indirect, notamment en ce qui concerne les pertes de profits, le manque à
-        gagner, les pertes de clientèle ou de données pouvant résulter de l'utilisation du site, ou au
-        contraire de l'impossibilité de son utilisation ;
-      </li>
-      <li>
-        d'un dysfonctionnement, d'une indisponibilité d'accès, d'une mauvaise utilisation ou
-        d'une mauvaise configuration de l'ordinateur de l'utilisateur ;
-      </li>
-      <li>du contenu des publicités et autres liens ou sources externes accessibles par l'utilisateur à partir du site.</li>
+      <li>notre hébergeur, qui stocke les données sur ses serveurs pour le fonctionnement technique du Service ;</li>
+      <li>Google, uniquement pour vérifier votre identité lorsque vous utilisez « Continuer avec Google » ;</li>
+      <li>une autorité compétente, si la loi nous y oblige.</li>
     </ul>
     <p>
-      L'utilisateur s'engage à ne pas diffuser des propos, opinions ou informations à caractère
-      diffamatoire, obscène, violent, raciste et plus généralement contrevenant aux textes en vigueur, aux droits
-      des personnes et aux bonnes mœurs.
+      En cas de rachat de RabipekNovel, les données pourraient être transmises au repreneur, qui resterait tenu
+      par la présente politique.
     </p>
 
-    <h3>Liens hypertexte</h3>
+    <h2>Article 6 — Cookies et identifiants techniques</h2>
     <p>
-      Tout webmaster qui souhaiterait établir un lien à partir de son site vers le site www.rabipeknovel.com est
-      tenu d'obtenir une autorisation expresse préalable en la sollicitant à l'adresse électronique de
-      RabipekNovel. L'utilisateur qui serait redirigé vers une tierce page Internet par l'intermédiaire
-      d'un lien hypertexte figurant sur le site reconnaît que RabipekNovel ne maîtrise pas le contenu des
-      sites de redirection et ne pourra en aucun cas être tenue responsable des dommages en résultant.
+      Le site utilise un unique cookie de session, strictement nécessaire pour vous garder connecté ; il n'est ni
+      lu ni transmis à des régies publicitaires. RabipekNovel n'utilise aucun cookie de mesure d'audience tiers ni
+      de traceur publicitaire. L'application mobile utilise l'équivalent technique (jeton stocké sur l'appareil)
+      pour la même finalité.
     </p>
 
-    <h3>Nature publicitaire du contenu</h3>
+    <h2>Article 7 — Vos droits</h2>
+    <p>Vous pouvez à tout moment :</p>
+    <ul>
+      <li>consulter et corriger les informations de votre profil depuis votre tableau de bord ;</li>
+      <li>
+        supprimer votre compte et les données associées, directement depuis l'application (Paramètres →
+        Supprimer mon compte) ou depuis le site, sans avoir besoin d'installer l'application, via
+        <a href="/supprimer-mon-compte">rabipeknovel.com/supprimer-mon-compte</a> ;
+      </li>
+      <li>demander une copie de vos données ou poser toute question en écrivant à <a href="mailto:rabipeknovel@gmail.com">rabipeknovel@gmail.com</a>.</li>
+    </ul>
+    <p>Nous répondons à toute demande dans un délai raisonnable.</p>
+
+    <h2>Article 8 — Contenu réservé aux adultes</h2>
     <p>
-      Le site www.rabipeknovel.com peut contenir des publicités. RabipekNovel ne pourra en aucun cas être tenue
-      responsable ni du contenu des publicités ni des conséquences d'une éventuelle relation contractuelle
-      entre l'utilisateur et la personne ayant diffusé la publicité.
+      Certains livres sont marqués comme réservés à un public adulte. L'accès à ces livres nécessite de confirmer
+      son année de naissance ; cette confirmation est mémorisée sur l'appareil et n'est jamais transmise à
+      RabipekNovel ni associée à votre compte.
     </p>
 
-    <h3>Utilisation des coordonnées figurant dans le site</h3>
+    <h2>Article 9 — Sécurité</h2>
     <p>
-      RabipekNovel interdit l'utilisation des coordonnées figurant sur le site en vue d'un démarchage,
-      d'une sollicitation publicitaire ou de toute autre fin commerciale.
+      RabipekNovel met en œuvre des mesures raisonnables pour protéger vos données (mots de passe chiffrés, accès
+      restreint aux données sensibles, connexions chiffrées). Aucun système n'étant infaillible, nous vous
+      invitons à utiliser un mot de passe unique et à nous signaler tout usage suspect de votre compte.
     </p>
 
-    <h3>Droits d'auteur</h3>
+    <h2>Article 10 — Modification de cette politique</h2>
     <p>
-      Ce site respecte le droit d'auteur. Tous les droits des auteurs des œuvres protégées reproduites et
-      communiquées sur ce site sont réservés. Sauf autorisation, toute utilisation des œuvres autre que la
-      reproduction et la consultation individuelles et privées est interdite.
+      Cette politique peut être mise à jour pour refléter une évolution du Service ou de la réglementation. La
+      version applicable est celle publiée sur cette page à la date de votre utilisation du Service.
     </p>
   </div>
 </div>
