@@ -31,6 +31,7 @@ $ogImageUrl = $ogImage ?? (Env::siteUrl() . '/images/logo.png');
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="google-site-verification" content="QCAQcjlC3-vLee-UZmgQpA4voQsPtgakm4JTjFqWe4k" />
   <title><?= View::e($title) ?></title>
   <?php if (!empty($description)): ?>
   <meta name="description" content="<?= View::e($description) ?>">
