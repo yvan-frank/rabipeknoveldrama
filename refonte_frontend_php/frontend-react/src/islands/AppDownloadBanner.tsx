@@ -39,11 +39,11 @@ export default function AppDownloadBanner({ playStoreUrl, appStoreUrl }: Props) 
     <div
       role="complementary"
       aria-hidden={!visible}
-      className={`fixed inset-x-0 bottom-0 z-40 transition-transform duration-300 ease-out ${
-        visible ? 'translate-y-0' : 'translate-y-full'
+      className={`fixed inset-x-0 bottom-3 z-40 px-4 transition-transform duration-300 ease-out sm:bottom-4 ${
+        visible ? 'translate-y-0' : 'translate-y-[calc(100%+2rem)]'
       }`}
     >
-      <div className="mx-auto flex max-w-2xl items-center gap-3 rounded-t-2xl border border-b-0 border-white/15 bg-gradient-to-r from-neutral-900 to-neutral-800 px-4 py-3 text-white shadow-[0_-8px_30px_rgba(0,0,0,0.25)] sm:mb-4 sm:rounded-2xl sm:border-b">
+      <div className="mx-auto flex max-w-2xl items-center gap-3 rounded-2xl border border-white/15 bg-gradient-to-r from-neutral-900 to-neutral-800 px-4 py-3 text-white shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
         <img src="/images/logo.png" alt="" className="size-9 shrink-0 rounded-lg" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">Lisez sans limites, sur mobile</p>
