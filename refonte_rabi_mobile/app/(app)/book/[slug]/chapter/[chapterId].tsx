@@ -14,6 +14,7 @@ import { ChapterCommentsSection } from '../../../../../src/components/ChapterCom
 import { ReaderTutorialOverlay } from '../../../../../src/components/ReaderTutorialOverlay';
 import { showToast } from '../../../../../src/components/Toast';
 import { useAuthStore } from '../../../../../src/auth/auth-store';
+import { useAgeVerificationStore } from '../../../../../src/lib/age-verification-store';
 import { extractApiErrorMessage } from '../../../../../src/api/client';
 import { addReadingTime, getChapterUnlockCost, getPointsBalance, unlockChapterWithPoints } from '../../../../../src/api/points';
 import { fetchBookBySlug } from '../../../../../src/api/books';
@@ -700,6 +701,18 @@ export default function ChapterReaderScreen() {
     enabled: !!chapterQuery.data,
   });
 
+  // Un chapitre peut être ouvert directement (lien profond, notification,
+  // "reprendre la lecture" du tableau de bord) sans passer par la fiche
+  // livre — sans ce garde, le mur d'âge de book/[slug].tsx serait
+  // contournable pour un livre 18+. Redirige vers la fiche, qui affiche
+  // elle-même la vérification d'âge tant qu'elle n'est pas confirmée.
+  const isAdult = useAgeVerificationStore((s) => s.isAdult);
+  useEffect(() => {
+    if (bookQuery.data?.isAdultOnly && !isAdult) {
+      router.replace(`/book/${slug}`);
+    }
+  }, [bookQuery.data?.isAdultOnly, isAdult, slug]);
+
   const chapterEntries = useMemo(() => (bookQuery.data ? flattenChapters(bookQuery.data) : []), [bookQuery.data]);
   const currentIndex = chapterEntries.findIndex((entry) => entry.chapter.id === numericChapterId);
   const nextEntry = currentIndex >= 0 && currentIndex < chapterEntries.length - 1 ? chapterEntries[currentIndex + 1] : null;
@@ -794,7 +807,7 @@ export default function ChapterReaderScreen() {
     }
   }
 
-  if (chapterQuery.isLoading || progressQuery.isLoading) {
+  if (chapterQuery.isLoading || progressQuery.isLoading || bookQuery.isLoading || (bookQuery.data?.isAdultOnly && !isAdult)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator color={colors.accent} />

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '../../../src/components/Button';
 import { BookDetailSkeleton } from '../../../src/components/BookDetailSkeleton';
 import { priceLabel } from '../../../src/components/BookListItem';
@@ -10,6 +10,7 @@ import { extractApiErrorMessage } from '../../../src/api/client';
 import { fetchBookBySlug, type BookDetail } from '../../../src/api/books';
 import { fetchReadingProgress } from '../../../src/api/chapters';
 import { toggleBookLike } from '../../../src/api/likes';
+import { useAgeVerificationStore } from '../../../src/lib/age-verification-store';
 import { flattenChapters, type ChapterEntry } from '../../../src/lib/chapter-access';
 import { useRecentlyViewedStore } from '../../../src/lib/recently-viewed-store';
 import { resolveAssetUrl } from '../../../src/lib/resolve-asset-url';
@@ -37,18 +38,55 @@ function NotFoundState({ message }: { message: string }) {
   );
 }
 
-function AgeGate({ onConfirm }: { onConfirm: () => void }) {
-  const { colors, spacing, typography } = useTheme();
+// Mesure d'assurance d'âge réelle (année de naissance saisie, calcul local)
+// plutôt qu'un simple tap "J'ai 18 ans ou plus" — cf. audit Play Store,
+// section contenu 18+/UGC. Le résultat est mémorisé (useAgeVerificationStore,
+// persisté) : une fois confirmé, plus jamais redemandé sur cet appareil.
+function AgeGate() {
+  const { colors, spacing, typography, radius } = useTheme();
+  const confirmBirthYear = useAgeVerificationStore((s) => s.confirmBirthYear);
+  const [year, setYear] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  function handleSubmit() {
+    const parsed = Number(year);
+    const currentYear = new Date().getFullYear();
+    if (year.length !== 4 || !Number.isInteger(parsed) || parsed < 1900 || parsed > currentYear) {
+      setError('Entrez une année de naissance valide (ex. 1998).');
+      return;
+    }
+    if (!confirmBirthYear(parsed)) {
+      setError("L'accès à ce contenu est réservé aux personnes de 18 ans ou plus.");
+      return;
+    }
+    setError(null);
+  }
+
   return (
     <View style={[styles.ageGate, { backgroundColor: colors.background }]}>
       <Text style={{ fontSize: 40, marginBottom: spacing.md }}>🔞</Text>
       <Text style={[typography.heading, { color: colors.ink, textAlign: 'center', marginBottom: spacing.sm }]}>
         Contenu réservé aux adultes
       </Text>
-      <Text style={[typography.body, { color: colors.textMuted, textAlign: 'center', marginBottom: spacing.xl }]}>
-        Ce livre contient des éléments destinés à un public averti. Confirmez que vous avez 18 ans ou plus pour continuer.
+      <Text style={[typography.body, { color: colors.textMuted, textAlign: 'center', marginBottom: spacing.lg }]}>
+        Ce livre contient des éléments destinés à un public averti. Indiquez votre année de naissance pour continuer.
       </Text>
-      <Button label="J'ai 18 ans ou plus" onPress={onConfirm} />
+      <TextInput
+        value={year}
+        onChangeText={(v) => setYear(v.replace(/[^0-9]/g, '').slice(0, 4))}
+        placeholder="Année de naissance"
+        placeholderTextColor={colors.textMuted}
+        keyboardType="number-pad"
+        maxLength={4}
+        style={[
+          styles.ageGateInput,
+          { borderColor: colors.border, color: colors.ink, borderRadius: radius.md, marginBottom: spacing.md },
+        ]}
+      />
+      {error ? (
+        <Text style={[typography.caption, { color: colors.danger, textAlign: 'center', marginBottom: spacing.md }]}>{error}</Text>
+      ) : null}
+      <Button label="Confirmer" onPress={handleSubmit} disabled={year.length !== 4} />
     </View>
   );
 }
@@ -79,7 +117,7 @@ export default function BookDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { colors, spacing, typography, shadow } = useTheme();
   const queryClient = useQueryClient();
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const isAdult = useAgeVerificationStore((s) => s.isAdult);
 
   const { data: book, isLoading, isError, error } = useQuery({
     queryKey: ['book', slug],
@@ -143,11 +181,11 @@ export default function BookDetailScreen() {
     );
   }
 
-  if (book.isAdultOnly && !ageConfirmed) {
+  if (book.isAdultOnly && !isAdult) {
     return (
       <>
         <Stack.Screen options={{ title: '' }} />
-        <AgeGate onConfirm={() => setAgeConfirmed(true)} />
+        <AgeGate />
       </>
     );
   }
@@ -237,6 +275,7 @@ const styles = StyleSheet.create({
   actionButton: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
   chapterRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth },
   ageGate: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  ageGateInput: { width: 220, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 10, paddingHorizontal: 14, fontSize: 16, textAlign: 'center' },
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   notFoundIconWrap: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center' },
 });
