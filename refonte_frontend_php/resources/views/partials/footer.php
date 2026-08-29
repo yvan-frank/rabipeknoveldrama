@@ -1,6 +1,7 @@
 <?php
 /** Équivalent statique de src/components/Footer.tsx (LEGAL_LINKS). */
 
+use App\Config\Env;
 use App\Support\View;
 
 $legalLinks = [
@@ -20,3 +21,8 @@ $legalLinks = [
     </nav>
   </div>
 </footer>
+
+<?= View::island('AppDownloadBanner', [
+  'playStoreUrl' => Env::playStoreUrl(),
+  'appStoreUrl' => Env::appStoreUrl(),
+]) ?>

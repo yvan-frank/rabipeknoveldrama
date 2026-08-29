@@ -12,6 +12,7 @@ const registry: Record<string, IslandLoader> = {
   RegisterForm: () => import('./RegisterForm'),
   GoogleAuthButton: () => import('./GoogleAuthButton'),
   OpenInApp: () => import('./OpenInApp'),
+  AppDownloadBanner: () => import('./AppDownloadBanner'),
   BookActions: () => import('./BookActions'),
   AuthorOverview: () => import('./AuthorOverview'),
   BookFilters: () => import('./BookFilters'),
