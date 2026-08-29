@@ -16,6 +16,7 @@ interface AuthState {
   // false = l'utilisateur a annulé le sélecteur de compte Google (pas une erreur).
   loginWithGoogle: () => Promise<boolean>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -75,6 +76,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     await clearGuestToken();
     set({ status: 'authenticated', user });
     return true;
+  },
+
+  // Suppression de compte en libre-service (exigence Play Store) — à
+  // l'inverse de logout(), on n'efface l'état local qu'après confirmation
+  // serveur : un échec réseau ne doit pas laisser croire au compte supprimé
+  // alors qu'il ne l'est pas.
+  deleteAccount: async () => {
+    await apiClient.delete('/auth/me');
+    await clearTokens();
+    set({ status: 'guest', user: null });
   },
 
   logout: async () => {

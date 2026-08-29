@@ -227,6 +227,11 @@ export default function Dashboard() {
                 <p className="my-1">{user?.email}</p>
                 <p className="my-1 opacity-60">La modification du profil sera disponible prochainement.</p>
               </div>
+              <div className="mt-6 border-t border-black/10 pt-5 dark:border-white/10">
+                <a href="/supprimer-mon-compte" className="text-sm font-semibold text-rose-600 no-underline hover:underline">
+                  Supprimer mon compte
+                </a>
+              </div>
             </Panel>
           ) : (
             <>

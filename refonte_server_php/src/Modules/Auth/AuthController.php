@@ -103,4 +103,12 @@ final class AuthController
     {
         Response::success(['user' => $request->user]);
     }
+
+    public static function deleteMe(Request $request): void
+    {
+        AuthService::deleteMyAccount($request->user);
+
+        Response::clearCookie(Env::cookieName());
+        Response::noContent();
+    }
 }

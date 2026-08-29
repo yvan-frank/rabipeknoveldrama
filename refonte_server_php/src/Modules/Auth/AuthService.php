@@ -6,6 +6,8 @@ namespace App\Modules\Auth;
 
 use App\Config\Env;
 use App\Lib\Database;
+use App\Modules\Authors\AuthorsService;
+use App\Modules\Users\UsersService;
 use App\Utils\ApiError;
 use App\Utils\GoogleTokenVerifier;
 use App\Utils\Jwt;
@@ -213,6 +215,39 @@ final class AuthService
     public static function me(array $user): array
     {
         return $user;
+    }
+
+    /**
+     * Suppression de compte en libre-service (Play Store exige ce chemin
+     * depuis l'app elle-même, cf. AuthController::deleteMe) — même
+     * soft-delete que la suppression admin, mais sur son propre compte, plus
+     * la révocation de toutes les sessions actives (web + mobile).
+     * @param array{id:int,role:string} $user
+     */
+    public static function deleteMyAccount(array $user): void
+    {
+        $id = (int) $user['id'];
+        $role = $user['role'] ?? null;
+
+        if ($role === 'guest') {
+            throw ApiError::badRequest('Aucun compte à supprimer pour un visiteur.');
+        }
+
+        if ($role === 'author') {
+            AuthorsService::softDeleteAuthor($id);
+            self::revokeAllRefreshTokens('author', $id);
+            return;
+        }
+
+        UsersService::softDeleteUser($id);
+        self::revokeAllRefreshTokens('user', $id);
+    }
+
+    private static function revokeAllRefreshTokens(string $accountType, int $accountId): void
+    {
+        self::db()
+            ->prepare('UPDATE refresh_tokens SET revoked_at = NOW() WHERE account_type = :accountType AND account_id = :accountId AND revoked_at IS NULL')
+            ->execute(['accountType' => $accountType, 'accountId' => $accountId]);
     }
 
     private static function revokeRefreshToken(string $refreshToken): void

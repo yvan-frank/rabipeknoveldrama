@@ -11,6 +11,7 @@ const registry: Record<string, IslandLoader> = {
   LoginForm: () => import('./LoginForm'),
   RegisterForm: () => import('./RegisterForm'),
   GoogleAuthButton: () => import('./GoogleAuthButton'),
+  DeleteMyAccountButton: () => import('./DeleteMyAccountButton'),
   OpenInApp: () => import('./OpenInApp'),
   AppDownloadBanner: () => import('./AppDownloadBanner'),
   BookActions: () => import('./BookActions'),

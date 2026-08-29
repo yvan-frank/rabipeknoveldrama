@@ -22,5 +22,6 @@ final class AuthRoutes
         $router->post('/refresh', [AuthController::class, 'refresh']);
         $router->post('/logout', [AuthController::class, 'logout']);
         $router->get('/me', [AuthController::class, 'me'], [AuthMiddleware::requireAuth(...)]);
+        $router->delete('/me', [AuthController::class, 'deleteMe'], [AuthMiddleware::requireAuth(...)]);
     }
 }

@@ -39,6 +39,7 @@ final class Routes
         // app/connexion, app/inscription
         $router->get('/connexion', [new AuthController(), 'login']);
         $router->get('/inscription', [new AuthController(), 'register']);
+        $router->get('/supprimer-mon-compte', [new AuthController(), 'deleteAccount']);
 
         // app/tableau-de-bord/**
         $router->get('/tableau-de-bord', [new DashboardController(), 'index']);

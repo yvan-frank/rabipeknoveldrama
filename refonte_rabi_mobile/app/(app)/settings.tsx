@@ -4,9 +4,11 @@ import { router } from 'expo-router';
 import { AdsConsent, AdsConsentPrivacyOptionsRequirementStatus } from 'react-native-google-mobile-ads';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { extractApiErrorMessage } from '../../src/api/client';
 import { useAuthStore } from '../../src/auth/auth-store';
 import { showAlert } from '../../src/components/AppAlert';
 import { useNotificationPreferenceStore } from '../../src/lib/notification-preference-store';
+import { unregisterCurrentPushToken } from '../../src/lib/push-notifications';
 import { useThemePreferenceStore } from '../../src/theme/theme-preference-store';
 import { useTheme } from '../../src/theme/useTheme';
 
@@ -26,6 +28,8 @@ export default function SettingsScreen() {
   const setPreference = useThemePreferenceStore((state) => state.setPreference);
   const isDark = scheme === 'dark';
   const isAuthenticated = useAuthStore((state) => state.status === 'authenticated');
+  const deleteAccount = useAuthStore((state) => state.deleteAccount);
+  const [isDeleting, setIsDeleting] = useState(false);
   const notificationsEnabled = useNotificationPreferenceStore((state) => state.enabled);
   const setNotificationsEnabled = useNotificationPreferenceStore((state) => state.setEnabled);
 
@@ -45,6 +49,31 @@ export default function SettingsScreen() {
     AdsConsent.showPrivacyOptionsForm().catch(() => {
       showAlert('Oups', "Impossible d'ouvrir les options de confidentialité pour l'instant.");
     });
+  }
+
+  function handleDeleteAccount() {
+    showAlert(
+      'Supprimer votre compte ?',
+      'Votre bibliothèque, vos points et votre progression seront définitivement perdus. Cette action est irréversible.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Supprimer', style: 'destructive', onPress: confirmDeleteAccount },
+      ],
+    );
+  }
+
+  async function confirmDeleteAccount() {
+    setIsDeleting(true);
+    try {
+      await unregisterCurrentPushToken();
+      await deleteAccount();
+      router.replace('/(app)');
+      showAlert('Compte supprimé', 'Votre compte a bien été supprimé.');
+    } catch (err) {
+      showAlert('Erreur', extractApiErrorMessage(err, 'Impossible de supprimer le compte pour le moment.'));
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -106,6 +135,25 @@ export default function SettingsScreen() {
             <LegalRow label="Confidentialité des annonces" onPress={handleAdsPrivacyOptions} />
           ) : null}
         </View>
+
+        {isAuthenticated ? (
+          <>
+            <Text style={[typography.label, { color: colors.textMuted, marginTop: spacing.xl, marginBottom: 8 }]}>COMPTE</Text>
+            <Pressable
+              onPress={handleDeleteAccount}
+              disabled={isDeleting}
+              style={[shadow, styles.row, { backgroundColor: colors.surface, borderRadius: radius.lg, opacity: isDeleting ? 0.6 : 1 }]}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.danger} />
+              <View style={{ flex: 1, marginLeft: spacing.md }}>
+                <Text style={[typography.body, { color: colors.danger }]}>
+                  {isDeleting ? 'Suppression en cours…' : 'Supprimer mon compte'}
+                </Text>
+                <Text style={[typography.caption, { color: colors.textMuted, marginTop: 2 }]}>Définitif, sans retour en arrière possible</Text>
+              </View>
+            </Pressable>
+          </>
+        ) : null}
       </SafeAreaView>
     </View>
   );
