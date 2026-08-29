@@ -41,5 +41,6 @@ final class AuthorsRoutes
         // premier match gagne dans l'ordre d'enregistrement) : sinon
         // PATCH /kyc-bypass matcherait ce segment dynamique en premier.
         $router->patch('/:authorId', [AuthorsController::class, 'update'], $adminOnly);
+        $router->delete('/:authorId', [AuthorsController::class, 'delete'], $adminOnly);
     }
 }

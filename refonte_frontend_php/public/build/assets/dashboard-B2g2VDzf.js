@@ -1,0 +1,1 @@
+const e={user:"/tableau-de-bord",author:"/espace-auteur",admin:"/administration"},r={user:"Mon espace",author:"Espace auteur",admin:"Administration"};function s(a){return e[a]}function n(a){return r[a]}function o(a,t){return a==="/tableau-de-bord"?s(t):a}export{s as a,n as g,o as r};

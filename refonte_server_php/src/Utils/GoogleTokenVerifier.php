@@ -16,10 +16,13 @@ final class GoogleTokenVerifier
     private const TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo';
 
     /**
+     * @param string[] $expectedAudiences un ou plusieurs client_id acceptés
+     *   (mobile ET web utilisent chacun leur propre client OAuth "Web
+     *   application", donc chacun produit un idToken avec un aud différent).
      * @return array{sub:string,email:string,name:?string,picture:?string}
      * @throws ApiError si le jeton est invalide, expiré, ou destiné à une autre application
      */
-    public static function verify(string $idToken, string $expectedAudience): array
+    public static function verify(string $idToken, array $expectedAudiences): array
     {
         $ch = curl_init(self::TOKENINFO_URL . '?id_token=' . urlencode($idToken));
         curl_setopt_array($ch, [
@@ -40,7 +43,7 @@ final class GoogleTokenVerifier
             throw ApiError::unauthorized('Jeton Google invalide ou expiré');
         }
 
-        if (($payload['aud'] ?? null) !== $expectedAudience) {
+        if (!in_array($payload['aud'] ?? null, $expectedAudiences, true)) {
             throw ApiError::unauthorized('Jeton Google destiné à une autre application');
         }
         if (!in_array($payload['iss'] ?? null, ['accounts.google.com', 'https://accounts.google.com'], true)) {

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
+import { apiClient, extractApiErrorMessage, type SessionUser } from '../lib/apiClient';
+import { resolveAuthRedirect } from '../lib/dashboard';
 import { PasswordInput } from '../components/PasswordInput';
 import { PasswordStrengthPanel } from '../components/PasswordStrengthPanel';
 import { countWords, isStrongPassword, MAX_ABOUT_WORDS } from '../lib/auth';
@@ -140,19 +141,18 @@ export default function RegisterForm({ redirectTo }: Props) {
 
     setIsSubmitting(true);
     try {
-      if (form.isAuthor) {
-        await apiClient.post('/auth/register-author', {
-          name: form.readerName,
-          fullName: form.fullName,
-          email: form.email,
-          password: form.password,
-          about: form.about,
-          genreIds: form.genreIds,
-        });
-      } else {
-        await apiClient.post('/auth/register', { name: form.name, email: form.email, password: form.password });
-      }
-      window.location.href = redirectTo;
+      type RegisterResponse = { data: { user: SessionUser } };
+      const res = form.isAuthor
+        ? await apiClient.post<RegisterResponse>('/auth/register-author', {
+            name: form.readerName,
+            fullName: form.fullName,
+            email: form.email,
+            password: form.password,
+            about: form.about,
+            genreIds: form.genreIds,
+          })
+        : await apiClient.post<RegisterResponse>('/auth/register', { name: form.name, email: form.email, password: form.password });
+      window.location.href = resolveAuthRedirect(redirectTo, res.data.data.user.role);
     } catch (err: any) {
       if (form.isAuthor && err?.response?.status === 404) {
         setSubmitError("L'inscription en tant qu'auteur n'est pas encore disponible sur cette API — créez un compte lecteur pour l'instant.");

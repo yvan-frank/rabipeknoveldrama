@@ -31,6 +31,9 @@ interface Props {
   // author), impossible à représenter comme une simple mise à jour du même
   // EditableAccount — l'appelant recharge la liste entière à la place.
   onPromoted?: () => void;
+  // Suppression (soft-delete) : même chose, le compte disparaît de la liste
+  // plutôt que d'être mis à jour — l'appelant recharge le tableau de bord.
+  onDeleted?: () => void;
 }
 
 const fieldClass = 'flex flex-col gap-1.5 text-sm opacity-85';
@@ -39,6 +42,8 @@ const inputClass =
 const btnClass = 'inline-block rounded-lg px-5 py-2.5 text-sm disabled:opacity-60';
 const btnPrimaryClass =
   'inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900';
+const btnDangerClass =
+  'inline-block rounded-lg border-none bg-gradient-to-br from-rose-500 to-red-600 px-5 py-2.5 text-sm text-white disabled:opacity-60';
 
 function Switch({ isOn, onToggle }: { isOn: boolean; onToggle: () => void }) {
   return (
@@ -61,7 +66,7 @@ function Switch({ isOn, onToggle }: { isOn: boolean; onToggle: () => void }) {
 // auteur, ouverte depuis la section "Utilisateurs" de l'admin — aucun
 // équivalent dans la source Next.js (qui n'affiche ces comptes qu'en
 // lecture seule), fonctionnalité ajoutée pour ce scaffold.
-export function EditAccountModal({ account, onClose, onSaved, onPromoted }: Props) {
+export function EditAccountModal({ account, onClose, onSaved, onPromoted, onDeleted }: Props) {
   const [name, setName] = useState(account.name ?? '');
   const [email, setEmail] = useState(account.email);
   const [isActive, setIsActive] = useState(account.kind === 'user' ? account.isActive : false);
@@ -74,6 +79,9 @@ export function EditAccountModal({ account, onClose, onSaved, onPromoted }: Prop
   const [promoteConfirmOpen, setPromoteConfirmOpen] = useState(false);
   const [isPromoting, setIsPromoting] = useState(false);
   const [promoteError, setPromoteError] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -82,11 +90,11 @@ export function EditAccountModal({ account, onClose, onSaved, onPromoted }: Prop
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !isSubmitting && !isPromoting) onClose();
+      if (e.key === 'Escape' && !isSubmitting && !isPromoting && !isDeleting) onClose();
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isSubmitting, isPromoting, onClose]);
+  }, [isSubmitting, isPromoting, isDeleting, onClose]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -132,10 +140,24 @@ export function EditAccountModal({ account, onClose, onSaved, onPromoted }: Prop
     }
   }
 
+  async function handleDelete() {
+    setDeleteError(null);
+    setIsDeleting(true);
+    try {
+      const path = account.kind === 'user' ? `/users/${account.id}` : `/authors/${account.id}`;
+      await apiClient.delete(path);
+      onDeleted?.();
+    } catch (err) {
+      setDeleteError(extractApiErrorMessage(err, 'Impossible de supprimer ce compte.'));
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div
       role="presentation"
-      onMouseDown={(e) => e.target === e.currentTarget && !isSubmitting && !isPromoting && onClose()}
+      onMouseDown={(e) => e.target === e.currentTarget && !isSubmitting && !isPromoting && !isDeleting && onClose()}
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
     >
       <section
@@ -232,6 +254,36 @@ export function EditAccountModal({ account, onClose, onSaved, onPromoted }: Prop
               </label>
             </div>
           )}
+
+          <div className="flex flex-col gap-3 border-t border-black/10 pt-1 dark:border-white/10">
+            {!deleteConfirmOpen ? (
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={isSubmitting || isPromoting}
+                className={`${btnClass} self-start !text-rose-600`}
+              >
+                Supprimer ce compte
+              </button>
+            ) : (
+              <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3.5 text-[0.8rem]">
+                <p className="m-0 mb-3 leading-relaxed opacity-75">
+                  {account.kind === 'user'
+                    ? 'Le compte lecteur ne pourra plus se connecter. Réversible uniquement en base de données.'
+                    : "Le compte auteur ne pourra plus se connecter ; ses livres déjà publiés restent en ligne. Réversible uniquement en base de données."}
+                </p>
+                {deleteError && <p className="text-sm text-rose-600">{deleteError}</p>}
+                <div className="flex justify-end gap-2.5">
+                  <button type="button" onClick={() => setDeleteConfirmOpen(false)} disabled={isDeleting} className={btnClass}>
+                    Annuler
+                  </button>
+                  <button type="button" onClick={handleDelete} disabled={isDeleting} className={btnDangerClass}>
+                    {isDeleting ? 'Suppression…' : 'Confirmer la suppression'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {error && <p className="text-sm text-rose-600">{error}</p>}
 

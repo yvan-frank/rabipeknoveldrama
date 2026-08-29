@@ -42,6 +42,13 @@ final class AuthorsController
         Response::success(AuthorsService::updateAuthor($id, $input));
     }
 
+    public static function delete(Request $request): void
+    {
+        $id = AuthorsSchema::authorIdParam($request->params['authorId']);
+        AuthorsService::softDeleteAuthor($id);
+        Response::noContent();
+    }
+
     public static function getKycBypassPolicy(Request $request): void
     {
         Response::success(AuthorsService::getAuthorKycBypassPolicy());

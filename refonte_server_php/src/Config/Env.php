@@ -165,11 +165,22 @@ final class Env
         return self::required('JWT_SECRET');
     }
 
-    // Audience attendue sur le idToken Google (mobile) — doit être identique
-    // au GOOGLE_CLIENT_ID de refonte_rabi_mobile/.env.local.
-    public static function googleClientId(): string
+    /**
+     * Audiences acceptées sur un idToken Google : le mobile et le web ont
+     * chacun leur propre client OAuth "Web application" (cf.
+     * refonte_rabi_mobile/.env.local GOOGLE_CLIENT_ID et
+     * refonte_frontend_php/.env GOOGLE_CLIENT_ID), donc deux valeurs
+     * possibles pour `aud`. Ni l'un ni l'autre n'est strictement requis pris
+     * isolément — seul POST /auth/google échoue si aucun des deux n'est
+     * configuré.
+     * @return string[]
+     */
+    public static function googleClientIds(): array
     {
-        return self::required('GOOGLE_CLIENT_ID');
+        return array_values(array_filter([
+            self::get('GOOGLE_CLIENT_ID'),
+            self::get('GOOGLE_CLIENT_ID_WEB'),
+        ], static fn (?string $v): bool => $v !== null && $v !== ''));
     }
 
     // "7d", "15m", "3600" (secondes brutes), "1h" -> secondes.

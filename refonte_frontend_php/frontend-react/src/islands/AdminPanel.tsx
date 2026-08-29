@@ -824,6 +824,13 @@ export default function AdminPanel() {
     loadDashboard();
   }
 
+  // Même logique que la promotion : le compte disparaît de la liste plutôt
+  // que d'être mis à jour, plus simple à refléter en rechargeant tout.
+  function handleAccountDeleted() {
+    setEditingAccount(null);
+    loadDashboard();
+  }
+
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
@@ -1018,6 +1025,7 @@ export default function AdminPanel() {
           onClose={() => setEditingAccount(null)}
           onSaved={handleAccountSaved}
           onPromoted={handleAccountPromoted}
+          onDeleted={handleAccountDeleted}
         />
       )}
     </div>

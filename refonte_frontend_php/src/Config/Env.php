@@ -136,4 +136,18 @@ final class Env
     {
         return self::get('APP_STORE_URL');
     }
+
+    // Client OAuth "Web application" dédié au site (distinct du client utilisé
+    // par l'app mobile, cf. refonte_rabi_mobile/.env.local) — sert de
+    // client_id au bouton Google Identity Services (GoogleAuthButton island).
+    // Le idToken produit est vérifié par le même endpoint POST /auth/google
+    // que le mobile, qui accepte les deux audiences (cf. refonte_server_php
+    // Env::googleClientIds()).
+    // Nullable plutôt que required() : la page de connexion/inscription doit
+    // rester utilisable (formulaire email) même si ce client OAuth n'est pas
+    // configuré — GoogleAuthButton n'est simplement pas rendu dans ce cas.
+    public static function googleClientIdWeb(): ?string
+    {
+        return self::get('GOOGLE_CLIENT_ID');
+    }
 }

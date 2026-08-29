@@ -429,6 +429,7 @@ final class UsersService
                     ae.kyc_verified_at
              FROM author a
              LEFT JOIN author_extension ae ON ae.author_id = a.id_author
+             WHERE a.deleted_at IS NULL
              ORDER BY a.created_at DESC LIMIT 6',
         );
         $recentAuthors = array_map(static fn (array $row): array => [
@@ -458,7 +459,7 @@ final class UsersService
 
         $countQueries = [
             'users' => 'SELECT COUNT(*) FROM users WHERE deleted_at IS NULL AND is_guest = 0',
-            'authors' => 'SELECT COUNT(*) FROM author',
+            'authors' => 'SELECT COUNT(*) FROM author WHERE deleted_at IS NULL',
             'books' => 'SELECT COUNT(*) FROM books',
             'chapters' => 'SELECT COUNT(*) FROM chapters',
             'purchases' => 'SELECT COUNT(*) FROM achat',

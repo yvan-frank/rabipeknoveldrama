@@ -22,6 +22,7 @@ final class AuthController
             'redirectTo' => $request->query['redirect'] ?? '/tableau-de-bord',
             'hideChrome' => true,
             'playStoreUrl' => Env::playStoreUrl(),
+            'googleClientId' => Env::googleClientIdWeb(),
         ], 'Connexion | RabipekNovel');
     }
 
@@ -30,6 +31,7 @@ final class AuthController
         View::render('auth.inscription', [
             'hideChrome' => true,
             'playStoreUrl' => Env::playStoreUrl(),
+            'googleClientId' => Env::googleClientIdWeb(),
         ], 'Inscription | RabipekNovel');
     }
 }

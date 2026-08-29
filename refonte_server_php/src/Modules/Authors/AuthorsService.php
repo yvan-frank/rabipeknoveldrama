@@ -22,7 +22,7 @@ final class AuthorsService
 
     public static function getAuthorById(int $id): array
     {
-        $stmt = self::db()->prepare('SELECT ' . self::PUBLIC_AUTHOR_SELECT . ' FROM author WHERE id_author = :id');
+        $stmt = self::db()->prepare('SELECT ' . self::PUBLIC_AUTHOR_SELECT . ' FROM author WHERE id_author = :id AND deleted_at IS NULL');
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
         if ($row === false) {
@@ -38,6 +38,14 @@ final class AuthorsService
             'isAccountVerified' => (bool) $row['is_account_verified'],
             'createdAt' => $row['created_at'],
         ];
+    }
+
+    // Symétrique à UsersService::softDeleteUser — révoque l'accès sans perdre
+    // l'historique (livres publiés, ventes...), contrairement à un DELETE dur.
+    public static function softDeleteAuthor(int $id): void
+    {
+        self::getAuthorById($id); // 404 si déjà supprimé/inexistant
+        self::db()->prepare('UPDATE author SET deleted_at = NOW() WHERE id_author = :id')->execute(['id' => $id]);
     }
 
     // Coût identique à AuthService::SALT_COST (bcrypt).
@@ -189,6 +197,7 @@ final class AuthorsService
                     ae.full_name, ae.social_links, ae.privacy_accepted_at, ae.kyc_verified_at, ae.created_at, ae.modified_at
              FROM author a
              JOIN author_extension ae ON ae.author_id = a.id_author
+             WHERE a.deleted_at IS NULL
              ORDER BY ae.modified_at DESC',
         );
         $stmt->execute();

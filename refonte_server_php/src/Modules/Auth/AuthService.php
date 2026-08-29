@@ -59,8 +59,12 @@ final class AuthService
     {
         $db = self::db();
 
-        $existing = self::findUserByEmail($db, $input['email']);
-        if ($existing !== false) {
+        // findAnyUserByEmail (pas findUserByEmail) : la contrainte unique
+        // users_email_key porte sur `email` seul, sans exception pour les
+        // comptes soft-supprimés (deleted_at) — un email déjà utilisé par un
+        // compte supprimé ferait planter l'INSERT plus bas (1062 Duplicate
+        // entry) si on ne le détectait qu'ici via la version filtrée.
+        if (self::findAnyUserByEmail($db, $input['email']) !== false) {
             throw ApiError::conflict('Un compte existe déjà avec cet email');
         }
 
@@ -77,11 +81,19 @@ final class AuthService
      */
     public static function loginWithGoogle(string $idToken, ?int $guestUserId = null): array
     {
-        $profile = GoogleTokenVerifier::verify($idToken, Env::googleClientId());
+        $profile = GoogleTokenVerifier::verify($idToken, Env::googleClientIds());
         $db = self::db();
 
-        $existing = self::findUserByEmail($db, $profile['email']);
+        $existing = self::findAnyUserByEmail($db, $profile['email']);
         if ($existing !== false) {
+            if ($existing['deleted_at'] !== null) {
+                // Compte soft-supprimé : email indisponible pour un nouveau
+                // compte (contrainte unique), et se reconnecter dessus via
+                // Google contournerait silencieusement une suppression
+                // volontaire — mieux vaut un message clair qu'une 500.
+                throw ApiError::conflict('Cette adresse email est associée à un compte supprimé.');
+            }
+
             return self::issueSession([
                 'id' => (int) $existing['id_user'],
                 'email' => $existing['email'],
@@ -217,9 +229,17 @@ final class AuthService
         return $stmt->fetch();
     }
 
+    /** Ignore deleted_at — reflète la portée réelle de la contrainte unique users_email_key. */
+    private static function findAnyUserByEmail(PDO $db, string $email): array|false
+    {
+        $stmt = $db->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
+        $stmt->execute(['email' => $email]);
+        return $stmt->fetch();
+    }
+
     private static function findAuthorByEmail(PDO $db, string $email): array|false
     {
-        $stmt = $db->prepare('SELECT id_author, email, password FROM author WHERE email = :email LIMIT 1');
+        $stmt = $db->prepare('SELECT id_author, email, password FROM author WHERE email = :email AND deleted_at IS NULL LIMIT 1');
         $stmt->execute(['email' => $email]);
         return $stmt->fetch();
     }
@@ -227,7 +247,7 @@ final class AuthService
     private static function loadAuthUser(PDO $db, string $accountType, int $accountId): array
     {
         if ($accountType === 'author') {
-            $stmt = $db->prepare('SELECT id_author, email FROM author WHERE id_author = :id LIMIT 1');
+            $stmt = $db->prepare('SELECT id_author, email FROM author WHERE id_author = :id AND deleted_at IS NULL LIMIT 1');
             $stmt->execute(['id' => $accountId]);
             $row = $stmt->fetch();
             if ($row === false) {

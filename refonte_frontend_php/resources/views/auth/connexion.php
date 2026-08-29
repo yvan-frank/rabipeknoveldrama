@@ -1,5 +1,7 @@
 <?php
-/** Équivalent de src/app/connexion/page.tsx. @var string $redirectTo @var string $playStoreUrl */
+/** Équivalent de src/app/connexion/page.tsx.
+ * @var string $redirectTo @var string $playStoreUrl @var string|null $googleClientId
+ */
 
 use App\Support\View;
 
@@ -19,9 +21,20 @@ $headline = 'Vos histoires africaines préférées, toujours à portée de main.
       <h1 class="text-2xl font-bold tracking-tight">Content de vous revoir</h1>
       <p class="mt-1.5 text-sm opacity-60">Connectez-vous pour retrouver votre bibliothèque et vos points.</p>
 
-      <div class="mt-8">
-        <?= View::island('LoginForm', ['redirectTo' => $redirectTo]) ?>
-      </div>
+      <?php if ($googleClientId !== null): ?>
+        <div class="mt-8">
+          <?= View::island('GoogleAuthButton', ['clientId' => $googleClientId, 'redirectTo' => $redirectTo, 'mode' => 'login']) ?>
+        </div>
+        <div class="my-6 flex items-center gap-3 text-xs opacity-50">
+          <span class="h-px flex-1 bg-black/10 dark:bg-white/10"></span>
+          ou
+          <span class="h-px flex-1 bg-black/10 dark:bg-white/10"></span>
+        </div>
+      <?php else: ?>
+        <div class="mt-8"></div>
+      <?php endif; ?>
+
+      <?= View::island('LoginForm', ['redirectTo' => $redirectTo]) ?>
 
       <p class="mt-6 text-center text-sm opacity-70">
         Pas encore de compte ? <a href="/inscription" class="font-semibold text-brand-amber no-underline hover:underline">Inscrivez-vous</a>
