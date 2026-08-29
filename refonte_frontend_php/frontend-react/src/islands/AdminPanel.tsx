@@ -1026,6 +1026,7 @@ export default function AdminPanel() {
           onSaved={handleAccountSaved}
           onPromoted={handleAccountPromoted}
           onDeleted={handleAccountDeleted}
+          isSelf={editingAccount.kind === 'user' && user?.id === editingAccount.id}
         />
       )}
     </div>

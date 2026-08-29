@@ -34,6 +34,12 @@ interface Props {
   // Suppression (soft-delete) : même chose, le compte disparaît de la liste
   // plutôt que d'être mis à jour — l'appelant recharge le tableau de bord.
   onDeleted?: () => void;
+  // Compte de l'admin actuellement connecté : masque le bouton de
+  // suppression plutôt que de laisser l'API le rejeter (cf.
+  // UsersController::delete côté serveur, qui refuse aussi cette
+  // auto-suppression — un admin qui se supprime lui-même se retrouverait
+  // instantanément sans accès pour annuler).
+  isSelf?: boolean;
 }
 
 const fieldClass = 'flex flex-col gap-1.5 text-sm opacity-85';
@@ -66,7 +72,7 @@ function Switch({ isOn, onToggle }: { isOn: boolean; onToggle: () => void }) {
 // auteur, ouverte depuis la section "Utilisateurs" de l'admin — aucun
 // équivalent dans la source Next.js (qui n'affiche ces comptes qu'en
 // lecture seule), fonctionnalité ajoutée pour ce scaffold.
-export function EditAccountModal({ account, onClose, onSaved, onPromoted, onDeleted }: Props) {
+export function EditAccountModal({ account, onClose, onSaved, onPromoted, onDeleted, isSelf }: Props) {
   const [name, setName] = useState(account.name ?? '');
   const [email, setEmail] = useState(account.email);
   const [isActive, setIsActive] = useState(account.kind === 'user' ? account.isActive : false);
@@ -256,7 +262,11 @@ export function EditAccountModal({ account, onClose, onSaved, onPromoted, onDele
           )}
 
           <div className="flex flex-col gap-3 border-t border-black/10 pt-1 dark:border-white/10">
-            {!deleteConfirmOpen ? (
+            {isSelf ? (
+              <p className="m-0 text-xs opacity-55">
+                Vous ne pouvez pas supprimer votre propre compte — demandez à un autre administrateur.
+              </p>
+            ) : !deleteConfirmOpen ? (
               <button
                 type="button"
                 onClick={() => setDeleteConfirmOpen(true)}

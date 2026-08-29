@@ -6,6 +6,7 @@ namespace App\Modules\Users;
 
 use App\Http\Request;
 use App\Http\Response;
+use App\Utils\ApiError;
 
 /**
  * Équivalent de src/modules/users/users.controller.ts.
@@ -40,6 +41,9 @@ final class UsersController
     public static function delete(Request $request): void
     {
         $id = UsersSchema::idParam($request->params['id']);
+        if ($id === (int) $request->user['id']) {
+            throw ApiError::badRequest('Vous ne pouvez pas supprimer votre propre compte');
+        }
         UsersService::softDeleteUser($id);
         Response::noContent();
     }
