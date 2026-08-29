@@ -3,4 +3,6 @@
 /public/hot
 /frontend-react/node_modules/
 /frontend-react/dist/
+/frontend-react/.env.production
+/frontend-react/.env.development
 *.log
