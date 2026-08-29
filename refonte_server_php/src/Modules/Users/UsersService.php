@@ -51,10 +51,17 @@ final class UsersService
         return self::mapPublicUser($row);
     }
 
+    // L'email est aussi mangled ici (pas seulement deleted_at posé) : la
+    // contrainte unique users_email_key ignore deleted_at (cf.
+    // AuthService::findAnyUserByEmail), donc sans ça cet email resterait à
+    // jamais indisponible pour une réinscription — cf. migration
+    // 0004_free_deleted_account_emails pour les lignes déjà supprimées.
     public static function softDeleteUser(int $id): void
     {
         self::getUserById($id);
-        self::db()->prepare('UPDATE users SET deleted_at = NOW() WHERE id_user = :id')->execute(['id' => $id]);
+        self::db()
+            ->prepare("UPDATE users SET deleted_at = NOW(), email = IF(email IS NULL, NULL, CONCAT('deleted_', id_user, '_', UNIX_TIMESTAMP(), '_', LEFT(email, 90))) WHERE id_user = :id")
+            ->execute(['id' => $id]);
     }
 
     // Promotion admin lecteur -> auteur. `users` et `author` sont deux tables

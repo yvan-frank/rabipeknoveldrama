@@ -1,19 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { useFonts } from 'expo-font';
 import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import mobileAds, { AdsConsent } from 'react-native-google-mobile-ads';
 import { useAuthStore } from '../src/auth/auth-store';
 import { AppAlertHost } from '../src/components/AppAlert';
+import { MarketingSplash } from '../src/components/MarketingSplash';
 import { ToastHost } from '../src/components/Toast';
 import { useNotificationPreferenceStore } from '../src/lib/notification-preference-store';
 import { registerForPushNotifications, unregisterCurrentPushToken } from '../src/lib/push-notifications';
 import { fontsToLoad } from '../src/theme/tokens';
 import { useTheme } from '../src/theme/useTheme';
+
+// Durée minimale du teaser marketing (cf. MarketingSplash) — l'app réelle
+// (Stack ci-dessous) est déjà montée en arrière-plan pendant ce temps, donc
+// le bootstrap auth tourne en parallèle plutôt qu'après ; si jamais il prend
+// plus longtemps que 5s, le splash reste affiché jusqu'à ce qu'il termine
+// (cf. appReady) au lieu de révéler un app pas encore prêt.
+const MARKETING_SPLASH_MS = 5000;
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -25,12 +32,19 @@ export default function RootLayout() {
   const status = useAuthStore((state) => state.status);
   const bootstrap = useAuthStore((state) => state.bootstrap);
   const [fontsLoaded] = useFonts(fontsToLoad);
-  const { colors, scheme } = useTheme();
+  const { scheme } = useTheme();
   const notificationsEnabled = useNotificationPreferenceStore((state) => state.enabled);
+  const [showMarketingSplash, setShowMarketingSplash] = useState(true);
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
 
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinSplashElapsed(true), MARKETING_SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Google exige la collecte du consentement (RGPD/DMA, User Messaging
   // Platform) AVANT toute requête de pub — mobileAds().initialize() ne doit
@@ -77,36 +91,34 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
-  // hideAsync() est un no-op si le splash est déjà masqué : pas besoin d'état
-  // supplémentaire pour éviter les appels répétés (ex. authenticated -> guest).
+  // Le splash natif (logo nu, cf. app.config.ts) se masque dès que les
+  // fonts sont prêtes, sans attendre bootstrap() : c'est MarketingSplash
+  // ci-dessous qui prend le relais visuel immédiatement, lui-même monté par-
+  // dessus l'app réelle (déjà en train de démarrer dessous) plutôt qu'à sa
+  // place — d'où le crossfade en sortie au lieu d'un cut.
   useEffect(() => {
-    if (status !== 'bootstrapping' && fontsLoaded) {
+    if (fontsLoaded) {
       SplashScreen.hideAsync().catch(() => undefined);
     }
-  }, [status, fontsLoaded]);
+  }, [fontsLoaded]);
 
-  if (status === 'bootstrapping' || !fontsLoaded) {
-    // Même logo/fond que le splash natif configuré (cf. app.config.ts) : le
-    // passage de l'un à l'autre (hideAsync) reste invisible, sans flash de
-    // fond blanc/spinner nu entre les deux.
-    return (
-      <View style={[styles.loading, { backgroundColor: '#FBF7EE' }]}>
-        {/* Fond du splash toujours clair (cf. commentaire ci-dessus), donc
-            icônes de statusbar toujours sombres ici, indépendamment du thème
-            — bascule sur le thème effectif seulement une fois l'app affichée. */}
-        <StatusBar style="dark" />
-        <Image source={require('../assets/rabipek-logo.png')} style={styles.logo} resizeMode="contain" />
-        <ActivityIndicator color={colors.accent} size="small" style={{ marginTop: 24 }} />
-      </View>
-    );
+  if (!fontsLoaded) {
+    return null;
   }
+
+  // Prêt = auth résolue ET durée minimale du teaser marketing écoulée ; si
+  // bootstrap() traîne au-delà de 5s (réseau lent), le splash reste affiché
+  // plutôt que de révéler un app encore en cours de résolution d'auth.
+  const appReady = status !== 'bootstrapping' && minSplashElapsed;
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* scheme est le thème EFFECTIF (préférence manuelle ou système, cf.
           useTheme) — pas le système brut, pour rester cohérent avec un
-          utilisateur qui a forcé un mode dans Réglages à l'inverse du système. */}
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+          utilisateur qui a forcé un mode dans Réglages à l'inverse du système.
+          Forcé en clair ("light") tant que le splash marketing (fond sombre)
+          recouvre l'écran. */}
+      <StatusBar style={showMarketingSplash ? 'light' : scheme === 'dark' ? 'light' : 'dark'} />
       {/* "fade" ici plutôt qu'un slide : le seul passage géré à ce niveau est
           (auth) <-> (app), un changement de contexte complet (visiteur/connecté),
           pas un "empilement" d'écran — un fondu se lit mieux qu'un glissement. */}
@@ -116,11 +128,9 @@ export default function RootLayout() {
           sous ce layout racine. */}
       <AppAlertHost />
       <ToastHost />
+      {showMarketingSplash ? (
+        <MarketingSplash ready={appReady} onFinished={() => setShowMarketingSplash(false)} />
+      ) : null}
     </QueryClientProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 220, height: 220 },
-});

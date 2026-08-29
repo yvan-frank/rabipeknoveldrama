@@ -42,10 +42,14 @@ final class AuthorsService
 
     // Symétrique à UsersService::softDeleteUser — révoque l'accès sans perdre
     // l'historique (livres publiés, ventes...), contrairement à un DELETE dur.
+    // L'email est aussi mangled (cf. commentaire équivalent côté users) pour
+    // libérer author_email_key en vue d'une réinscription avec ce même email.
     public static function softDeleteAuthor(int $id): void
     {
         self::getAuthorById($id); // 404 si déjà supprimé/inexistant
-        self::db()->prepare('UPDATE author SET deleted_at = NOW() WHERE id_author = :id')->execute(['id' => $id]);
+        self::db()
+            ->prepare("UPDATE author SET deleted_at = NOW(), email = CONCAT('deleted_', id_author, '_', UNIX_TIMESTAMP(), '_', LEFT(email, 90)) WHERE id_author = :id")
+            ->execute(['id' => $id]);
     }
 
     // Coût identique à AuthService::SALT_COST (bcrypt).

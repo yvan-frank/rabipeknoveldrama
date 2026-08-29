@@ -15,10 +15,10 @@ const API_URL_BY_ENV: Record<string, string> = {
 };
 
 const config: ExpoConfig = {
-  name: APP_ENV === 'prod' ? 'RabipekNovel' : `Rabipek (${APP_ENV})`,
+  name: "RabipekNovel",
   slug: 'rabipek',
   scheme: 'rabipek',
-  version: '2.7.0',
+  version: '2.7.1',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -28,6 +28,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.frank00.rabipek",
+      versionCode: 18,
     // Requis pour les notifications push (FCM v1) depuis qu'Expo route les
     // push Android via Firebase Cloud Messaging plutôt que son propre relais
     // — sans ce fichier, getExpoPushTokenAsync() échoue avec "Default
@@ -49,13 +50,6 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-font',
     [
-      // play-services-ads 25.4.0 (tirée par react-native-google-mobile-ads)
-      // est compilée avec des métadonnées Kotlin en version binaire 2.3.0,
-      // incompatibles avec le Kotlin 2.1.20 par défaut du SDK Expo 57 —
-      // `compileDebugKotlin` échouait avec "Module was compiled with an
-      // incompatible version of Kotlin. The binary version of its metadata
-      // is 2.3.0, expected version is 2.1.0." Ce plugin force un Kotlin plus
-      // récent, capable de lire ces métadonnées.
       'expo-build-properties',
       { android: { kotlinVersion: '2.2.20' } },
     ],
@@ -105,7 +99,7 @@ const config: ExpoConfig = {
   ],
   extra: {
     appEnv: APP_ENV,
-    apiUrl: API_URL_BY_ENV[APP_ENV] ?? API_URL_BY_ENV.dev,
+    apiUrl: 'https://api.rabipeknovel.com/api',
     googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
       "eas": {
           "projectId": "f0ab758c-40a7-42da-913c-d81048cf5694"
