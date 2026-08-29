@@ -12,6 +12,8 @@ final class DramaController
 {
     public function index(Request $request): void
     {
-        View::render('drama.index', [], 'RabipekDrama | RabipekNovel');
+        View::render('drama.index', [
+            'description' => 'RabipekDrama : les mêmes histoires africaines, en formats courts et immersifs.',
+        ], 'RabipekDrama | RabipekNovel');
     }
 }

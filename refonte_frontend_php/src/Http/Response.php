@@ -31,4 +31,20 @@ final class Response
         echo $html;
         exit;
     }
+
+    public static function xml(string $xml, int $status = 200): never
+    {
+        http_response_code($status);
+        header('Content-Type: application/xml; charset=utf-8');
+        echo $xml;
+        exit;
+    }
+
+    public static function text(string $text, int $status = 200): never
+    {
+        http_response_code($status);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo $text;
+        exit;
+    }
 }

@@ -21,6 +21,7 @@ final class AuthController
         View::render('auth.connexion', [
             'redirectTo' => $request->query['redirect'] ?? '/tableau-de-bord',
             'hideChrome' => true,
+            'noindex' => true,
             'playStoreUrl' => Env::playStoreUrl(),
             'googleClientId' => Env::googleClientIdWeb(),
         ], 'Connexion | RabipekNovel');
@@ -30,6 +31,7 @@ final class AuthController
     {
         View::render('auth.inscription', [
             'hideChrome' => true,
+            'noindex' => true,
             'playStoreUrl' => Env::playStoreUrl(),
             'googleClientId' => Env::googleClientIdWeb(),
         ], 'Inscription | RabipekNovel');

@@ -22,6 +22,7 @@ final class HomeController
             'topRatedBooks' => $topRated['data'] ?? [],
             'latestBooks' => $latest['data']['items'] ?? [],
             'categories' => $categories['data'] ?? [],
+            'description' => 'Lisez des romans et drames africains en ligne sur RabipekNovel. Gagnez des points en lisant et débloquez de nouveaux chapitres gratuitement.',
         ], 'RabipekNovel — Livres africains en ligne');
     }
 }

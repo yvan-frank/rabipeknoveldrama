@@ -31,6 +31,7 @@ final class BooksController
             'page' => $data['page'] ?? 1,
             'pageSize' => $data['pageSize'] ?? 20,
             'query' => $request->query,
+            'description' => 'Parcourez le catalogue complet de romans et drames africains disponibles sur RabipekNovel.',
         ], 'Catalogue | RabipekNovel');
     }
 
@@ -44,9 +45,51 @@ final class BooksController
             Response::notFound();
         }
 
+        $data = $book['data'] ?? null;
+
         View::render('livres.show', [
-            'book' => $book['data'] ?? null,
-        ], ($book['data']['title'] ?? 'Livre') . ' | RabipekNovel');
+            'book' => $data,
+            'description' => $data !== null ? self::metaDescription($data) : null,
+            'ogImage' => $data['cover'] ?? null,
+            'jsonLd' => $data !== null ? self::bookJsonLd($data) : null,
+        ], ($data['title'] ?? 'Livre') . ' | RabipekNovel');
+    }
+
+    /** @param array<string,mixed> $book */
+    private static function metaDescription(array $book): ?string
+    {
+        $resume = is_string($book['resume'] ?? null) ? trim(strip_tags($book['resume'])) : '';
+        if ($resume === '') {
+            return null;
+        }
+        return mb_strlen($resume) > 160 ? mb_substr($resume, 0, 157) . '…' : $resume;
+    }
+
+    /** @param array<string,mixed> $book schema.org/Book — https://schema.org/Book */
+    private static function bookJsonLd(array $book): string
+    {
+        $isFree = (bool) ($book['isFree'] ?? false);
+        $isPromotion = (bool) ($book['isPromotion'] ?? false);
+        $price = $isFree ? 0 : ($isPromotion ? ($book['promotionPrice'] ?? 0) : ($book['price'] ?? 0));
+
+        $jsonLd = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Book',
+            'name' => $book['title'] ?? null,
+            'image' => $book['cover'] ?? null,
+            'description' => self::metaDescription($book),
+            'datePublished' => $book['datePub'] ?? null,
+            'genre' => $book['category']['name'] ?? null,
+            'author' => isset($book['author']['name']) ? ['@type' => 'Person', 'name' => $book['author']['name']] : null,
+            'offers' => [
+                '@type' => 'Offer',
+                'price' => $price,
+                'priceCurrency' => 'XAF',
+                'availability' => 'https://schema.org/InStock',
+            ],
+        ];
+
+        return json_encode(array_filter($jsonLd, static fn ($v) => $v !== null), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
     }
 
     /**

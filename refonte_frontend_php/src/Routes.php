@@ -12,6 +12,7 @@ use App\Modules\Books\BooksController;
 use App\Modules\Dashboard\DashboardController;
 use App\Modules\Drama\DramaController;
 use App\Modules\Home\HomeController;
+use App\Modules\Seo\SeoController;
 use App\Modules\StaticPages\StaticPagesController;
 
 /**
@@ -23,6 +24,10 @@ final class Routes
 {
     public static function register(Router $router): void
     {
+        // Référencement — cf. src/Modules/Seo/SeoController.php.
+        $router->get('/robots.txt', [new SeoController(), 'robots']);
+        $router->get('/sitemap.xml', [new SeoController(), 'sitemap']);
+
         // app/page.tsx
         $router->get('/', [new HomeController(), 'index']);
 

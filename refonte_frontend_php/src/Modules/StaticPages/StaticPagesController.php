@@ -16,7 +16,9 @@ final class StaticPagesController
 {
     public function about(Request $request): void
     {
-        View::render('static.about', [], 'À propos | RabipekNovel');
+        View::render('static.about', [
+            'description' => 'RabipekNovel : plateforme de lecture de romans et drames africains en ligne. Découvrez notre mission et notre équipe.',
+        ], 'À propos | RabipekNovel');
     }
 
     public function legalNotice(Request $request): void
@@ -36,6 +38,6 @@ final class StaticPagesController
 
     public function maintenance(Request $request): void
     {
-        View::render('static.maintenance', [], 'Maintenance | RabipekNovel');
+        View::render('static.maintenance', ['noindex' => true], 'Maintenance | RabipekNovel');
     }
 }
