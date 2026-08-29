@@ -57,6 +57,7 @@ final class SeoController
             ['loc' => '/mentions-legales', 'changefreq' => 'yearly', 'priority' => '0.1'],
             ['loc' => '/politique-confidentialite', 'changefreq' => 'yearly', 'priority' => '0.1'],
             ['loc' => '/conditions-generales-de-vente', 'changefreq' => 'yearly', 'priority' => '0.1'],
+            ['loc' => '/conditions-utilisation', 'changefreq' => 'yearly', 'priority' => '0.1'],
         ];
 
         $bookEntries = [];

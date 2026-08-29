@@ -9,6 +9,7 @@ $legalLinks = [
     '/mentions-legales' => 'Mentions légales',
     '/politique-confidentialite' => 'Politique de confidentialité',
     '/conditions-generales-de-vente' => 'Conditions générales de vente',
+    '/conditions-utilisation' => "Conditions générales d'utilisation",
 ];
 ?>
 <footer class="mt-12 border-t border-black/10 dark:border-white/10">

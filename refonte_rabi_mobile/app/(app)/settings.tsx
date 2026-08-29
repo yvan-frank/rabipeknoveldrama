@@ -100,6 +100,7 @@ export default function SettingsScreen() {
         <View style={[shadow, { backgroundColor: colors.surface, borderRadius: radius.lg }]}>
           <LegalRow label="Mentions légales" onPress={() => router.push('/mentions-legales')} />
           <LegalRow label="Conditions générales de vente" onPress={() => router.push('/cgv')} />
+          <LegalRow label="Conditions générales d'utilisation" onPress={() => router.push('/cgu')} />
           <LegalRow label="Politique de confidentialité" onPress={() => router.push('/politique-confidentialite')} />
           {showAdsPrivacyRow ? (
             <LegalRow label="Confidentialité des annonces" onPress={handleAdsPrivacyOptions} />

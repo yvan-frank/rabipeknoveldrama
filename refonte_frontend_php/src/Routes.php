@@ -65,6 +65,7 @@ final class Routes
         $router->get('/mentions-legales', [new StaticPagesController(), 'legalNotice']);
         $router->get('/politique-confidentialite', [new StaticPagesController(), 'privacyPolicy']);
         $router->get('/conditions-generales-de-vente', [new StaticPagesController(), 'termsOfSale']);
+        $router->get('/conditions-utilisation', [new StaticPagesController(), 'termsOfUse']);
         $router->get('/maintenance', [new StaticPagesController(), 'maintenance']);
     }
 }

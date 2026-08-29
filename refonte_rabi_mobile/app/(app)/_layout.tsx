@@ -66,6 +66,7 @@ export default function AppLayout() {
       <Stack.Screen name="author/kyc" options={{ title: "Vérification d'identité" }} />
       <Stack.Screen name="mentions-legales" options={{ title: 'Mentions légales' }} />
       <Stack.Screen name="cgv" options={{ title: 'CGV' }} />
+      <Stack.Screen name="cgu" options={{ title: 'CGU' }} />
       <Stack.Screen name="politique-confidentialite" options={{ title: 'Confidentialité' }} />
     </Stack>
   );

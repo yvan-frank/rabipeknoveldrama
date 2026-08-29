@@ -28,6 +28,8 @@ export default function AuthLandingScreen() {
       // false (annulé) ou true (connecté) : dans les deux cas rien à afficher
       // ici, (auth)/_layout redirige automatiquement vers /(app) au succès.
     } catch (err) {
+      // eslint-disable-next-line no-console -- diagnostic temporaire, cf. échec connexion Google en prod
+      console.error('[auth] loginWithGoogle a échoué :', err);
       setError(extractApiErrorMessage(err, 'Connexion Google impossible'));
     } finally {
       setGoogleLoading(false);
@@ -80,7 +82,7 @@ export default function AuthLandingScreen() {
 
         <Text style={[typography.caption, { color: colors.textMuted, textAlign: 'center', marginTop: spacing.xl }]}>
           En continuant, vous acceptez les{' '}
-          <Text style={{ color: colors.accent }} onPress={() => router.push('/cgv')}>
+          <Text style={{ color: colors.accent }} onPress={() => router.push('/cgu')}>
             Conditions d&apos;Utilisation
           </Text>{' '}
           et confirmez avoir lu la{' '}

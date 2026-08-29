@@ -10,7 +10,7 @@ use App\Support\View;
 /**
  * Équivalent des pages statiques/légales : a-propos-de-nous,
  * mentions-legales, politique-confidentialite, conditions-generales-de-vente,
- * maintenance.
+ * conditions-utilisation, maintenance.
  */
 final class StaticPagesController
 {
@@ -34,6 +34,13 @@ final class StaticPagesController
     public function termsOfSale(Request $request): void
     {
         View::render('static.terms-of-sale', [], 'CGV | RabipekNovel');
+    }
+
+    public function termsOfUse(Request $request): void
+    {
+        View::render('static.terms-of-use', [
+            'description' => "Conditions générales d'utilisation du site et de l'application RabipekNovel.",
+        ], "Conditions générales d'utilisation | RabipekNovel");
     }
 
     public function maintenance(Request $request): void
