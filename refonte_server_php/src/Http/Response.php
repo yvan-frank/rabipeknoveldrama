@@ -33,23 +33,33 @@ final class Response
 
     public static function cookie(string $name, string $value, int $maxAgeSeconds): void
     {
-        setcookie($name, $value, [
-            'expires' => time() + $maxAgeSeconds,
-            'path' => '/',
-            'httponly' => true,
-            'secure' => Env::isProduction(),
-            'samesite' => 'Lax',
-        ]);
+        setcookie($name, $value, self::cookieOptions(time() + $maxAgeSeconds));
     }
 
     public static function clearCookie(string $name): void
     {
-        setcookie($name, '', [
-            'expires' => time() - 3600,
+        setcookie($name, '', self::cookieOptions(time() - 3600));
+    }
+
+    /** @return array{expires:int,path:string,httponly:bool,secure:bool,samesite:string,domain?:string} */
+    private static function cookieOptions(int $expires): array
+    {
+        $options = [
+            'expires' => $expires,
             'path' => '/',
             'httponly' => true,
             'secure' => Env::isProduction(),
             'samesite' => 'Lax',
-        ]);
+        ];
+
+        // cf. Env::cookieDomain() — partage le cookie entre rabipeknovel.com
+        // (pages PHP) et api.rabipeknovel.com (cette API) en prod ; absent en
+        // dev où localhost n'a aucun sous-domaine à couvrir.
+        $domain = Env::cookieDomain();
+        if ($domain !== null) {
+            $options['domain'] = $domain;
+        }
+
+        return $options;
     }
 }

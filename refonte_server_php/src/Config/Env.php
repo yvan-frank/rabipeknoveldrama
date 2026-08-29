@@ -160,6 +160,18 @@ final class Env
         return self::get('COOKIE_NAME', 'rabipek_token') ?? 'rabipek_token';
     }
 
+    // Sans "domain" explicite, setcookie() scope le cookie au host exact qui
+    // répond — ici api.rabipeknovel.com (cf. APP_URL_PRO) — invisible pour
+    // les pages PHP rendues sur rabipeknovel.com (refonte_frontend_php).
+    // null en dev : localhost n'a pas de sous-domaine à couvrir, et un
+    // "domain" qui ne matche pas l'hôte de la requête est simplement rejeté
+    // par le navigateur (cookie jamais posé).
+    public static function cookieDomain(): ?string
+    {
+        $value = self::get('COOKIE_DOMAIN', '');
+        return $value !== '' ? $value : null;
+    }
+
     public static function jwtSecret(): string
     {
         return self::required('JWT_SECRET');
