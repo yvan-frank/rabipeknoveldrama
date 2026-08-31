@@ -6,7 +6,6 @@ namespace App\Modules\Auth;
 
 use App\Config\Env;
 use App\Http\Request;
-use App\Middleware\AuthMiddleware;
 use App\Support\View;
 
 /**
@@ -41,14 +40,14 @@ final class AuthController
     /**
      * Chemin web de suppression de compte, exigé par Google Play même sans
      * l'app installée (cf. réglage "Sécurité des données" de la fiche Store)
-     * — même effet que le bouton mobile, via le même endpoint API.
+     * — même effet que le bouton mobile, via le même endpoint API. La garde
+     * de page et l'affichage de l'identité connectée sont gérés côté client
+     * par l'îlot DeleteMyAccountButton (cf. useRequireAuth.ts) : PHP ne peut
+     * plus lire le jeton de session (localStorage) au moment du rendu initial.
      */
     public function deleteAccount(Request $request): void
     {
-        $user = AuthMiddleware::requireAuth($request);
-
         View::render('auth.supprimer-compte', [
-            'user' => $user,
             'noindex' => true,
         ], 'Supprimer mon compte | RabipekNovel');
     }

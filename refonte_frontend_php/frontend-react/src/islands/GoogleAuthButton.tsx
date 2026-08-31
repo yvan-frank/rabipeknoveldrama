@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { apiClient, extractApiErrorMessage, type SessionUser } from '../lib/apiClient';
+import { apiClient, extractApiErrorMessage, saveSession, type SessionUser } from '../lib/apiClient';
 import { resolveAuthRedirect } from '../lib/dashboard';
 
 interface Props {
@@ -45,7 +45,11 @@ export default function GoogleAuthButton({ clientId, redirectTo, mode }: Props) 
     async function handleCredentialResponse(response: GoogleCredentialResponse) {
       setError(null);
       try {
-        const res = await apiClient.post<{ data: { user: SessionUser } }>('/auth/google', { idToken: response.credential });
+        const res = await apiClient.post<{ data: { user: SessionUser; accessToken: string; refreshToken: string } }>(
+          '/auth/google',
+          { idToken: response.credential },
+        );
+        saveSession(res.data.data);
         window.location.href = resolveAuthRedirect(redirectTo, res.data.data.user.role);
       } catch (err) {
         setError(extractApiErrorMessage(err, 'Connexion Google impossible'));

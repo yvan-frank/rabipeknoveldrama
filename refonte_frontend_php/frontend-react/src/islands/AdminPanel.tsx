@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { apiClient, extractApiErrorMessage, getSessionUser, type SessionUser } from '../lib/apiClient';
+import { apiClient, extractApiErrorMessage, logout } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
+import { getDashboardPath } from '../lib/dashboard';
 import { formatPrice } from '../lib/formatPrice';
 import { EditAccountModal, type EditableAccount } from '../components/EditAccountModal';
 
@@ -779,7 +781,7 @@ function KycSection() {
 // utilisateurs, catalogue, transactions et modération ; "Attribuer un livre",
 // "Vérification KYC" et "Support" ont chacune leurs propres appels.
 export default function AdminPanel() {
-  const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
+  const user = useRequireAuth('/administration');
   const [data, setData] = useState<AdminData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [section, setSection] = useState<Section>('pilotage');
@@ -810,10 +812,16 @@ export default function AdminPanel() {
       .catch((err) => setError(extractApiErrorMessage(err, "Impossible de charger les données d'administration.")));
   }
 
+  useEffect(loadDashboard, []);
+
+  // GET /users/administration/tableau-de-bord est réservé au rôle "admin"
+  // côté API — un utilisateur/auteur connecté est renvoyé vers son propre
+  // espace plutôt que de rester coincé face à des données vides/en erreur.
   useEffect(() => {
-    getSessionUser().then(setUser);
-    loadDashboard();
-  }, []);
+    if (user && user.role !== 'admin') {
+      window.location.href = getDashboardPath(user.role);
+    }
+  }, [user]);
 
   // Promotion lecteur -> auteur (cf. EditAccountModal) : change le compte de
   // table entière (users -> author), pas une simple mise à jour de champs —
@@ -834,16 +842,13 @@ export default function AdminPanel() {
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
-      await apiClient.post('/auth/logout');
+      await logout();
     } finally {
       window.location.href = '/connexion';
     }
   }
 
-  if (user === null) {
-    window.location.href = '/connexion?redirect=%2Fadministration';
-    return null;
-  }
+  if (!user || user.role !== 'admin') return null;
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
 import { formatPrice } from '../lib/formatPrice';
 import { DeleteConfirm, CONFIRMATION_PHRASE } from '../components/DeleteConfirm';
+import { useRequireAuth } from '../lib/useRequireAuth';
 
 interface AuthorBook {
   id: number;
@@ -21,6 +22,7 @@ const badgeFreeClass = 'inline-block rounded-full bg-brand-amber/20 px-2 py-0.5 
 
 // Équivalent de src/components/dashboard/author/AuthorBooksSection.tsx.
 export default function AuthorBooksList() {
+  const user = useRequireAuth('/espace-auteur/livres');
   const [books, setBooks] = useState<AuthorBook[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bookToDelete, setBookToDelete] = useState<AuthorBook | null>(null);
@@ -34,7 +36,11 @@ export default function AuthorBooksList() {
       .catch((err) => setError(extractApiErrorMessage(err, 'Impossible de charger vos livres.')));
   }
 
-  useEffect(loadBooks, []);
+  useEffect(() => {
+    if (user) loadBooks();
+  }, [user]);
+
+  if (!user) return null;
 
   async function handleConfirmDelete() {
     if (!bookToDelete) return;

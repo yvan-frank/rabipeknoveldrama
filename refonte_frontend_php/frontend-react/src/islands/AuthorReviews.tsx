@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
 
 interface AuthorBook {
   id: number;
@@ -122,17 +123,20 @@ function BookReviewsManager({ bookId }: { bookId: number }) {
 
 // Équivalent de src/components/dashboard/author/AuthorReviews.tsx.
 export default function AuthorReviews() {
+  const user = useRequireAuth('/espace-auteur/avis');
   const [books, setBooks] = useState<AuthorBook[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bookId, setBookId] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     apiClient
       .get('/books/mine')
       .then((res) => setBooks(res.data?.data ?? []))
       .catch((err) => setError(extractApiErrorMessage(err, 'Impossible de charger vos livres.')));
-  }, []);
+  }, [user]);
 
+  if (!user) return null;
   if (error) return <p className="text-[0.8rem] text-rose-600">{error}</p>;
   if (books === null) return <p className="opacity-60">Chargement…</p>;
 

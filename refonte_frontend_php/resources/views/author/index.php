@@ -1,4 +1,4 @@
-<?php /** Équivalent de src/app/espace-auteur/{layout,page}.tsx. @var array $user */ ?>
+<?php /** Équivalent de src/app/espace-auteur/{layout,page}.tsx. */ ?>
 <section class="mx-auto max-w-6xl p-4">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <h1>Espace auteur</h1>

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
 
 const DOCUMENT_TYPE_OPTIONS = [
   { value: 'cni', label: "Carte nationale d'identité (CNI)" },
@@ -85,6 +86,7 @@ const btnPrimaryClass =
 // réinitialise kycVerifiedAt à chaque nouvelle soumission — modifier après
 // vérification repasserait l'auteur en attente.
 export default function KycForm() {
+  const user = useRequireAuth('/espace-auteur/kyc');
   const [status, setStatus] = useState<KycStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -120,7 +122,9 @@ export default function KycForm() {
       .catch((err) => setLoadError(extractApiErrorMessage(err, 'Impossible de charger votre KYC.')));
   }
 
-  useEffect(loadStatus, []);
+  useEffect(() => {
+    if (user) loadStatus();
+  }, [user]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -168,6 +172,7 @@ export default function KycForm() {
     }
   }
 
+  if (!user) return null;
   if (loadError) return <p className="text-sm text-rose-600">{loadError}</p>;
   if (status === null) return <p className="opacity-60">Chargement…</p>;
 

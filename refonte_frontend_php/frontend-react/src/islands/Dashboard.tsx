@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { apiClient, extractApiErrorMessage, getSessionUser, type SessionUser } from '../lib/apiClient';
+import { apiClient, extractApiErrorMessage, logout } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
+import { getDashboardPath } from '../lib/dashboard';
 
 interface DashboardBook {
   id: number;
@@ -124,33 +126,38 @@ function Panel({ title, description, children }: { title: string; description: s
 // (GET /users/moi/tableau-de-bord, réservé au rôle "user" côté API), navigué
 // par onglets côté client puisque tout ici est déjà chargé en une fois.
 export default function Dashboard() {
-  const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
+  const user = useRequireAuth('/tableau-de-bord');
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [section, setSection] = useState<Section>('accueil');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    getSessionUser().then(setUser);
     apiClient
       .get('/users/moi/tableau-de-bord')
       .then((res) => setData(res.data?.data ?? null))
       .catch((err) => setError(extractApiErrorMessage(err, 'Impossible de charger votre espace.')));
   }, []);
 
+  // GET /users/moi/tableau-de-bord est réservé au rôle "user" côté API — un
+  // auteur/admin connecté est renvoyé vers son propre espace plutôt que de
+  // recevoir une 403 depuis l'appel ci-dessus.
+  useEffect(() => {
+    if (user && user.role !== 'user') {
+      window.location.href = getDashboardPath(user.role);
+    }
+  }, [user]);
+
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
-      await apiClient.post('/auth/logout');
+      await logout();
     } finally {
       window.location.href = '/connexion';
     }
   }
 
-  if (user === null) {
-    window.location.href = '/connexion?redirect=%2Ftableau-de-bord';
-    return null;
-  }
+  if (!user || user.role !== 'user') return null;
 
   return (
     <div className="flex min-h-screen flex-col">

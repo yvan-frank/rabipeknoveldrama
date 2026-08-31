@@ -27,6 +27,7 @@ const registry: Record<string, IslandLoader> = {
   KycForm: () => import('./KycForm'),
   AuthorSettingsForm: () => import('./AuthorSettingsForm'),
   AuthorStats: () => import('./AuthorStats'),
+  AuthGuard: () => import('./AuthGuard'),
 };
 
 export function resolveIsland(name: string): IslandLoader | undefined {

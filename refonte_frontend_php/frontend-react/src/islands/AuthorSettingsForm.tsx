@@ -1,15 +1,11 @@
-import { useEffect, useState } from 'react';
-import { getSessionUser, type SessionUser } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
 
 // Équivalent de src/components/dashboard/author/AuthorSettingsSection.tsx —
 // affichage seul dans la source elle-même (la modification du profil public
 // n'est pas encore disponible), donc pas de formulaire à soumettre ici.
 export default function AuthorSettingsForm() {
-  const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
-
-  useEffect(() => {
-    getSessionUser().then(setUser);
-  }, []);
+  const user = useRequireAuth('/espace-auteur/parametres');
+  if (user === null) return null;
 
   return (
     <div className="rounded-[1.25rem] border border-black/10 px-6 py-5 dark:border-white/10">

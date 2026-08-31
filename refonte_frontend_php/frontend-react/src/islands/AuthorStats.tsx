@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
 
 interface AuthorBook {
   id: number;
@@ -38,6 +39,7 @@ const pickerBtnActiveClass = 'cursor-pointer rounded-full border border-brand-am
 // côté PHP (totalViews/uniqueTrackedViews/reads/likes/shares/purchases/revenue),
 // un peu plus riche que l'interface Summary de la source Next.js.
 export default function AuthorStats() {
+  const user = useRequireAuth('/espace-auteur/statistiques');
   const [books, setBooks] = useState<AuthorBook[] | null>(null);
   const [booksError, setBooksError] = useState<string | null>(null);
   const [bookId, setBookId] = useState<number | null>(null);
@@ -47,11 +49,12 @@ export default function AuthorStats() {
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
     apiClient
       .get('/books/mine')
       .then((res) => setBooks(res.data?.data ?? []))
       .catch((err) => setBooksError(extractApiErrorMessage(err, 'Impossible de charger vos livres.')));
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (bookId === null) return;
@@ -79,6 +82,7 @@ export default function AuthorStats() {
     };
   }, [bookId]);
 
+  if (!user) return null;
   if (booksError) return <p className="text-[0.8rem] text-rose-600">{booksError}</p>;
   if (books === null) return <p className="opacity-60">Chargement…</p>;
 

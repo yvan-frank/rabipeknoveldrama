@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { apiClient, extractApiErrorMessage, getSessionUser } from '../lib/apiClient';
+import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
 import { EMPTY_BOOK_FORM, LANGUAGE_OPTIONS, toBookApiPayload, type BookFormState } from '../lib/bookForm';
 import { CoverUploadField } from '../components/CoverUploadField';
 import { ChipsInput } from '../components/ChipsInput';
@@ -81,6 +82,7 @@ const btnPrimaryClass =
 // seule la création (POST /books) passe par ici, l'édition se fait depuis
 // BookManageDashboard.tsx.
 export default function BookWizard() {
+  const user = useRequireAuth('/espace-auteur/livres/nouveau');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [hadDraft] = useState(() => Boolean(loadDraft()?.title));
@@ -93,8 +95,8 @@ export default function BookWizard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    getSessionUser().then((user) => setAuthorId(user?.authorId ?? null));
-  }, []);
+    setAuthorId(user?.authorId ?? null);
+  }, [user]);
 
   useEffect(() => {
     apiClient
@@ -164,6 +166,8 @@ export default function BookWizard() {
   const currentStep = STEPS[step];
   const isFirstStep = step === 0;
   const isLastStep = step === STEPS.length - 1;
+
+  if (!user) return null;
 
   if (categoriesLoaded && categories.length === 0) {
     return (

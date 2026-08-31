@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
 
 interface AuthorBook {
   id: number;
@@ -12,13 +13,17 @@ interface AuthorBook {
 
 // Équivalent de src/app/espace-auteur/page.tsx : vue d'ensemble des livres
 // de l'auteur connecté (GET /books/mine, déjà filtré côté API sur son
-// authorId) — la garde de page (redirection si non connecté) est faite en
-// amont côté PHP par AuthMiddleware, ce composant suppose une session valide.
+// authorId). La garde de page (redirection si non connecté) était faite en
+// amont côté PHP par AuthMiddleware — désormais côté client via
+// useRequireAuth, PHP ne pouvant plus lire le jeton (localStorage) au moment
+// du rendu initial.
 export default function AuthorOverview() {
+  const user = useRequireAuth('/espace-auteur');
   const [books, setBooks] = useState<AuthorBook[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     let cancelled = false;
     apiClient
       .get('/books/mine')
@@ -31,8 +36,9 @@ export default function AuthorOverview() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
+  if (!user) return null;
   if (error) return <p className="text-rose-600">{error}</p>;
   if (books === null) return <p className="opacity-60">Chargement…</p>;
 

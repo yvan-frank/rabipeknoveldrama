@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { apiClient, extractApiErrorMessage, type SessionUser } from '../lib/apiClient';
+import { apiClient, extractApiErrorMessage, saveSession, type SessionUser } from '../lib/apiClient';
 import { resolveAuthRedirect } from '../lib/dashboard';
 import { PasswordInput } from '../components/PasswordInput';
 import { PasswordStrengthPanel } from '../components/PasswordStrengthPanel';
@@ -141,7 +141,7 @@ export default function RegisterForm({ redirectTo }: Props) {
 
     setIsSubmitting(true);
     try {
-      type RegisterResponse = { data: { user: SessionUser } };
+      type RegisterResponse = { data: { user: SessionUser; accessToken: string; refreshToken: string } };
       const res = form.isAuthor
         ? await apiClient.post<RegisterResponse>('/auth/register-author', {
             name: form.readerName,
@@ -152,6 +152,7 @@ export default function RegisterForm({ redirectTo }: Props) {
             genreIds: form.genreIds,
           })
         : await apiClient.post<RegisterResponse>('/auth/register', { name: form.name, email: form.email, password: form.password });
+      saveSession(res.data.data);
       window.location.href = resolveAuthRedirect(redirectTo, res.data.data.user.role);
     } catch (err: any) {
       if (form.isAuthor && err?.response?.status === 404) {

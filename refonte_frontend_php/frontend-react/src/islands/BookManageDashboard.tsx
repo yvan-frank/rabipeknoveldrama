@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
 import { formatPrice } from '../lib/formatPrice';
 import { bookToFormState, toBookApiPayload, type BookFormState } from '../lib/bookForm';
 import { BookFormFields } from '../components/BookFormFields';
@@ -596,6 +597,7 @@ function ChaptersManager({ bookId, chapters, parts, onChanged }: { bookId: numbe
 // génération/téléchargement de fichier asynchrone, hors scope de ce
 // scaffold (cf. README).
 export default function BookManageDashboard({ bookId }: { bookId: string }) {
+  const user = useRequireAuth(`/espace-auteur/livres/${bookId}`);
   const [book, setBook] = useState<BookDetail | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -614,14 +616,17 @@ export default function BookManageDashboard({ bookId }: { bookId: string }) {
       .catch((err) => setLoadError(extractApiErrorMessage(err, 'Impossible de charger ce livre.')));
   }
 
-  useEffect(loadBook, [bookId]);
+  useEffect(() => {
+    if (user) loadBook();
+  }, [user, bookId]);
 
   useEffect(() => {
+    if (!user) return;
     apiClient
       .get('/categories')
       .then((res) => setCategories(res.data?.data ?? []))
       .catch(() => setCategories([]));
-  }, []);
+  }, [user]);
 
   function startEdit() {
     if (!book) return;
@@ -662,6 +667,7 @@ export default function BookManageDashboard({ bookId }: { bookId: string }) {
     }
   }
 
+  if (!user) return null;
   if (loadError) return <p className={errorClass}>{loadError}</p>;
   if (book === null) return <p className="opacity-60">Chargement…</p>;
 

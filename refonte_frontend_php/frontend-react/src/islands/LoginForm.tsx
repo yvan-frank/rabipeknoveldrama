@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { apiClient, extractApiErrorMessage, type SessionUser } from '../lib/apiClient';
+import { apiClient, extractApiErrorMessage, saveSession, type SessionUser } from '../lib/apiClient';
 import { resolveAuthRedirect } from '../lib/dashboard';
 import { PasswordInput } from '../components/PasswordInput';
 
@@ -19,7 +19,11 @@ export default function LoginForm({ redirectTo }: Props) {
     setError(null);
     setIsSubmitting(true);
     try {
-      const res = await apiClient.post<{ data: { user: SessionUser } }>('/auth/login', { email, password });
+      const res = await apiClient.post<{ data: { user: SessionUser; accessToken: string; refreshToken: string } }>(
+        '/auth/login',
+        { email, password },
+      );
+      saveSession(res.data.data);
       window.location.href = resolveAuthRedirect(redirectTo, res.data.data.user.role);
     } catch (err) {
       setError(extractApiErrorMessage(err, 'Identifiants invalides'));
