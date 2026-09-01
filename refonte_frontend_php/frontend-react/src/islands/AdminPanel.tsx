@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { Menu, X } from 'lucide-react';
 import { apiClient, extractApiErrorMessage, logout } from '../lib/apiClient';
 import { useRequireAuth } from '../lib/useRequireAuth';
 import { getDashboardPath } from '../lib/dashboard';
@@ -117,6 +118,69 @@ const titleTextClass = 'overflow-hidden text-sm font-medium text-ellipsis whites
 const metaTextClass = 'text-[0.7rem] opacity-55';
 const rowActionClass =
   'flex w-full items-center gap-3 rounded-lg border border-black/10 bg-transparent px-3.5 py-2.5 text-left text-inherit hover:border-brand-amber hover:bg-brand-amber/6 dark:border-white/10';
+
+interface SmtpTestResult {
+  ok: boolean;
+  log: string[];
+  error?: string;
+}
+
+// Test de connexion SMTP (POST /system/smtp-test, admin-only) : rejoue le
+// handshake EHLO/STARTTLS/AUTH LOGIN avec les identifiants de .env côté API
+// et renvoie le détail échange par échange — cf. SmtpTester.php côté serveur.
+function SmtpTestPanel() {
+  const [result, setResult] = useState<SmtpTestResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+  const [showLog, setShowLog] = useState(false);
+
+  async function handleTest() {
+    setIsTesting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await apiClient.post<{ data: SmtpTestResult }>('/system/smtp-test');
+      setResult(res.data.data);
+    } catch (err) {
+      setError(extractApiErrorMessage(err, 'Impossible de lancer le test SMTP.'));
+    } finally {
+      setIsTesting(false);
+    }
+  }
+
+  return (
+    <div className={`mt-5 ${panelClass}`}>
+      <h3 className="m-0 text-[0.95rem]">Connexion SMTP</h3>
+      <p className={panelDescriptionClass}>Vérifie que les identifiants SMTP_* de .env permettent bien de s'authentifier auprès du serveur mail.</p>
+
+      <button type="button" onClick={handleTest} disabled={isTesting} className={btnPrimaryClass}>
+        {isTesting ? 'Test en cours…' : 'Tester la connexion SMTP'}
+      </button>
+
+      {error && <p className={`mt-3 ${errorClass}`}>{error}</p>}
+
+      {result && (
+        <div className="mt-3">
+          <p className={result.ok ? successClass : errorClass}>
+            {result.ok ? '✓ Connexion et authentification réussies.' : `✗ Échec — ${result.error ?? 'voir le détail ci-dessous'}`}
+          </p>
+          {result.log.length > 0 && (
+            <>
+              <button type="button" onClick={() => setShowLog((v) => !v)} className="mt-2 text-[0.8rem] underline opacity-70">
+                {showLog ? 'Masquer' : 'Voir'} le détail de l'échange ({result.log.length} lignes)
+              </button>
+              {showLog && (
+                <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-black/5 p-3 text-[0.75rem] whitespace-pre-wrap dark:bg-white/5">
+                  {result.log.join('\n')}
+                </pre>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Panel({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
@@ -787,6 +851,10 @@ export default function AdminPanel() {
   const [section, setSection] = useState<Section>('pilotage');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [editingAccount, setEditingAccount] = useState<EditableAccount | null>(null);
+  // Tiroir de nav sur mobile (< md) : la sidebar fixe ne convient pas à 9
+  // sections sur un petit écran — cf. NAV_ITEMS. Sans effet au-delà de md,
+  // où la nav reste la colonne statique habituelle (cf. classes ci-dessous).
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   function handleAccountSaved(updated: EditableAccount) {
     setEditingAccount(null);
@@ -813,6 +881,10 @@ export default function AdminPanel() {
   }
 
   useEffect(loadDashboard, []);
+
+  // Ferme le tiroir mobile dès qu'une section est choisie, peu importe le
+  // déclencheur (bouton de nav, ou raccourci comme "Gérer les utilisateurs →").
+  useEffect(() => setIsNavOpen(false), [section]);
 
   // GET /users/administration/tableau-de-bord est réservé au rôle "admin"
   // côté API — un utilisateur/auteur connecté est renvoyé vers son propre
@@ -853,9 +925,21 @@ export default function AdminPanel() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-black/10 bg-white px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 dark:border-white/10 dark:bg-neutral-950">
-        <a href="/" className="shrink-0 text-[1.1rem] font-black text-inherit no-underline sm:text-[1.2rem]">
-          Rabi<span className="text-brand-amber">pek</span> <span className="text-xs font-semibold text-sky-400">Admin</span>
-        </a>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => setIsNavOpen(true)}
+            aria-label="Ouvrir le menu"
+            aria-expanded={isNavOpen}
+            aria-controls="admin-nav"
+            className="-ml-1.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg hover:bg-black/10 md:hidden dark:hover:bg-white/10"
+          >
+            <Menu size={20} />
+          </button>
+          <a href="/" className="shrink-0 text-[1.1rem] font-black text-inherit no-underline sm:text-[1.2rem]">
+            Rabi<span className="text-brand-amber">pek</span> <span className="text-xs font-semibold text-sky-400">Admin</span>
+          </a>
+        </div>
         <div className="flex min-w-0 items-center gap-2 sm:gap-3.5">
           {user && <span className="hidden max-w-40 truncate text-[0.8rem] opacity-60 sm:inline">{user.email}</span>}
           <button type="button" onClick={handleLogout} disabled={isLoggingOut} className={`${btnClass} shrink-0 px-3.5 py-2 sm:px-5 sm:py-2.5`}>
@@ -865,7 +949,31 @@ export default function AdminPanel() {
       </header>
 
       <div className="mx-auto flex w-full max-w-[88rem] flex-1 flex-col md:flex-row">
-        <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-black/10 p-3 md:w-60 md:flex-col md:border-r md:border-b-0 md:p-6 dark:border-white/10">
+        {isNavOpen && (
+          <div
+            onClick={() => setIsNavOpen(false)}
+            aria-hidden="true"
+            className="fixed inset-0 z-20 bg-black/50 md:hidden"
+          />
+        )}
+
+        <nav
+          id="admin-nav"
+          className={`fixed inset-y-0 left-0 z-30 flex w-72 max-w-[80vw] flex-col gap-1 overflow-y-auto bg-white p-4 shadow-2xl transition-transform duration-200 dark:bg-neutral-950 md:static md:z-auto md:w-60 md:max-w-none md:shrink-0 md:translate-x-0 md:border-r md:border-black/10 md:p-6 md:shadow-none md:transition-none dark:md:border-white/10 ${
+            isNavOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="mb-3 flex items-center justify-between md:hidden">
+            <span className="text-sm font-semibold opacity-60">Menu</span>
+            <button
+              type="button"
+              onClick={() => setIsNavOpen(false)}
+              aria-label="Fermer le menu"
+              className="inline-flex size-8 items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+            >
+              <X size={18} />
+            </button>
+          </div>
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -979,6 +1087,7 @@ export default function AdminPanel() {
                 <p className="my-1">{user?.email}</p>
                 <p className={`my-1 ${emptyClass}`}>Les réglages globaux seront centralisés ici.</p>
               </div>
+              <SmtpTestPanel />
             </Panel>
           ) : (
             <>

@@ -36,6 +36,10 @@ $headline = 'Vos histoires africaines préférées, toujours à portée de main.
 
       <?= View::island('LoginForm', ['redirectTo' => $redirectTo]) ?>
 
+      <p class="mt-3 text-right text-sm">
+        <a href="/mot-de-passe-oublie" class="text-brand-amber no-underline hover:underline">Mot de passe oublié ?</a>
+      </p>
+
       <p class="mt-6 text-center text-sm opacity-70">
         Pas encore de compte ? <a href="/inscription" class="font-semibold text-brand-amber no-underline hover:underline">Inscrivez-vous</a>
       </p>

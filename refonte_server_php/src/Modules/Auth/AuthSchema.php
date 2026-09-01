@@ -41,4 +41,19 @@ final class AuthSchema
             'idToken' => ['required', 'string', 'min:20'],
         ];
     }
+
+    public static function forgotPassword(): array
+    {
+        return [
+            'email' => ['required', 'email'],
+        ];
+    }
+
+    public static function resetPassword(): array
+    {
+        return [
+            'token' => ['required', 'string', 'min:20'],
+            'password' => ['required', 'string', 'min:8'],
+        ];
+    }
 }

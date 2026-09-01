@@ -37,6 +37,26 @@ final class AuthController
         ], 'Inscription | RabipekNovel');
     }
 
+    public function forgotPassword(Request $request): void
+    {
+        View::render('auth.mot-de-passe-oublie', [
+            'hideChrome' => true,
+            'noindex' => true,
+            'playStoreUrl' => Env::playStoreUrl(),
+        ], 'Mot de passe oublié | RabipekNovel');
+    }
+
+    // Le jeton (?token=...) est lu côté client par l'îlot ResetPasswordForm,
+    // pas ici — cf. son commentaire getTokenFromUrl().
+    public function resetPassword(Request $request): void
+    {
+        View::render('auth.reinitialiser-mot-de-passe', [
+            'hideChrome' => true,
+            'noindex' => true,
+            'playStoreUrl' => Env::playStoreUrl(),
+        ], 'Réinitialiser le mot de passe | RabipekNovel');
+    }
+
     /**
      * Chemin web de suppression de compte, exigé par Google Play même sans
      * l'app installée (cf. réglage "Sécurité des données" de la fiche Store)

@@ -6,6 +6,7 @@ namespace App\Modules\Auth;
 
 use App\Config\Env;
 use App\Lib\Database;
+use App\Lib\Mailer;
 use App\Modules\Authors\AuthorsService;
 use App\Modules\Users\UsersService;
 use App\Utils\ApiError;
@@ -13,6 +14,7 @@ use App\Utils\GoogleTokenVerifier;
 use App\Utils\Jwt;
 use App\Utils\UserCode;
 use PDO;
+use Throwable;
 
 /**
  * Équivalent de src/modules/auth/auth.service.ts. L'inscription auteur
@@ -24,6 +26,8 @@ final class AuthService
 {
     private const SALT_COST = 12; // équivalent de SALT_ROUNDS côté bcrypt Node
     private const REFRESH_TOKEN_BYTES = 48;
+    private const RESET_TOKEN_BYTES = 32;
+    private const RESET_TOKEN_TTL_MINUTES = 60;
 
     private static function db(): PDO
     {
@@ -172,6 +176,107 @@ final class AuthService
             'role' => 'author',
             'authorId' => (int) $author['id_author'],
         ]);
+    }
+
+    /**
+     * Envoie un e-mail de réinitialisation si un compte existe pour cet
+     * email. Ne révèle jamais si le compte existe ou non (réponse identique
+     * dans les deux cas côté controller) — évite qu'un tiers énumère les
+     * adresses inscrites via ce endpoint.
+     */
+    public static function requestPasswordReset(string $email): void
+    {
+        $db = self::db();
+        $account = self::findResetTarget($db, $email);
+        if ($account === null) {
+            return;
+        }
+
+        $token = bin2hex(random_bytes(self::RESET_TOKEN_BYTES));
+        $hash = hash('sha256', $token);
+
+        $stmt = $db->prepare('INSERT INTO password_reset_tokens (token_hash, account_type, account_id, expires_at, created_at)
+            VALUES (:hash, :accountType, :accountId, DATE_ADD(NOW(), INTERVAL :ttl MINUTE), NOW())');
+        $stmt->execute([
+            'hash' => $hash,
+            'accountType' => $account['type'],
+            'accountId' => $account['id'],
+            'ttl' => self::RESET_TOKEN_TTL_MINUTES,
+        ]);
+
+        $resetUrl = Env::siteUrl() . '/reinitialiser-mot-de-passe?token=' . $token;
+        $body = "Bonjour,\n\n"
+            . "Une réinitialisation de mot de passe a été demandée pour ce compte RabipekNovel.\n"
+            . "Cliquez sur le lien suivant pour choisir un nouveau mot de passe (valide 1 heure) :\n"
+            . "{$resetUrl}\n\n"
+            . "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail — "
+            . "votre mot de passe actuel reste inchangé.";
+
+        try {
+            Mailer::send($email, 'Réinitialisation de votre mot de passe RabipekNovel', $body);
+        } catch (Throwable) {
+            // Ne fait pas échouer la requête côté client (qui ne doit de
+            // toute façon jamais savoir si l'email existait) — une panne
+            // SMTP reste diagnosticable via POST /system/smtp-test, pas via
+            // ce endpoint public.
+        }
+    }
+
+    /** @throws ApiError si le jeton est invalide, expiré, ou déjà utilisé */
+    public static function resetPassword(string $token, string $newPassword): void
+    {
+        $db = self::db();
+        $hash = hash('sha256', $token);
+
+        $stmt = $db->prepare('SELECT * FROM password_reset_tokens WHERE token_hash = :hash LIMIT 1');
+        $stmt->execute(['hash' => $hash]);
+        $record = $stmt->fetch();
+
+        if (
+            $record === false
+            || $record['used_at'] !== null
+            || strtotime((string) $record['expires_at']) < time()
+        ) {
+            throw ApiError::unauthorized('Lien de réinitialisation invalide ou expiré');
+        }
+
+        $passwordHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => self::SALT_COST]);
+        $accountId = (int) $record['account_id'];
+
+        if ($record['account_type'] === 'author') {
+            $db->prepare('UPDATE author SET password = :password WHERE id_author = :id')
+                ->execute(['password' => $passwordHash, 'id' => $accountId]);
+        } else {
+            $db->prepare('UPDATE users SET password = :password WHERE id_user = :id')
+                ->execute(['password' => $passwordHash, 'id' => $accountId]);
+        }
+
+        // Marqué utilisé avant toute autre chose : un jeton de reset ne doit
+        // jamais pouvoir servir deux fois, même si la révocation des sessions
+        // ci-dessous échouait pour une raison quelconque.
+        $db->prepare('UPDATE password_reset_tokens SET used_at = NOW() WHERE id = :id')
+            ->execute(['id' => $record['id']]);
+
+        // Un mot de passe compromis au point de justifier un reset doit aussi
+        // invalider les sessions déjà ouvertes ailleurs (même logique que
+        // deleteMyAccount()).
+        self::revokeAllRefreshTokens($record['account_type'], $accountId);
+    }
+
+    /** @return array{type:string,id:int}|null */
+    private static function findResetTarget(PDO $db, string $email): ?array
+    {
+        $user = self::findUserByEmail($db, $email);
+        if ($user !== false) {
+            return ['type' => 'user', 'id' => (int) $user['id_user']];
+        }
+
+        $author = self::findAuthorByEmail($db, $email);
+        if ($author !== false) {
+            return ['type' => 'author', 'id' => (int) $author['id_author']];
+        }
+
+        return null;
     }
 
     public static function logout(?string $refreshToken): void

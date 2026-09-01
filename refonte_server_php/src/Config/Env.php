@@ -155,6 +155,15 @@ final class Env
         return self::get('APP_URL', 'http://localhost:4000') ?? 'http://localhost:4000';
     }
 
+    // URL du frontend web (refonte_frontend_php), pour construire des liens
+    // pointant vers ses pages (ex. lien de réinitialisation de mot de passe
+    // envoyé par e-mail) — même variable SITE_URL que côté frontend Env.php,
+    // dupliquée ici car ce sont deux applications/déploiements distincts.
+    public static function siteUrl(): string
+    {
+        return rtrim(self::get('SITE_URL', 'http://localhost:8000') ?? '', '/');
+    }
+
     public static function cookieName(): string
     {
         return self::get('COOKIE_NAME', 'rabipek_token') ?? 'rabipek_token';
@@ -175,6 +184,20 @@ final class Env
     public static function jwtSecret(): string
     {
         return self::required('JWT_SECRET');
+    }
+
+    /** @return array{host:string,port:int,user:string,password:string,secure:bool,fromAddress:string,fromName:string} */
+    public static function smtp(): array
+    {
+        return [
+            'host' => self::get('SMTP_HOST', '') ?? '',
+            'port' => self::int('SMTP_PORT', 587),
+            'user' => self::get('SMTP_USER', '') ?? '',
+            'password' => self::get('SMTP_PASSWORD', '') ?? '',
+            'secure' => self::bool('SMTP_SECURE', false),
+            'fromAddress' => self::get('MAIL_FROM_ADDRESS', '') ?? '',
+            'fromName' => self::get('MAIL_FROM_NAME', '') ?? '',
+        ];
     }
 
     /**

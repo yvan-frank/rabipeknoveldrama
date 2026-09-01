@@ -18,6 +18,8 @@ final class AuthRoutes
         $router->post('/register', [AuthController::class, 'register']);
         $router->post('/login', [AuthController::class, 'login']);
         $router->post('/google', [AuthController::class, 'google']);
+        $router->post('/forgot-password', [AuthController::class, 'forgotPassword']);
+        $router->post('/reset-password', [AuthController::class, 'resetPassword']);
         // Sans authentification : le refresh token en tient lieu.
         $router->post('/refresh', [AuthController::class, 'refresh']);
         $router->post('/logout', [AuthController::class, 'logout']);

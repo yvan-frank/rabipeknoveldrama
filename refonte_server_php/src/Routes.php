@@ -21,6 +21,7 @@ use App\Modules\Notifications\NotificationsRoutes;
 use App\Modules\Points\PointsRoutes;
 use App\Modules\Stats\StatsRoutes;
 use App\Modules\Support\SupportRoutes;
+use App\Modules\System\SystemRoutes;
 use App\Modules\Uploads\UploadsRoutes;
 use App\Modules\Users\UsersRoutes;
 
@@ -53,5 +54,6 @@ final class Routes
         $router->mount('/points', PointsRoutes::register(...));
         $router->mount('/support', SupportRoutes::register(...));
         $router->mount('/notifications', NotificationsRoutes::register(...));
+        $router->mount('/system', SystemRoutes::register(...));
     }
 }

@@ -99,6 +99,23 @@ final class AuthController
         ]);
     }
 
+    public static function forgotPassword(Request $request): void
+    {
+        $input = Validator::validate($request->body, AuthSchema::forgotPassword());
+        AuthService::requestPasswordReset($input['email']);
+        // Réponse identique que l'email existe ou non (cf.
+        // AuthService::requestPasswordReset) — ne jamais laisser deviner
+        // quelles adresses sont inscrites.
+        Response::success(null);
+    }
+
+    public static function resetPassword(Request $request): void
+    {
+        $input = Validator::validate($request->body, AuthSchema::resetPassword());
+        AuthService::resetPassword($input['token'], $input['password']);
+        Response::success(null);
+    }
+
     public static function me(Request $request): void
     {
         Response::success(['user' => $request->user]);

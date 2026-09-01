@@ -39,6 +39,8 @@ final class Routes
         // app/connexion, app/inscription
         $router->get('/connexion', [new AuthController(), 'login']);
         $router->get('/inscription', [new AuthController(), 'register']);
+        $router->get('/mot-de-passe-oublie', [new AuthController(), 'forgotPassword']);
+        $router->get('/reinitialiser-mot-de-passe', [new AuthController(), 'resetPassword']);
         $router->get('/supprimer-mon-compte', [new AuthController(), 'deleteAccount']);
 
         // app/tableau-de-bord/**
