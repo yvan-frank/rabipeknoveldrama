@@ -116,6 +116,13 @@ final class AuthController
         Response::success(null);
     }
 
+    public static function changePassword(Request $request): void
+    {
+        $input = Validator::validate($request->body, AuthSchema::changePassword());
+        AuthService::changePassword($request->user, $input['currentPassword'], $input['password']);
+        Response::success(null);
+    }
+
     public static function me(Request $request): void
     {
         Response::success(['user' => $request->user]);

@@ -56,4 +56,12 @@ final class AuthSchema
             'password' => ['required', 'string', 'min:8'],
         ];
     }
+
+    public static function changePassword(): array
+    {
+        return [
+            'currentPassword' => ['required', 'string', 'min:1'],
+            'password' => ['required', 'string', 'min:8'],
+        ];
+    }
 }

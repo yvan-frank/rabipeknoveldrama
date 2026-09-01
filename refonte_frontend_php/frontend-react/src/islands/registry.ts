@@ -12,6 +12,7 @@ const registry: Record<string, IslandLoader> = {
   RegisterForm: () => import('./RegisterForm'),
   ForgotPasswordForm: () => import('./ForgotPasswordForm'),
   ResetPasswordForm: () => import('./ResetPasswordForm'),
+  ChangePasswordForm: () => import('./ChangePasswordForm'),
   GoogleAuthButton: () => import('./GoogleAuthButton'),
   DeleteMyAccountButton: () => import('./DeleteMyAccountButton'),
   OpenInApp: () => import('./OpenInApp'),

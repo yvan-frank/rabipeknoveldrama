@@ -80,6 +80,7 @@ final class AuthorsService
 
         if (array_key_exists('password', $input)) {
             $sets[] = 'password = :password';
+            $sets[] = 'password_changed_at = NOW()';
             $params['password'] = password_hash($input['password'], PASSWORD_BCRYPT, ['cost' => self::PASSWORD_SALT_COST]);
         }
 

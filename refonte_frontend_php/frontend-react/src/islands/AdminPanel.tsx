@@ -3,6 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { apiClient, extractApiErrorMessage, logout } from '../lib/apiClient';
 import { useRequireAuth } from '../lib/useRequireAuth';
 import { getDashboardPath } from '../lib/dashboard';
+import ChangePasswordForm from './ChangePasswordForm';
 import { formatPrice } from '../lib/formatPrice';
 import { EditAccountModal, type EditableAccount } from '../components/EditAccountModal';
 
@@ -1086,6 +1087,11 @@ export default function AdminPanel() {
                 <span className={panelDescriptionClass}>Session active</span>
                 <p className="my-1">{user?.email}</p>
                 <p className={`my-1 ${emptyClass}`}>Les réglages globaux seront centralisés ici.</p>
+              </div>
+              <div className={`mt-5 ${panelClass}`}>
+                <h3 className="m-0 text-[0.95rem]">Mot de passe</h3>
+                <p className={panelDescriptionClass}>Change le mot de passe de votre propre compte administrateur.</p>
+                <ChangePasswordForm />
               </div>
               <SmtpTestPanel />
             </Panel>

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { apiClient, extractApiErrorMessage, logout } from '../lib/apiClient';
 import { useRequireAuth } from '../lib/useRequireAuth';
 import { getDashboardPath } from '../lib/dashboard';
+import ChangePasswordForm from './ChangePasswordForm';
 
 interface DashboardBook {
   id: number;
@@ -232,7 +233,10 @@ export default function Dashboard() {
               <div>
                 <span className="text-[0.8rem] opacity-60">Adresse e-mail</span>
                 <p className="my-1">{user?.email}</p>
-                <p className="my-1 opacity-60">La modification du profil sera disponible prochainement.</p>
+              </div>
+              <div className="mt-6 border-t border-black/10 pt-5 dark:border-white/10">
+                <h3 className="mb-3 text-[0.95rem]">Mot de passe</h3>
+                <ChangePasswordForm />
               </div>
               <div className="mt-6 border-t border-black/10 pt-5 dark:border-white/10">
                 <a href="/supprimer-mon-compte" className="text-sm font-semibold text-rose-600 no-underline hover:underline">

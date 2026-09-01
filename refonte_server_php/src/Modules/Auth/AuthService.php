@@ -28,6 +28,10 @@ final class AuthService
     private const REFRESH_TOKEN_BYTES = 48;
     private const RESET_TOKEN_BYTES = 32;
     private const RESET_TOKEN_TTL_MINUTES = 60;
+    // Politique de sécurité : au-delà de 180 jours sans changement, un
+    // lecteur/auteur doit réinitialiser son mot de passe pour se reconnecter
+    // (cf. assertPasswordNotExpired ci-dessous). Ne s'applique pas aux admins.
+    private const PASSWORD_MAX_AGE_DAYS = 180;
 
     private static function db(): PDO
     {
@@ -120,19 +124,24 @@ final class AuthService
     /** Convertit le compte invité courant en compte réel, ou en crée un nouveau. */
     private static function upsertRealUser(PDO $db, ?int $guestUserId, string $name, string $email, ?string $passwordHash): int
     {
+        // NULL pour un compte Google (cf. loginWithGoogle) : reste NULL tant
+        // qu'aucun mot de passe n'est défini — assertPasswordNotExpired() ne
+        // s'applique de toute façon jamais à ces comptes (pas de connexion
+        // par mot de passe possible sans en définir un via reset-password).
+        $passwordChangedAt = $passwordHash !== null ? date('Y-m-d H:i:s') : null;
         $guestRow = $guestUserId !== null ? self::findGuestById($db, $guestUserId) : false;
 
         if ($guestRow !== false) {
-            $stmt = $db->prepare('UPDATE users SET name = :name, email = :email, password = :password, is_guest = 0, is_active = 1, updated_at = NOW()
+            $stmt = $db->prepare('UPDATE users SET name = :name, email = :email, password = :password, password_changed_at = :passwordChangedAt, is_guest = 0, is_active = 1, updated_at = NOW()
                 WHERE id_user = :id');
-            $stmt->execute(['name' => $name, 'email' => $email, 'password' => $passwordHash, 'id' => $guestUserId]);
+            $stmt->execute(['name' => $name, 'email' => $email, 'password' => $passwordHash, 'passwordChangedAt' => $passwordChangedAt, 'id' => $guestUserId]);
 
             return $guestUserId;
         }
 
-        $stmt = $db->prepare('INSERT INTO users (name, email, password, is_admin, is_active, points_balance, created_at, updated_at)
-            VALUES (:name, :email, :password, 0, 1, 0, NOW(), NOW())');
-        $stmt->execute(['name' => $name, 'email' => $email, 'password' => $passwordHash]);
+        $stmt = $db->prepare('INSERT INTO users (name, email, password, password_changed_at, is_admin, is_active, points_balance, created_at, updated_at)
+            VALUES (:name, :email, :password, :passwordChangedAt, 0, 1, 0, NOW(), NOW())');
+        $stmt->execute(['name' => $name, 'email' => $email, 'password' => $passwordHash, 'passwordChangedAt' => $passwordChangedAt]);
 
         return (int) $db->lastInsertId();
     }
@@ -158,10 +167,15 @@ final class AuthService
                 throw ApiError::unauthorized('Email ou mot de passe incorrect');
             }
 
+            $role = ((bool) $row['is_admin']) ? 'admin' : 'user';
+            if ($role !== 'admin') {
+                self::assertPasswordNotExpired($input['email'], $row['password_changed_at']);
+            }
+
             return self::issueSession([
                 'id' => (int) $row['id_user'],
                 'email' => $row['email'],
-                'role' => ((bool) $row['is_admin']) ? 'admin' : 'user',
+                'role' => $role,
             ]);
         }
 
@@ -169,6 +183,7 @@ final class AuthService
         if ($author === false || !password_verify($input['password'], $author['password'])) {
             throw ApiError::unauthorized('Email ou mot de passe incorrect');
         }
+        self::assertPasswordNotExpired($input['email'], $author['password_changed_at']);
 
         return self::issueSession([
             'id' => (int) $author['id_author'],
@@ -176,6 +191,30 @@ final class AuthService
             'role' => 'author',
             'authorId' => (int) $author['id_author'],
         ]);
+    }
+
+    // Rejette la connexion (et déclenche directement l'e-mail de
+    // réinitialisation, cf. requestPasswordReset) si le mot de passe n'a pas
+    // été changé depuis plus de PASSWORD_MAX_AGE_DAYS jours. `null` (jamais
+    // changé) est traité comme expiré — ne devrait plus arriver après le
+    // backfill de la migration 0006, mais reste le choix le plus sûr.
+    private static function assertPasswordNotExpired(string $email, ?string $passwordChangedAt): void
+    {
+        $ageInDays = $passwordChangedAt !== null
+            ? (time() - strtotime($passwordChangedAt)) / 86400
+            : PHP_INT_MAX;
+
+        if ($ageInDays <= self::PASSWORD_MAX_AGE_DAYS) {
+            return;
+        }
+
+        self::requestPasswordReset($email);
+
+        throw new ApiError(
+            403,
+            'Votre mot de passe a plus de 180 jours et doit être renouvelé pour votre sécurité. Un lien de réinitialisation vient de vous être envoyé par e-mail.',
+            ['reason' => 'password_expired'],
+        );
     }
 
     /**
@@ -240,16 +279,9 @@ final class AuthService
             throw ApiError::unauthorized('Lien de réinitialisation invalide ou expiré');
         }
 
-        $passwordHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => self::SALT_COST]);
         $accountId = (int) $record['account_id'];
-
-        if ($record['account_type'] === 'author') {
-            $db->prepare('UPDATE author SET password = :password WHERE id_author = :id')
-                ->execute(['password' => $passwordHash, 'id' => $accountId]);
-        } else {
-            $db->prepare('UPDATE users SET password = :password WHERE id_user = :id')
-                ->execute(['password' => $passwordHash, 'id' => $accountId]);
-        }
+        $passwordHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => self::SALT_COST]);
+        self::updatePassword($db, $record['account_type'], $accountId, $passwordHash);
 
         // Marqué utilisé avant toute autre chose : un jeton de reset ne doit
         // jamais pouvoir servir deux fois, même si la révocation des sessions
@@ -261,6 +293,55 @@ final class AuthService
         // invalider les sessions déjà ouvertes ailleurs (même logique que
         // deleteMyAccount()).
         self::revokeAllRefreshTokens($record['account_type'], $accountId);
+    }
+
+    /**
+     * Changement volontaire de mot de passe (utilisateur déjà connecté,
+     * n'importe quel rôle réel — lecteur, auteur ou admin). Exige le mot de
+     * passe actuel, contrairement à resetPassword() qui s'appuie sur un
+     * jeton reçu par e-mail.
+     * @param array{id:int,role:string} $user
+     */
+    public static function changePassword(array $user, string $currentPassword, string $newPassword): void
+    {
+        $role = $user['role'] ?? null;
+        if ($role === 'guest') {
+            throw ApiError::badRequest('Aucun mot de passe à modifier pour un visiteur.');
+        }
+
+        $db = self::db();
+        $id = (int) $user['id'];
+        $accountType = $role === 'author' ? 'author' : 'user';
+
+        if ($accountType === 'author') {
+            $stmt = $db->prepare('SELECT password FROM author WHERE id_author = :id AND deleted_at IS NULL LIMIT 1');
+        } else {
+            $stmt = $db->prepare('SELECT password FROM users WHERE id_user = :id AND deleted_at IS NULL LIMIT 1');
+        }
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+
+        if ($row === false || $row['password'] === null || !password_verify($currentPassword, $row['password'])) {
+            throw ApiError::unauthorized('Mot de passe actuel incorrect');
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => self::SALT_COST]);
+        self::updatePassword($db, $accountType, $id, $newHash);
+
+        // Comme resetPassword() : un changement volontaire révoque aussi les
+        // autres sessions actives (signal possible de compromission évité).
+        self::revokeAllRefreshTokens($accountType, $id);
+    }
+
+    private static function updatePassword(PDO $db, string $accountType, int $id, string $passwordHash): void
+    {
+        if ($accountType === 'author') {
+            $db->prepare('UPDATE author SET password = :password, password_changed_at = NOW() WHERE id_author = :id')
+                ->execute(['password' => $passwordHash, 'id' => $id]);
+        } else {
+            $db->prepare('UPDATE users SET password = :password, password_changed_at = NOW() WHERE id_user = :id')
+                ->execute(['password' => $passwordHash, 'id' => $id]);
+        }
     }
 
     /** @return array{type:string,id:int}|null */
@@ -379,7 +460,7 @@ final class AuthService
 
     private static function findAuthorByEmail(PDO $db, string $email): array|false
     {
-        $stmt = $db->prepare('SELECT id_author, email, password FROM author WHERE email = :email AND deleted_at IS NULL LIMIT 1');
+        $stmt = $db->prepare('SELECT id_author, email, password, password_changed_at FROM author WHERE email = :email AND deleted_at IS NULL LIMIT 1');
         $stmt->execute(['email' => $email]);
         return $stmt->fetch();
     }
