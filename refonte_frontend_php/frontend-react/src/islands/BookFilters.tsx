@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiClient } from '../lib/apiClient';
+import { Checkbox } from '../components/Checkbox';
 
 interface Category {
   id: number;
@@ -76,10 +77,9 @@ export default function BookFilters({ action, query }: Props) {
         </select>
       </label>
 
-      <label className="flex flex-row items-center gap-1.5 text-xs opacity-75">
-        <input type="checkbox" checked={isFree} onChange={(e) => setIsFree(e.target.checked)} />
+      <Checkbox checked={isFree} onChange={setIsFree} className="text-xs opacity-75">
         Gratuits uniquement
-      </label>
+      </Checkbox>
 
       <div className="ml-auto flex gap-2">
         <button type="button" onClick={handleReset} className="inline-block rounded-lg px-4 py-2 text-[0.8rem]">

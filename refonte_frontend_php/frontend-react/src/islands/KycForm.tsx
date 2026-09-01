@@ -1,6 +1,9 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { ShieldCheck, ShieldAlert, UploadCloud, CheckCircle2, X } from 'lucide-react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
 import { useRequireAuth } from '../lib/useRequireAuth';
+import { glassPanel, inputBase, labelBase, btnPrimary, errorText } from '../lib/authorUi';
+import { Checkbox } from '../components/Checkbox';
 
 const DOCUMENT_TYPE_OPTIONS = [
   { value: 'cni', label: "Carte nationale d'identité (CNI)" },
@@ -73,12 +76,7 @@ function toApiPayload(form: FormState) {
   return { ...rest, ...(Object.keys(socialLinks).length > 0 ? { socialLinks } : {}) };
 }
 
-const fieldClass = 'flex flex-col gap-1.5 text-[0.8rem] opacity-85';
-const inputClass =
-  'w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-brand-amber focus:ring-3 focus:ring-brand-amber/20 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100';
-const rowClass = 'grid grid-cols-2 gap-4';
-const btnPrimaryClass =
-  'inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900';
+const rowClass = 'grid grid-cols-1 gap-4 sm:grid-cols-2';
 
 // Équivalent de src/components/dashboard/author/KycForm.tsx (+
 // DocumentUploadField.tsx intégré). Une fois vérifié (isVerified), le
@@ -126,6 +124,8 @@ export default function KycForm() {
     if (user) loadStatus();
   }, [user]);
 
+  if (!user) return null;
+
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
@@ -172,97 +172,85 @@ export default function KycForm() {
     }
   }
 
-  if (!user) return null;
-  if (loadError) return <p className="text-sm text-rose-600">{loadError}</p>;
-  if (status === null) return <p className="opacity-60">Chargement…</p>;
+  if (loadError) return <p className={errorText}>{loadError}</p>;
+  if (status === null) return <div className="h-96 animate-pulse rounded-3xl border border-white/10 bg-white/[0.04]" />;
 
   const isVerified = status.isVerified;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">Vérification KYC</h1>
+        <p className="mt-1.5 text-sm text-white/50">Confirmez votre identité pour débloquer la gestion complète de vos livres.</p>
+      </div>
+
       {isVerified ? (
-        <p className="rounded-xl border border-emerald-500/35 bg-emerald-500/12 px-4.5 py-3.5 text-[0.85rem] text-emerald-500">
-          ✓ Votre identité est vérifiée — vous pouvez gérer vos livres librement. Vos informations sont verrouillées ;
-          contactez un administrateur si vous devez les modifier.
-        </p>
+        <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-4">
+          <ShieldCheck size={20} className="shrink-0 text-emerald-400" />
+          <p className="text-sm text-emerald-300">
+            Votre identité est vérifiée — vous pouvez gérer vos livres librement. Vos informations sont verrouillées ;
+            contactez un administrateur si vous devez les modifier.
+          </p>
+        </div>
       ) : (
         status.isComplete && (
-          <p className="rounded-xl border border-brand-amber/35 bg-brand-amber/12 px-4.5 py-3.5 text-[0.85rem] text-brand-amber">
-            ✓ KYC soumis — en attente de vérification par un administrateur.
-          </p>
+          <div className="flex items-center gap-3 rounded-2xl border border-brand-amber/30 bg-brand-amber/10 px-5 py-4">
+            <ShieldAlert size={20} className="shrink-0 text-brand-amber" />
+            <p className="text-sm text-brand-amber">KYC soumis — en attente de vérification par un administrateur.</p>
+          </div>
         )
       )}
 
-      <form className="flex max-w-2xl flex-col gap-4" onSubmit={handleSubmit}>
-        <fieldset disabled={isVerified} className="flex flex-col gap-4 border-none p-0 m-0 disabled:opacity-65">
-          <label className={fieldClass}>
+      <form className={`${glassPanel} flex max-w-2xl flex-col gap-5 p-6 sm:p-7`} onSubmit={handleSubmit}>
+        <fieldset disabled={isVerified} className="m-0 flex flex-col gap-5 border-none p-0 disabled:opacity-50">
+          <label className={labelBase}>
             Nom complet
-            <input
-              type="text"
-              value={form.fullName}
-              onChange={(e) => set('fullName', e.target.value)}
-              maxLength={50}
-              required
-              className={inputClass}
-            />
+            <input type="text" value={form.fullName} onChange={(e) => set('fullName', e.target.value)} maxLength={50} required className={inputBase} />
           </label>
 
           <div className={rowClass}>
-            <label className={fieldClass}>
+            <label className={labelBase}>
               Pays
-              <select value={form.country} onChange={(e) => set('country', e.target.value)} required className={inputClass}>
-                <option value="" disabled>
+              <select value={form.country} onChange={(e) => set('country', e.target.value)} required className={inputBase}>
+                <option value="" disabled className="bg-neutral-900">
                   Choisir…
                 </option>
                 {COUNTRY_OPTIONS.map((c) => (
-                  <option key={c} value={c}>
+                  <option key={c} value={c} className="bg-neutral-900">
                     {c}
                   </option>
                 ))}
               </select>
             </label>
-            <label className={fieldClass}>
+            <label className={labelBase}>
               Adresse
-              <input
-                type="text"
-                value={form.address}
-                onChange={(e) => set('address', e.target.value)}
-                maxLength={50}
-                required
-                className={inputClass}
-              />
+              <input type="text" value={form.address} onChange={(e) => set('address', e.target.value)} maxLength={50} required className={inputBase} />
             </label>
           </div>
 
           <div className={rowClass}>
-            <label className={fieldClass}>
+            <label className={labelBase}>
               Type de pièce d'identité
-              <select value={form.documentType} onChange={(e) => set('documentType', e.target.value)} className={inputClass}>
+              <select value={form.documentType} onChange={(e) => set('documentType', e.target.value)} className={inputBase}>
                 {DOCUMENT_TYPE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
+                  <option key={o.value} value={o.value} className="bg-neutral-900">
                     {o.label}
                   </option>
                 ))}
               </select>
             </label>
-            <label className={fieldClass}>
+            <label className={labelBase}>
               Numéro du document
-              <input
-                type="text"
-                value={form.documentId}
-                onChange={(e) => set('documentId', e.target.value)}
-                maxLength={50}
-                required
-                className={inputClass}
-              />
+              <input type="text" value={form.documentId} onChange={(e) => set('documentId', e.target.value)} maxLength={50} required className={inputBase} />
             </label>
           </div>
 
-          <div className={fieldClass}>
+          <div className={labelBase}>
             <span>Pièce d'identité (CNI, passeport ou autre)</span>
-            {form.documents && (
-              <p className="my-1 flex items-center gap-2.5 text-[0.85rem] text-emerald-500">
-                ✓ {docFileName ?? 'Document envoyé'}
+            {form.documents ? (
+              <div className="mt-1 flex items-center gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-2.5 text-[0.82rem] text-emerald-300">
+                <CheckCircle2 size={16} className="shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{docFileName ?? 'Document envoyé'}</span>
                 {!isVerified && (
                   <button
                     type="button"
@@ -270,93 +258,70 @@ export default function KycForm() {
                       set('documents', '');
                       setDocFileName(null);
                     }}
-                    className="border-none bg-none text-xs text-inherit underline opacity-70"
+                    className="shrink-0 rounded-md p-1 text-emerald-300/70 hover:bg-emerald-500/15 hover:text-emerald-200"
                   >
-                    Retirer
+                    <X size={14} />
                   </button>
                 )}
-              </p>
-            )}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              onChange={handleDocumentChange}
-              disabled={docUploading || isVerified}
-            />
-            {docUploading && <p className="opacity-60">Envoi…</p>}
-          </div>
-
-          <fieldset className="flex flex-col gap-3.5 rounded-xl border border-black/10 p-4 dark:border-white/10">
-            <legend className="px-1.5 text-xs font-bold tracking-[0.05em] uppercase opacity-60">Réseaux sociaux (facultatif)</legend>
-            <div className={rowClass}>
-              <label className={fieldClass}>
-                Facebook
+              </div>
+            ) : (
+              <label
+                className={`mt-1 flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-white/15 px-4 py-6 text-center transition hover:border-brand-amber/40 hover:bg-white/[0.02] ${
+                  docUploading || isVerified ? 'pointer-events-none opacity-50' : ''
+                }`}
+              >
+                <UploadCloud size={22} className="text-white/40" />
+                <span className="text-[0.8rem] text-white/50">{docUploading ? 'Envoi…' : 'Cliquez pour choisir un fichier (JPG, PNG, PDF)'}</span>
                 <input
-                  type="text"
-                  value={form.facebook}
-                  onChange={(e) => set('facebook', e.target.value)}
-                  placeholder="https://facebook.com/…"
-                  className={inputClass}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={handleDocumentChange}
+                  disabled={docUploading || isVerified}
+                  className="hidden"
                 />
               </label>
-              <label className={fieldClass}>
+            )}
+          </div>
+
+          <fieldset className="m-0 flex flex-col gap-3.5 rounded-2xl border border-white/10 bg-black/15 p-4">
+            <legend className="px-1.5 text-[0.7rem] font-semibold tracking-[0.12em] text-white/40 uppercase">Réseaux sociaux (facultatif)</legend>
+            <div className={rowClass}>
+              <label className={labelBase}>
+                Facebook
+                <input type="text" value={form.facebook} onChange={(e) => set('facebook', e.target.value)} placeholder="https://facebook.com/…" className={inputBase} />
+              </label>
+              <label className={labelBase}>
                 Instagram
-                <input
-                  type="text"
-                  value={form.instagram}
-                  onChange={(e) => set('instagram', e.target.value)}
-                  placeholder="https://instagram.com/…"
-                  className={inputClass}
-                />
+                <input type="text" value={form.instagram} onChange={(e) => set('instagram', e.target.value)} placeholder="https://instagram.com/…" className={inputBase} />
               </label>
             </div>
             <div className={rowClass}>
-              <label className={fieldClass}>
+              <label className={labelBase}>
                 X / Twitter
-                <input
-                  type="text"
-                  value={form.twitter}
-                  onChange={(e) => set('twitter', e.target.value)}
-                  placeholder="https://x.com/…"
-                  className={inputClass}
-                />
+                <input type="text" value={form.twitter} onChange={(e) => set('twitter', e.target.value)} placeholder="https://x.com/…" className={inputBase} />
               </label>
-              <label className={fieldClass}>
+              <label className={labelBase}>
                 Site web
-                <input
-                  type="text"
-                  value={form.website}
-                  onChange={(e) => set('website', e.target.value)}
-                  placeholder="https://…"
-                  className={inputClass}
-                />
+                <input type="text" value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://…" className={inputBase} />
               </label>
             </div>
           </fieldset>
 
-          <label className="flex items-center gap-2 text-[0.85rem]">
-            <input type="checkbox" checked={form.privacyAccepted} onChange={(e) => set('privacyAccepted', e.target.checked)} />
+          <Checkbox checked={form.privacyAccepted} onChange={(v) => set('privacyAccepted', v)} className="text-[0.85rem] text-white/70">
             J'accepte la politique de confidentialité
-          </label>
-          <a
-            href="/politique-confidentialite"
-            target="_blank"
-            rel="noreferrer"
-            className="-mt-2 text-xs text-brand-amber"
-          >
+          </Checkbox>
+          <a href="/politique-confidentialite" target="_blank" rel="noreferrer" className="-mt-3 text-xs text-brand-amber hover:underline">
             Lire la politique de confidentialité
           </a>
         </fieldset>
 
-        {error && <p className="text-sm text-rose-600">{error}</p>}
-        {success && <p className="text-[0.85rem] text-emerald-500">Informations enregistrées.</p>}
+        {error && <p className={errorText}>{error}</p>}
+        {success && <p className="text-[0.85rem] text-emerald-400">✓ Informations enregistrées.</p>}
 
         {!isVerified && (
-          <div className="flex items-center gap-3">
-            <button type="submit" disabled={isSubmitting || docUploading} className={btnPrimaryClass}>
-              {isSubmitting ? 'Enregistrement…' : 'Soumettre mon KYC'}
-            </button>
-          </div>
+          <button type="submit" disabled={isSubmitting || docUploading} className={`${btnPrimary} self-start`}>
+            {isSubmitting ? 'Enregistrement…' : 'Soumettre mon KYC'}
+          </button>
         )}
       </form>
     </div>

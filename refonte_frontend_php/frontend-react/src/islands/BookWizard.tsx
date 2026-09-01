@@ -1,9 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { BookText, ImageIcon, Coins, Sparkles as SparklesIcon, CheckCircle2, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
 import { useRequireAuth } from '../lib/useRequireAuth';
 import { EMPTY_BOOK_FORM, LANGUAGE_OPTIONS, toBookApiPayload, type BookFormState } from '../lib/bookForm';
 import { CoverUploadField } from '../components/CoverUploadField';
 import { ChipsInput } from '../components/ChipsInput';
+import { Checkbox } from '../components/Checkbox';
+import { glassPanel, inputBase, labelBase, btnPrimary, btnSecondary, errorText } from '../lib/authorUi';
 
 interface Category {
   id: number;
@@ -40,15 +43,15 @@ function clearDraft() {
 interface Step {
   title: string;
   description: string;
-  icon: string;
+  Icon: typeof BookText;
 }
 
 const STEPS: Step[] = [
-  { title: 'Informations', description: 'Titre, catégorie et résumé', icon: '📖' },
-  { title: 'Couverture', description: 'Image et fichier', icon: '🖼️' },
-  { title: 'Tarification', description: "Prix et conditions d'accès", icon: '💰' },
-  { title: 'Contenu enrichi', description: 'Introduction et conclusion (facultatif)', icon: '✨' },
-  { title: 'Récapitulatif', description: 'Vérifiez avant de publier', icon: '✓' },
+  { title: 'Informations', description: 'Titre, catégorie et résumé', Icon: BookText },
+  { title: 'Couverture', description: 'Image et fichier', Icon: ImageIcon },
+  { title: 'Tarification', description: "Prix et conditions d'accès", Icon: Coins },
+  { title: 'Contenu enrichi', description: 'Introduction et conclusion (facultatif)', Icon: SparklesIcon },
+  { title: 'Récapitulatif', description: 'Vérifiez avant de publier', Icon: CheckCircle2 },
 ];
 
 // Valide uniquement les champs pertinents pour l'étape courante — même
@@ -67,14 +70,8 @@ function validateStep(step: number, form: BookFormState): string | null {
   return null;
 }
 
-const fieldClass = 'flex flex-col gap-1.5 text-[0.8rem] opacity-85';
-const inputClass =
-  'w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-brand-amber focus:ring-3 focus:ring-brand-amber/20 focus:outline-none dark:border-white/10 dark:bg-neutral-900 dark:text-neutral-100';
-const rowClass = 'grid grid-cols-2 gap-4';
-const bookFormClass = 'flex max-w-2xl flex-col gap-4';
-const btnClass = 'inline-block rounded-lg px-5 py-2.5 text-sm disabled:opacity-60';
-const btnPrimaryClass =
-  'inline-block rounded-lg bg-neutral-900 px-5 py-2.5 text-sm text-white disabled:opacity-60 dark:bg-neutral-100 dark:text-neutral-900';
+const rowClass = 'grid grid-cols-1 gap-4 sm:grid-cols-2';
+const checkboxCardClass = 'rounded-xl border border-white/10 bg-black/15 px-3.5 py-3 text-[0.85rem] text-white/75 transition hover:border-white/20';
 
 // Équivalent de src/components/dashboard/author/BookWizard.tsx : même
 // BookFormState/toBookApiPayload que BookForm.tsx (cf. lib/bookForm.ts),
@@ -171,212 +168,198 @@ export default function BookWizard() {
 
   if (categoriesLoaded && categories.length === 0) {
     return (
-      <p className="mx-auto my-8 max-w-lg rounded-2xl border border-dashed border-black/10 p-8 text-center opacity-60 dark:border-white/10">
-        Aucune catégorie n'existe encore — impossible de créer un livre tant qu'au moins une catégorie n'a pas été ajoutée.
-      </p>
+      <div className={`${glassPanel} mx-auto my-8 max-w-lg p-8 text-center`}>
+        <p className="text-sm text-white/50">Aucune catégorie n'existe encore — impossible de créer un livre tant qu'au moins une catégorie n'a pas été ajoutée.</p>
+      </div>
     );
   }
 
   return (
     <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">Nouveau livre</h1>
+        <p className="mt-1.5 text-sm text-white/50">Publiez votre prochaine histoire en quelques étapes.</p>
+      </div>
+
       {hadDraft && step === 0 && (
-        <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-brand-amber bg-brand-amber/10 px-4 py-3 text-[0.85rem]">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-amber/25 bg-brand-amber/10 px-4.5 py-3.5 text-[0.85rem] text-brand-amber">
           <span>Brouillon restauré — reprenez là où vous vous étiez arrêté·e.</span>
-          <button type="button" onClick={handleRestart} className="border-none bg-none text-[0.8rem] text-rose-600 underline">
-            Recommencer
+          <button type="button" onClick={handleRestart} className="inline-flex items-center gap-1 border-none bg-none text-[0.8rem] text-rose-300 underline">
+            <RotateCcw size={12} /> Recommencer
           </button>
         </div>
       )}
 
-      <div className="flex items-center">
+      <div className="mb-5 flex items-center">
         {STEPS.map((s, index) => (
-          <div key={s.title} className="flex flex-1 flex-col items-center gap-1.5">
-            <span
-              className={`flex size-8 items-center justify-center rounded-full text-[0.85rem] font-semibold ${
-                index === step
-                  ? 'bg-gradient-to-br from-brand-amber to-brand-pink text-neutral-900'
-                  : index < step
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-black/10 dark:bg-white/10'
-              }`}
-            >
-              {index < step ? '✓' : index + 1}
-            </span>
-            <span className={`text-[0.7rem] whitespace-nowrap opacity-65 ${index === step ? 'font-semibold opacity-100' : ''}`}>{s.title}</span>
+          <div key={s.title} className="flex flex-1 flex-col items-center gap-2">
+            <div className="relative flex w-full items-center">
+              {index > 0 && <span className={`absolute right-1/2 h-px w-full ${index <= step ? 'bg-gradient-to-r from-brand-amber to-brand-pink' : 'bg-white/10'}`} />}
+              <span
+                className={`relative z-10 mx-auto flex size-9 items-center justify-center rounded-full text-[0.85rem] font-semibold transition ${
+                  index === step
+                    ? 'bg-gradient-to-br from-brand-amber to-brand-pink text-neutral-950 shadow-[0_0_0_4px_rgba(245,158,11,0.15)]'
+                    : index < step
+                      ? 'bg-emerald-500/90 text-white'
+                      : 'border border-white/15 bg-black/30 text-white/40'
+                }`}
+              >
+                {index < step ? <CheckCircle2 size={16} /> : index + 1}
+              </span>
+            </div>
+            <span className={`text-center text-[0.68rem] whitespace-nowrap ${index === step ? 'font-semibold text-white' : 'text-white/35'}`}>{s.title}</span>
           </div>
         ))}
       </div>
 
-      <form
-        className="mt-4 rounded-[1.25rem] border border-black/10 p-6 dark:border-white/10"
-        onSubmit={isLastStep ? handleSubmit : (e) => e.preventDefault()}
-      >
-        <div className="mb-5 flex items-center gap-3">
-          <span>{currentStep.icon}</span>
+      <form className={`${glassPanel} p-6 sm:p-7`} onSubmit={isLastStep ? handleSubmit : (e) => e.preventDefault()}>
+        <div className="mb-6 flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-amber/20 to-brand-pink/20 text-brand-amber">
+            <currentStep.Icon size={18} />
+          </span>
           <div>
-            <h2 className="m-0 text-[1.1rem]">{currentStep.title}</h2>
-            <p className="mt-0.5 text-[0.8rem] opacity-60">{currentStep.description}</p>
+            <h2 className="text-[1.1rem] font-semibold text-white">{currentStep.title}</h2>
+            <p className="mt-0.5 text-[0.8rem] text-white/45">{currentStep.description}</p>
           </div>
         </div>
 
         {step === 0 && (
-          <div className={bookFormClass}>
-            <label className={fieldClass}>
+          <div className="flex max-w-2xl flex-col gap-4">
+            <label className={labelBase}>
               Titre
-              <input type="text" value={form.title} onChange={(e) => set('title', e.target.value)} maxLength={255} className={inputClass} />
+              <input type="text" value={form.title} onChange={(e) => set('title', e.target.value)} maxLength={255} className={inputBase} />
             </label>
             <div className={rowClass}>
-              <label className={fieldClass}>
+              <label className={labelBase}>
                 Catégorie
-                <select value={form.categoryId || ''} onChange={(e) => set('categoryId', Number(e.target.value))} className={inputClass}>
-                  <option value="" disabled>
+                <select value={form.categoryId || ''} onChange={(e) => set('categoryId', Number(e.target.value))} className={inputBase}>
+                  <option value="" disabled className="bg-neutral-900">
                     Choisir…
                   </option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={c.id} className="bg-neutral-900">
                       {c.name}
                     </option>
                   ))}
                 </select>
               </label>
-              <label className={fieldClass}>
+              <label className={labelBase}>
                 Langue
-                <select value={form.language} onChange={(e) => set('language', e.target.value)} className={inputClass}>
+                <select value={form.language} onChange={(e) => set('language', e.target.value)} className={inputBase}>
                   {LANGUAGE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
+                    <option key={o.value} value={o.value} className="bg-neutral-900">
                       {o.label}
                     </option>
                   ))}
                 </select>
               </label>
             </div>
-            <label className={fieldClass}>
+            <label className={labelBase}>
               Résumé
-              <textarea value={form.resume} onChange={(e) => set('resume', e.target.value)} rows={5} className={`${inputClass} resize-y`} />
+              <textarea value={form.resume} onChange={(e) => set('resume', e.target.value)} rows={5} className={`${inputBase} resize-y`} />
             </label>
           </div>
         )}
 
         {step === 1 && (
-          <div className={bookFormClass}>
+          <div className="flex max-w-2xl flex-col gap-4">
             <CoverUploadField value={form.cover} onChange={(url) => set('cover', url)} />
-            <label className={fieldClass}>
+            <label className={labelBase}>
               Lien du fichier (facultatif)
-              <input type="text" value={form.bookLink} onChange={(e) => set('bookLink', e.target.value)} placeholder="https://…" className={inputClass} />
-              <span className="text-xs opacity-55">Un livre géré uniquement via les chapitres n'a pas besoin de fichier externe.</span>
+              <input type="text" value={form.bookLink} onChange={(e) => set('bookLink', e.target.value)} placeholder="https://…" className={inputBase} />
+              <span className="text-xs text-white/35">Un livre géré uniquement via les chapitres n'a pas besoin de fichier externe.</span>
             </label>
             <div className={rowClass}>
-              <label className={fieldClass}>
+              <label className={labelBase}>
                 Date de publication
-                <input type="date" value={form.datePub} onChange={(e) => set('datePub', e.target.value)} className={inputClass} />
+                <input type="date" value={form.datePub} onChange={(e) => set('datePub', e.target.value)} className={inputBase} />
               </label>
-              <label className={fieldClass}>
+              <label className={labelBase}>
                 Nombre de pages
-                <input
-                  type="number"
-                  min={1}
-                  value={form.pageNumber}
-                  onChange={(e) => set('pageNumber', Number(e.target.value))}
-                  className={inputClass}
-                />
+                <input type="number" min={1} value={form.pageNumber} onChange={(e) => set('pageNumber', Number(e.target.value))} className={inputBase} />
               </label>
             </div>
           </div>
         )}
 
         {step === 2 && (
-          <div className={bookFormClass}>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2.5">
-              <label className="flex items-center gap-2 rounded-lg border border-black/10 px-3.5 py-2.5 text-[0.85rem] dark:border-white/10">
-                <input type="checkbox" checked={form.isFree} onChange={(e) => set('isFree', e.target.checked)} />
+          <div className="flex max-w-2xl flex-col gap-4">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              <Checkbox checked={form.isFree} onChange={(v) => set('isFree', v)} className={checkboxCardClass}>
                 Livre entièrement gratuit
-              </label>
-              <label className="flex items-center gap-2 rounded-lg border border-black/10 px-3.5 py-2.5 text-[0.85rem] dark:border-white/10">
-                <input type="checkbox" checked={form.isPromotion} onChange={(e) => set('isPromotion', e.target.checked)} />
+              </Checkbox>
+              <Checkbox checked={form.isPromotion} onChange={(v) => set('isPromotion', v)} className={checkboxCardClass}>
                 En promotion
-              </label>
-              <label className="flex items-center gap-2 rounded-lg border border-black/10 px-3.5 py-2.5 text-[0.85rem] dark:border-white/10">
-                <input type="checkbox" checked={form.readBeforePay} onChange={(e) => set('readBeforePay', e.target.checked)} />
+              </Checkbox>
+              <Checkbox checked={form.readBeforePay} onChange={(v) => set('readBeforePay', v)} className={checkboxCardClass}>
                 Lecture avant paiement
-              </label>
-              <label className="flex items-center gap-2 rounded-lg border border-black/10 px-3.5 py-2.5 text-[0.85rem] dark:border-white/10">
-                <input type="checkbox" checked={form.isAdultOnly} onChange={(e) => set('isAdultOnly', e.target.checked)} />
+              </Checkbox>
+              <Checkbox checked={form.isAdultOnly} onChange={(v) => set('isAdultOnly', v)} className={checkboxCardClass}>
                 Public averti (+18)
-              </label>
+              </Checkbox>
             </div>
             {!form.isFree && (
               <div className={rowClass}>
-                <label className={fieldClass}>
+                <label className={labelBase}>
                   Prix (FCFA)
-                  <input type="number" min={0} value={form.price} onChange={(e) => set('price', Number(e.target.value))} className={inputClass} />
+                  <input type="number" min={0} value={form.price} onChange={(e) => set('price', Number(e.target.value))} className={inputBase} />
                 </label>
-                <label className={fieldClass}>
+                <label className={labelBase}>
                   Chapitres gratuits (aperçu)
-                  <input
-                    type="number"
-                    min={0}
-                    value={form.freeChapterCount}
-                    onChange={(e) => set('freeChapterCount', Number(e.target.value))}
-                    className={inputClass}
-                  />
+                  <input type="number" min={0} value={form.freeChapterCount} onChange={(e) => set('freeChapterCount', Number(e.target.value))} className={inputBase} />
                 </label>
               </div>
             )}
             {form.isPromotion && (
-              <label className={`${fieldClass} max-w-56`}>
+              <label className={`${labelBase} max-w-56`}>
                 Prix promotionnel (FCFA)
-                <input
-                  type="number"
-                  min={0}
-                  value={form.promotionPrice}
-                  onChange={(e) => set('promotionPrice', Number(e.target.value))}
-                  className={inputClass}
-                />
+                <input type="number" min={0} value={form.promotionPrice} onChange={(e) => set('promotionPrice', Number(e.target.value))} className={inputBase} />
               </label>
             )}
           </div>
         )}
 
         {step === 3 && (
-          <div className={bookFormClass}>
-            <p className="text-xs opacity-55">Ces trois champs sont entièrement facultatifs — laissez-les vides si non applicable.</p>
-            <label className={fieldClass}>
+          <div className="flex max-w-2xl flex-col gap-4">
+            <p className="text-xs text-white/35">Ces trois champs sont entièrement facultatifs — laissez-les vides si non applicable.</p>
+            <label className={labelBase}>
               Introduction
-              <textarea value={form.introduction} onChange={(e) => set('introduction', e.target.value)} rows={4} className={`${inputClass} resize-y`} />
+              <textarea value={form.introduction} onChange={(e) => set('introduction', e.target.value)} rows={4} className={`${inputBase} resize-y`} />
             </label>
-            <label className={fieldClass}>
+            {/* <div>, pas <label> : ChipsInput contient ses propres <button>
+                (retrait d'un chip) — cf. commentaire équivalent dans
+                ChapterEditorPage.tsx pour RichTextEditor, même piège. */}
+            <div className={labelBase}>
               Sujets abordés
               <ChipsInput
                 value={form.topics ? form.topics.split(',').map((t) => t.trim()).filter(Boolean) : []}
                 onChange={(chips) => set('topics', chips.join(', '))}
                 placeholder="Tapez un sujet puis Entrée…"
               />
-            </label>
-            <label className={fieldClass}>
+            </div>
+            <label className={labelBase}>
               Conclusion
-              <textarea value={form.conclusion} onChange={(e) => set('conclusion', e.target.value)} rows={4} className={`${inputClass} resize-y`} />
+              <textarea value={form.conclusion} onChange={(e) => set('conclusion', e.target.value)} rows={4} className={`${inputBase} resize-y`} />
             </label>
           </div>
         )}
 
         {step === 4 && (
           <div className="flex flex-col gap-5">
-            <div className="flex gap-4 rounded-2xl border border-black/10 p-4 dark:border-white/10">
+            <div className="flex gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
               {form.cover ? (
-                <img src={form.cover} alt="Couverture" className="h-28 w-20 shrink-0 rounded-lg object-cover" />
+                <img src={form.cover} alt="Couverture" className="h-28 w-20 shrink-0 rounded-lg object-cover shadow-lg" />
               ) : (
-                <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-lg bg-black/10 text-[0.7rem] opacity-60 dark:bg-white/10">
-                  Sans image
-                </div>
+                <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-[0.7rem] text-white/40">Sans image</div>
               )}
-              <div>
-                <p className="m-0 font-bold">{form.title || 'Sans titre'}</p>
-                <p className="my-1 text-xs opacity-60">{categories.find((c) => c.id === form.categoryId)?.name}</p>
-                <p className="mt-2 text-[0.85rem] opacity-80">{form.resume}</p>
+              <div className="min-w-0">
+                <p className="font-bold text-white">{form.title || 'Sans titre'}</p>
+                <p className="my-1 text-xs text-white/40">{categories.find((c) => c.id === form.categoryId)?.name}</p>
+                <p className="mt-2 line-clamp-3 text-[0.85rem] text-white/60">{form.resume}</p>
               </div>
             </div>
 
-            <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+            <dl className="m-0 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <RecapRow label="Prix" value={form.isFree ? 'Gratuit' : `${form.price} FCFA`} />
               <RecapRow label="Promotion" value={form.isPromotion ? `Oui — ${form.promotionPrice} FCFA` : 'Non'} />
               <RecapRow label="Chapitres gratuits (aperçu)" value={String(form.freeChapterCount)} />
@@ -389,12 +372,14 @@ export default function BookWizard() {
             </dl>
 
             {submitError && (
-              <p className="text-sm text-rose-600">
+              <p className={errorText}>
                 {submitError}
                 {kycBlocked && (
                   <>
                     {' '}
-                    <a href="/espace-auteur/kyc">Compléter mon KYC →</a>
+                    <a href="/espace-auteur/kyc" className="text-brand-amber underline">
+                      Compléter mon KYC →
+                    </a>
                   </>
                 )}
               </p>
@@ -402,19 +387,19 @@ export default function BookWizard() {
           </div>
         )}
 
-        {stepError && <p className="text-sm text-rose-600">{stepError}</p>}
+        {stepError && <p className={`mt-4 ${errorText}`}>{stepError}</p>}
 
-        <div className="mt-6 flex justify-between">
-          <button type="button" onClick={goBack} disabled={isFirstStep} className={btnClass}>
-            ← Précédent
+        <div className="mt-7 flex justify-between border-t border-white/10 pt-5">
+          <button type="button" onClick={goBack} disabled={isFirstStep} className={btnSecondary}>
+            <ArrowLeft size={15} /> Précédent
           </button>
           {isLastStep ? (
-            <button type="submit" disabled={isSubmitting} className={btnPrimaryClass}>
+            <button type="submit" disabled={isSubmitting} className={btnPrimary}>
               {isSubmitting ? 'Publication…' : 'Publier le livre'}
             </button>
           ) : (
-            <button type="button" onClick={goNext} className={btnPrimaryClass}>
-              Suivant →
+            <button type="button" onClick={goNext} className={btnPrimary}>
+              Suivant <ArrowRight size={15} />
             </button>
           )}
         </div>
@@ -425,9 +410,9 @@ export default function BookWizard() {
 
 function RecapRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-black/10 px-3.5 py-2.5 dark:border-white/10">
-      <dt className="text-[0.7rem] opacity-55">{label}</dt>
-      <dd className="mt-0.5 overflow-hidden text-[0.85rem] font-semibold text-ellipsis whitespace-nowrap">{value}</dd>
+    <div className="rounded-xl border border-white/10 bg-black/15 px-3.5 py-2.5">
+      <dt className="text-[0.7rem] text-white/40">{label}</dt>
+      <dd className="mt-0.5 overflow-hidden text-[0.85rem] font-semibold text-ellipsis whitespace-nowrap text-white">{value}</dd>
     </div>
   );
 }

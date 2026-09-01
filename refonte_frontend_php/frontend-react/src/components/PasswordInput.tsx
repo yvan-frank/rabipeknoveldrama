@@ -33,7 +33,7 @@ export function PasswordInput({ id, value, onChange, autoComplete, onFocus, onBl
         type="button"
         onClick={() => setIsVisible((v) => !v)}
         aria-label={isVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-        className="absolute top-1/2 right-2.5 -translate-y-1/2 text-base opacity-60 hover:opacity-100"
+        className="absolute inset-y-0 right-2.5 flex items-center text-base opacity-60 hover:opacity-100"
       >
         {isVisible ? '🙈' : '👁'}
       </button>

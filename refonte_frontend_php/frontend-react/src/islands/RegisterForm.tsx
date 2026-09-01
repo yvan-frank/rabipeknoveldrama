@@ -3,6 +3,7 @@ import { apiClient, extractApiErrorMessage, saveSession, type SessionUser } from
 import { resolveAuthRedirect } from '../lib/dashboard';
 import { PasswordInput } from '../components/PasswordInput';
 import { PasswordStrengthPanel } from '../components/PasswordStrengthPanel';
+import { Checkbox } from '../components/Checkbox';
 import { countWords, isStrongPassword, MAX_ABOUT_WORDS } from '../lib/auth';
 
 interface Props {
@@ -244,13 +245,17 @@ export default function RegisterForm({ redirectTo }: Props) {
               <PasswordInput id="confirmPassword" value={form.confirmPassword} onChange={(v) => set('confirmPassword', v)} autoComplete="new-password" />
             </label>
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-black/10 p-3.5 hover:border-brand-amber dark:border-white/10">
-              <input type="checkbox" checked={form.isAuthor} onChange={(e) => set('isAuthor', e.target.checked)} className="mt-0.5 shrink-0" />
+            <Checkbox
+              checked={form.isAuthor}
+              onChange={(v) => set('isAuthor', v)}
+              alignTop
+              className="rounded-2xl border border-black/10 p-3.5 hover:border-brand-amber dark:border-white/10"
+            >
               <span className="flex flex-col gap-0.5">
                 <strong className="text-[0.875rem] font-semibold">✒ Je suis auteur</strong>
                 <span className="text-xs opacity-60">Quelques questions en plus pour créer votre profil auteur.</span>
               </span>
-            </label>
+            </Checkbox>
 
             {stepError && <p className="text-sm text-rose-600">{stepError}</p>}
             {submitError && <p className="text-sm text-rose-600">{submitError}</p>}

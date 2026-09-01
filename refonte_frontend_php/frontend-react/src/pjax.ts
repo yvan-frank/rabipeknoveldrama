@@ -13,8 +13,10 @@ const ROOT_ID = 'pjax-root';
 const BAR_ID = 'pjax-progress-bar';
 
 type MountFn = () => void;
+type UnmountFn = () => void;
 
 let mount: MountFn = () => undefined;
+let unmount: UnmountFn = () => undefined;
 let activeController: AbortController | null = null;
 let hideTimeoutId: number | undefined;
 let growTimeoutIds: number[] = [];
@@ -113,6 +115,10 @@ async function navigateTo(url: string, push: boolean): Promise<void> {
     const currentRoot = document.getElementById(ROOT_ID);
     if (!newRoot || !currentRoot) throw new Error('#pjax-root introuvable dans la réponse');
 
+    // Démonte les îlots de la page quittée avant de jeter leur DOM — cf.
+    // main.tsx pour pourquoi c'est indispensable (fuite d'effets React,
+    // redirections fantômes).
+    unmount();
     currentRoot.innerHTML = newRoot.innerHTML;
     document.title = parsed.title;
     if (push) {
@@ -136,8 +142,9 @@ async function navigateTo(url: string, push: boolean): Promise<void> {
   }
 }
 
-export function initPjax(mountIslands: MountFn): void {
-  mount = mountIslands;
+export function initPjax(handlers: { mount: MountFn; unmount: UnmountFn }): void {
+  mount = handlers.mount;
+  unmount = handlers.unmount;
 
   document.addEventListener('click', (event) => {
     if (event.defaultPrevented || event.button !== 0) return;

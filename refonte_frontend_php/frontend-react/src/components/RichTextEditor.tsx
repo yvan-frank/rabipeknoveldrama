@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
@@ -37,6 +38,18 @@ export function RichTextEditor({ content, onChange }: Props) {
       attributes: {},
     },
   });
+
+  // useEditor ne prend `content` qu'à l'initialisation — sans ça, un
+  // contenu qui arrive après coup (brouillon localStorage restauré une fois
+  // le livre chargé, chapitre existant récupéré en mode édition) ne se
+  // reflète jamais dans l'éditeur alors que les <input> classiques (titre,
+  // numéro…) se mettent bien à jour puisqu'ils sont liés à `value`.
+  useEffect(() => {
+    if (!editor) return;
+    if (content !== editor.getHTML()) {
+      editor.commands.setContent(content, { emitUpdate: false });
+    }
+  }, [editor, content]);
 
   if (!editor) {
     return <div className="min-h-60 rounded-xl border border-black/10 bg-black/[0.04] dark:border-white/10 dark:bg-white/[0.04]" />;

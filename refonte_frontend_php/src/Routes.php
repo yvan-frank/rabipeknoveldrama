@@ -51,6 +51,8 @@ final class Routes
         $router->get('/espace-auteur/livres', [new AuthorController(), 'books']);
         $router->get('/espace-auteur/livres/nouveau', [new AuthorController(), 'newBook']);
         $router->get('/espace-auteur/livres/:id', [new AuthorController(), 'editBook']);
+        $router->get('/espace-auteur/livres/:id/chapitres/nouveau', [new AuthorController(), 'newChapter']);
+        $router->get('/espace-auteur/livres/:id/chapitres/:chapterId', [new AuthorController(), 'editChapter']);
         $router->get('/espace-auteur/avis', [new AuthorController(), 'reviews']);
         $router->get('/espace-auteur/kyc', [new AuthorController(), 'kyc']);
         $router->get('/espace-auteur/parametres', [new AuthorController(), 'settings']);

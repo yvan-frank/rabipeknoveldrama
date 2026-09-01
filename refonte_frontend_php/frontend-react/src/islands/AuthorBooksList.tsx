@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Trash2, ArrowUpRight, Plus } from 'lucide-react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
 import { formatPrice } from '../lib/formatPrice';
 import { DeleteConfirm, CONFIRMATION_PHRASE } from '../components/DeleteConfirm';
 import { useRequireAuth } from '../lib/useRequireAuth';
+import { glassPanel, glassPanelHover, badgeNeutral, badgeAmber, errorText, emptyText, skeletonPulse } from '../lib/authorUi';
 
 interface AuthorBook {
   id: number;
@@ -16,9 +18,6 @@ interface AuthorBook {
   category: { name: string };
   _count: { chapters: number; likes: number; comments: number };
 }
-
-const badgeClass = 'inline-block rounded-full bg-black/10 px-2 py-0.5 text-[0.7rem] font-semibold dark:bg-white/10';
-const badgeFreeClass = 'inline-block rounded-full bg-brand-amber/20 px-2 py-0.5 text-[0.7rem] font-semibold text-brand-amber';
 
 // Équivalent de src/components/dashboard/author/AuthorBooksSection.tsx.
 export default function AuthorBooksList() {
@@ -57,59 +56,81 @@ export default function AuthorBooksList() {
     }
   }
 
-  if (error) return <p className="text-sm text-rose-600">{error}</p>;
-  if (books === null) return <p className="opacity-60">Chargement…</p>;
-
-  if (books.length === 0) {
-    return (
-      <div className="mt-6 rounded-2xl border border-dashed border-black/10 px-4 py-10 text-center dark:border-white/10">
-        <p className="mb-4 opacity-60">Vous n'avez encore publié aucun livre.</p>
-        <a href="/espace-auteur/livres/nouveau" className="inline-block rounded-lg px-5 py-2.5 text-sm no-underline">
-          Publier votre premier livre
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">Mes livres</h1>
+          <p className="mt-1.5 text-sm text-white/50">{books?.length ?? 0} livre{(books?.length ?? 0) > 1 ? 's' : ''} publié{(books?.length ?? 0) > 1 ? 's' : ''}.</p>
+        </div>
+        <a
+          href="/espace-auteur/livres/nouveau"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-amber to-brand-pink px-5 py-2.5 text-sm font-semibold text-neutral-950 no-underline shadow-[0_10px_30px_-10px_rgba(245,158,11,0.65)] transition hover:scale-[1.03]"
+        >
+          <Plus size={16} strokeWidth={2.5} /> Nouveau livre
         </a>
       </div>
-    );
-  }
 
-  return (
-    <>
-      <div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
-        {books.map((book) => (
-          <div key={book.id} className="flex flex-col gap-3 rounded-2xl border border-black/10 p-4 dark:border-white/10">
-            <div className="flex items-center gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-amber to-brand-pink font-bold text-neutral-900">
-                {book.title.slice(0, 1).toUpperCase()}
-              </span>
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap">{book.title}</span>
-                <span className="text-[0.7rem] opacity-55">{book.category.name}</span>
+      {error ? (
+        <p className={errorText}>{error}</p>
+      ) : books === null ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className={`${skeletonPulse} h-40`} />
+          ))}
+        </div>
+      ) : books.length === 0 ? (
+        <div className={`${glassPanel} p-10 text-center`}>
+          <p className={emptyText}>Vous n'avez encore publié aucun livre.</p>
+          <a
+            href="/espace-auteur/livres/nouveau"
+            className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-amber to-brand-pink px-5 py-2.5 text-sm font-semibold text-neutral-950 no-underline"
+          >
+            Publier votre premier livre <ArrowUpRight size={16} />
+          </a>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {books.map((book) => (
+            <div key={book.id} className={`${glassPanel} ${glassPanelHover} group flex flex-col gap-4 p-4`}>
+              <div className="flex items-start gap-3.5">
+                {book.cover ? (
+                  <img src={book.cover} alt="" className="h-[76px] w-[52px] shrink-0 rounded-lg object-cover shadow-lg" />
+                ) : (
+                  <span className="flex h-[76px] w-[52px] shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand-amber to-brand-pink text-xl font-bold text-neutral-950">
+                    {book.title.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <p className="truncate text-sm font-semibold text-white">{book.title}</p>
+                  <p className="mt-0.5 text-[0.72rem] text-white/40">{book.category.name}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className={badgeNeutral}>
+                      {book._count.chapters} chap.
+                    </span>
+                    <span className={badgeNeutral}>{book.isFree ? 'Gratuit' : `${formatPrice(book.price)} FCFA`}</span>
+                    {book.isPromotion && <span className={badgeAmber}>Promo</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-auto flex items-center justify-between border-t border-white/10 pt-3">
+                <a href={`/espace-auteur/livres/${book.id}`} className="inline-flex items-center gap-1 text-[0.8rem] font-semibold text-brand-amber no-underline hover:underline">
+                  Gérer <ArrowUpRight size={13} />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setBookToDelete(book)}
+                  aria-label="Supprimer"
+                  className="rounded-lg border-none bg-transparent p-1.5 text-white/30 transition hover:bg-rose-500/10 hover:text-rose-300"
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              <span className={badgeClass}>
-                {book._count.chapters} chapitre{book._count.chapters > 1 ? 's' : ''}
-              </span>
-              <span className={badgeClass}>{book.isFree ? 'Gratuit' : `${formatPrice(book.price)} FCFA`}</span>
-              {book.isPromotion && <span className={badgeFreeClass}>Promo</span>}
-            </div>
-
-            <div className="mt-1 flex items-center justify-between">
-              <a href={`/espace-auteur/livres/${book.id}`} className="text-[0.85rem] font-semibold text-brand-amber no-underline">
-                Gérer →
-              </a>
-              <button
-                type="button"
-                onClick={() => setBookToDelete(book)}
-                aria-label="Supprimer"
-                className="rounded border-none bg-none p-1 text-base opacity-50 hover:bg-rose-600/10 hover:opacity-100"
-              >
-                🗑
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {bookToDelete && (
         <DeleteConfirm
@@ -126,6 +147,6 @@ export default function AuthorBooksList() {
           onConfirm={handleConfirmDelete}
         />
       )}
-    </>
+    </div>
   );
 }

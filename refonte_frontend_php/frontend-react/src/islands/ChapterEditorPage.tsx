@@ -1,0 +1,351 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import { ArrowLeft, BookOpen, Hash, Layers, Save, Trash2, FileText, Sparkles } from 'lucide-react';
+import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
+import { useRequireAuth } from '../lib/useRequireAuth';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { DeleteConfirm } from '../components/DeleteConfirm';
+import { glassPanel, glassInset, inputBase, labelBase, btnPrimary, btnSecondary, btnDanger, errorText, skeletonPulse } from '../lib/authorUi';
+
+interface Props {
+  bookId: string;
+  // Absent = création. Présent = édition de ce chapitre.
+  chapterId?: string;
+}
+
+interface BookPart {
+  id: number;
+  title: string;
+  partNumber: number;
+}
+
+interface BookSummary {
+  id: number;
+  title: string;
+  parts: BookPart[];
+  chapters: Array<{ id: number; chapterNumber: number }>;
+}
+
+interface ChapterFormState {
+  title: string;
+  chapterNumber: number;
+  introduction: string;
+  content: string;
+  partId: number | null;
+}
+
+const EMPTY_FORM: ChapterFormState = { title: '', chapterNumber: 1, introduction: '', content: '', partId: null };
+
+function chapterPayload(form: ChapterFormState) {
+  return {
+    title: form.title,
+    chapterNumber: form.chapterNumber,
+    content: form.content,
+    partId: form.partId,
+    extension: form.introduction ? { introduction: form.introduction } : undefined,
+  };
+}
+
+// Brouillon localStorage — uniquement pour la création (pas l'édition, où
+// les données serveur font déjà foi), même règle que ChapterForm.tsx côté source.
+function draftKeyFor(bookId: string): string {
+  return `author-chapter-draft-${bookId}`;
+}
+
+function loadDraft(key: string): Partial<ChapterFormState> | null {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(key: string, values: ChapterFormState) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(values));
+  } catch {
+    // stockage indisponible (navigation privée, quota) : on continue sans persistance
+  }
+}
+
+function clearDraft(key: string) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // rien à faire si l'accès au storage échoue déjà
+  }
+}
+
+function wordCount(html: string): number {
+  const text = html.replace(/<[^>]*>/g, ' ').trim();
+  return text ? text.split(/\s+/).length : 0;
+}
+
+// Équivalent immersif du panel ChapterForm.tsx — page dédiée plutôt que
+// modale (l'ancienne modale, cf. git history de BookManageDashboard.tsx,
+// posait aussi un problème de containing block avec les panneaux
+// backdrop-blur). Layout studio : contenu éditorial au centre, réglages du
+// chapitre dans une colonne fixe à droite.
+export default function ChapterEditorPage({ bookId, chapterId }: Props) {
+  const isEditMode = chapterId !== undefined;
+  const user = useRequireAuth(isEditMode ? `/espace-auteur/livres/${bookId}/chapitres/${chapterId}` : `/espace-auteur/livres/${bookId}/chapitres/nouveau`);
+
+  const [book, setBook] = useState<BookSummary | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [form, setForm] = useState<ChapterFormState>(EMPTY_FORM);
+  const [isLoadingChapter, setIsLoadingChapter] = useState(isEditMode);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Livre (titre pour le fil d'ariane + parties disponibles pour l'assignation).
+  useEffect(() => {
+    if (!user) return;
+    apiClient
+      .get(`/books/manage/${bookId}`)
+      .then((res) => setBook(res.data?.data ?? null))
+      .catch((err) => setLoadError(extractApiErrorMessage(err, 'Impossible de charger ce livre.')));
+  }, [user, bookId]);
+
+  // Création : brouillon localStorage + numéro de chapitre par défaut une
+  // fois le livre chargé (nombre de chapitres existants + 1).
+  useEffect(() => {
+    if (isEditMode || !book) return;
+    const key = draftKeyFor(bookId);
+    const draft = loadDraft(key);
+    setHasDraft(Boolean(draft?.title || draft?.content));
+    setForm({ ...EMPTY_FORM, chapterNumber: book.chapters.length + 1, ...draft });
+  }, [isEditMode, book, bookId]);
+
+  // Édition : charge le chapitre existant.
+  useEffect(() => {
+    if (!isEditMode || !chapterId || !user) return;
+    setIsLoadingChapter(true);
+    apiClient
+      .get(`/chapters/manage/${chapterId}`)
+      .then((res) => {
+        const chapter = res.data?.data;
+        setForm({
+          title: chapter?.title ?? '',
+          chapterNumber: chapter?.chapterNumber ?? 1,
+          introduction: chapter?.extension?.introduction ?? '',
+          content: chapter?.content ?? '',
+          partId: chapter?.partId ?? null,
+        });
+      })
+      .catch((err) => setLoadError(extractApiErrorMessage(err, 'Impossible de charger ce chapitre.')))
+      .finally(() => setIsLoadingChapter(false));
+  }, [isEditMode, chapterId, user]);
+
+  // Sauvegarde automatique du brouillon (création uniquement).
+  useEffect(() => {
+    if (isEditMode) return;
+    if (form.title || form.content) saveDraft(draftKeyFor(bookId), form);
+  }, [isEditMode, bookId, form]);
+
+  if (!user) return null;
+
+  function set<K extends keyof ChapterFormState>(key: K, value: ChapterFormState[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function handleRestart() {
+    if (!window.confirm('Effacer le brouillon et recommencer ce chapitre depuis le début ?')) return;
+    clearDraft(draftKeyFor(bookId));
+    setForm({ ...EMPTY_FORM, chapterNumber: book?.chapters.length ? book.chapters.length + 1 : 1 });
+    setHasDraft(false);
+  }
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setSubmitError(null);
+    setIsSubmitting(true);
+    try {
+      if (isEditMode) {
+        await apiClient.patch(`/chapters/${chapterId}`, chapterPayload(form));
+      } else {
+        await apiClient.post('/chapters', { ...chapterPayload(form), bookId: Number(bookId) });
+        clearDraft(draftKeyFor(bookId));
+      }
+      window.location.href = `/espace-auteur/livres/${bookId}`;
+    } catch (err) {
+      setSubmitError(extractApiErrorMessage(err, "Impossible d'enregistrer le chapitre."));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!chapterId) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await apiClient.delete(`/chapters/${chapterId}`);
+      window.location.href = `/espace-auteur/livres/${bookId}`;
+    } catch (err) {
+      setDeleteError(extractApiErrorMessage(err, 'La suppression a échoué.'));
+      setIsDeleting(false);
+    }
+  }
+
+  if (loadError) return <p className={errorText}>{loadError}</p>;
+  if (book === null || isLoadingChapter) return <div className={`${skeletonPulse} h-96`} />;
+
+  return (
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+      <div className="min-w-0 flex-1">
+        <a
+          href={`/espace-auteur/livres/${bookId}`}
+          className="inline-flex w-fit items-center gap-1.5 text-[0.85rem] text-white/50 no-underline hover:text-white"
+        >
+          <ArrowLeft size={14} /> Retour à « {book.title} »
+        </a>
+
+        <div className="mt-4 mb-6 flex items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-amber/20 to-brand-pink/20 text-brand-amber">
+            <FileText size={19} />
+          </span>
+          <div>
+            <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-white/40 uppercase">
+              {isEditMode ? 'Modifier le chapitre' : 'Nouveau chapitre'}
+            </p>
+            <h1 className="text-xl font-bold text-white sm:text-2xl">{form.title || 'Sans titre'}</h1>
+          </div>
+        </div>
+
+        {hasDraft && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-amber/25 bg-brand-amber/10 px-4.5 py-3.5 text-[0.85rem] text-brand-amber">
+            <span>Brouillon restauré — reprenez là où vous vous étiez arrêté·e.</span>
+            <button type="button" onClick={handleRestart} className="text-[0.8rem] text-rose-300 underline">
+              Recommencer
+            </button>
+          </div>
+        )}
+
+        <form id="chapter-form" onSubmit={handleSubmit} className={`${glassPanel} flex flex-col gap-5 p-6 sm:p-7`}>
+          <label className={labelBase}>
+            Titre du chapitre
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => set('title', e.target.value)}
+              maxLength={255}
+              required
+              placeholder="Le titre de ce chapitre…"
+              className={`${inputBase} text-base font-medium`}
+            />
+          </label>
+
+          <label className={labelBase}>
+            Introduction (facultative)
+            <textarea
+              value={form.introduction}
+              onChange={(e) => set('introduction', e.target.value)}
+              rows={2}
+              placeholder="Un court avant-propos affiché avant le chapitre…"
+              className={`${inputBase} resize-y`}
+            />
+          </label>
+
+          <div className={labelBase}>
+            {/* <div>, pas <label> : le RichTextEditor contient ses propres
+                <button> (barre d'outils) — un <label> englobant leur
+                transférerait automatiquement tout clic dans l'éditeur (y
+                compris le texte, pas juste la barre d'outils) vers le
+                premier bouton labelable qu'il trouve (ici "Gras"), l'activant
+                à chaque clic dans le contenu. Cf. spec HTML sur le "label's
+                control" : un <label> sans `for` cible le premier descendant
+                labelable en ordre du document. */}
+            Contenu
+            <RichTextEditor content={form.content} onChange={(html) => set('content', html)} />
+          </div>
+
+          {submitError && <p className={errorText}>{submitError}</p>}
+        </form>
+      </div>
+
+      <aside className="flex w-full shrink-0 flex-col gap-4 lg:sticky lg:top-6 lg:w-80">
+        <div className={`${glassPanel} p-5`}>
+          <div className="mb-4 flex items-center gap-2">
+            <Sparkles size={15} className="text-brand-amber" />
+            <h2 className="text-[0.9rem] font-semibold text-white">Réglages du chapitre</h2>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <label className={labelBase}>
+              <span className="flex items-center gap-1.5">
+                <Hash size={13} /> Numéro du chapitre
+              </span>
+              <input
+                type="number"
+                min={1}
+                value={form.chapterNumber}
+                onChange={(e) => set('chapterNumber', Number(e.target.value))}
+                required
+                className={inputBase}
+              />
+            </label>
+
+            <label className={labelBase}>
+              <span className="flex items-center gap-1.5">
+                <Layers size={13} /> Partie associée
+              </span>
+              <select
+                value={form.partId ?? ''}
+                onChange={(e) => set('partId', e.target.value ? Number(e.target.value) : null)}
+                className={inputBase}
+              >
+                <option value="" className="bg-neutral-900">
+                  Aucune (chapitre libre)
+                </option>
+                {book.parts.map((part) => (
+                  <option key={part.id} value={part.id} className="bg-neutral-900">
+                    Partie {part.partNumber} · {part.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className={`mt-4 ${glassInset} flex items-center justify-between px-3.5 py-2.5`}>
+            <span className="flex items-center gap-1.5 text-[0.75rem] text-white/45">
+              <BookOpen size={13} /> Mots
+            </span>
+            <span className="text-sm font-semibold text-white">{wordCount(form.content).toLocaleString('fr-FR')}</span>
+          </div>
+        </div>
+
+        <div className={`${glassPanel} flex flex-col gap-2.5 p-5`}>
+          <button type="submit" form="chapter-form" disabled={isSubmitting} className={`${btnPrimary} w-full`}>
+            <Save size={15} /> {isSubmitting ? 'Enregistrement…' : isEditMode ? 'Enregistrer' : 'Créer le chapitre'}
+          </button>
+          <a href={`/espace-auteur/livres/${bookId}`} className={`${btnSecondary} w-full no-underline`}>
+            Annuler
+          </a>
+          {isEditMode && (
+            <button type="button" onClick={() => setIsDeleteOpen(true)} className={`${btnDanger} mt-1 w-full`}>
+              <Trash2 size={15} /> Supprimer ce chapitre
+            </button>
+          )}
+        </div>
+      </aside>
+
+      {isDeleteOpen && (
+        <DeleteConfirm
+          title="Supprimer ce chapitre ?"
+          description={`Le chapitre ${form.chapterNumber} · « ${form.title} » sera définitivement retiré du livre.`}
+          isSubmitting={isDeleting}
+          error={deleteError}
+          onClose={() => {
+            setIsDeleteOpen(false);
+            setDeleteError(null);
+          }}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+    </div>
+  );
+}

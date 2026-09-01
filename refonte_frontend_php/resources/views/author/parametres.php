@@ -1,5 +1,6 @@
-<?php /** Équivalent de src/app/espace-auteur/parametres/page.tsx. */ ?>
-<section class="mx-auto max-w-6xl p-4">
-  <h1>Paramètres auteur</h1>
-  <?= \App\Support\View::island('AuthorSettingsForm', []) ?>
-</section>
+<?php
+/** Équivalent de src/app/espace-auteur/parametres/page.tsx. */
+require __DIR__ . '/../partials/author-shell-open.php';
+?>
+  <?= \App\Support\View::island('AuthorSettingsForm') ?>
+<?php require __DIR__ . '/../partials/author-shell-close.php'; ?>

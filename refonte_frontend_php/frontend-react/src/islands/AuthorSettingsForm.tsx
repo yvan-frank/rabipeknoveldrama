@@ -1,4 +1,6 @@
+import { Mail, KeyRound, Sparkles } from 'lucide-react';
 import { useRequireAuth } from '../lib/useRequireAuth';
+import { glassPanel } from '../lib/authorUi';
 import ChangePasswordForm from './ChangePasswordForm';
 
 // Équivalent de src/components/dashboard/author/AuthorSettingsSection.tsx —
@@ -9,15 +11,32 @@ export default function AuthorSettingsForm() {
   if (user === null) return null;
 
   return (
-    <div className="rounded-[1.25rem] border border-black/10 px-6 py-5 dark:border-white/10">
-      <p className="mt-1 mb-4 text-sm opacity-60">Vos informations de connexion et de profil public.</p>
-      <div className="mt-5 rounded-2xl border border-black/10 p-5 dark:border-white/10">
-        <span className="mt-1 mb-4 text-sm opacity-60">Adresse e-mail</span>
-        <p className="mt-1 mb-5 font-semibold">{user === undefined ? '…' : (user?.email ?? '—')}</p>
-        <p className="opacity-60">La modification du profil public (nom, biographie, photo, réseaux sociaux) sera disponible prochainement.</p>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">Paramètres</h1>
+        <p className="mt-1.5 text-sm text-white/50">Vos informations de connexion et de profil public.</p>
       </div>
-      <div className="mt-5 rounded-2xl border border-black/10 p-5 dark:border-white/10">
-        <h3 className="mb-3 text-[0.95rem]">Mot de passe</h3>
+
+      <div className={`${glassPanel} flex max-w-2xl items-center gap-4 p-6`}>
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-amber/20 to-brand-pink/20 text-brand-amber">
+          <Mail size={18} />
+        </span>
+        <div>
+          <p className="text-[0.72rem] text-white/40">Adresse e-mail</p>
+          <p className="font-semibold text-white">{user === undefined ? '…' : (user?.email ?? '—')}</p>
+        </div>
+      </div>
+
+      <div className={`${glassPanel} flex max-w-2xl items-start gap-3 border-brand-amber/15 bg-brand-amber/[0.04] p-5`}>
+        <Sparkles size={16} className="mt-0.5 shrink-0 text-brand-amber" />
+        <p className="text-sm text-white/60">La modification du profil public (nom, biographie, photo, réseaux sociaux) sera disponible prochainement.</p>
+      </div>
+
+      <div className={`${glassPanel} max-w-2xl p-6`}>
+        <div className="mb-4 flex items-center gap-2.5">
+          <KeyRound size={17} className="text-brand-amber" />
+          <h2 className="text-[0.95rem] font-semibold text-white">Mot de passe</h2>
+        </div>
         <ChangePasswordForm />
       </div>
     </div>

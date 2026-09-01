@@ -3,7 +3,7 @@
  * Équivalent de src/app/espace-auteur/livres/[id]/page.tsx (BookManageDashboard).
  * @var string $bookId
  */
+require __DIR__ . '/../../partials/author-shell-open.php';
 ?>
-<section class="mx-auto max-w-6xl p-4">
   <?= \App\Support\View::island('BookManageDashboard', ['bookId' => $bookId]) ?>
-</section>
+<?php require __DIR__ . '/../../partials/author-shell-close.php'; ?>

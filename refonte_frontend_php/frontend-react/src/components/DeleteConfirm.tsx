@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Checkbox } from './Checkbox';
 
 const CONFIRMATION_PHRASE = 'SUPPRIMER';
 
@@ -25,7 +27,13 @@ export function DeleteConfirm({ title, description, isSubmitting, error, onClose
     inputRef.current?.focus();
   }, []);
 
-  return (
+  // Portail vers document.body : un `position:fixed` imbriqué dans un
+  // ancêtre à `backdrop-filter` (ex. les panneaux "verre" de l'espace
+  // auteur, cf. authorUi.ts) reste piégé DANS cet ancêtre — le
+  // backdrop-filter établit un nouveau "containing block", exactement comme
+  // `filter`. Un portail sort la modale de toute hiérarchie DOM parente,
+  // donc de ce piège, quel que soit l'endroit où <DeleteConfirm> est monté.
+  return createPortal(
     <div
       role="presentation"
       onMouseDown={(e) => e.target === e.currentTarget && !isSubmitting && onClose()}
@@ -40,10 +48,15 @@ export function DeleteConfirm({ title, description, isSubmitting, error, onClose
         <h2 className="my-2 text-[1.4rem]">{title}</h2>
         <p className="text-sm leading-relaxed opacity-70">{description}</p>
 
-        <label className="my-5 flex cursor-pointer items-start gap-2.5 rounded-xl border border-black/10 p-3.5 text-sm dark:border-white/10">
-          <input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} disabled={isSubmitting} />
+        <Checkbox
+          checked={consented}
+          onChange={setConsented}
+          disabled={isSubmitting}
+          alignTop
+          className="my-5 rounded-xl border border-black/10 p-3.5 text-sm dark:border-white/10"
+        >
           Je comprends que cette suppression est définitive.
-        </label>
+        </Checkbox>
 
         <label className="block text-sm font-semibold">
           Saisissez <strong>{CONFIRMATION_PHRASE}</strong> pour confirmer.
@@ -80,7 +93,8 @@ export function DeleteConfirm({ title, description, isSubmitting, error, onClose
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

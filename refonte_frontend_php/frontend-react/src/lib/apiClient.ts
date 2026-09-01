@@ -171,10 +171,22 @@ apiClient.interceptors.response.use(
   },
 );
 
+// Une erreur de validation (400, cf. ValidationException côté API) renvoie
+// {message: "Validation échouée", errors: {champ: ["raison", ...], ...}} —
+// le message seul ne dit jamais QUEL champ a échoué ni POURQUOI. On préfère
+// donc le détail par champ dès qu'il existe, plutôt que le message générique.
 export function extractApiErrorMessage(error: unknown, fallback = 'Une erreur est survenue'): string {
   if (axios.isAxiosError(error)) {
-    const message = (error.response?.data as { message?: string } | undefined)?.message;
-    if (message) return message;
+    const data = error.response?.data as { message?: string; errors?: Record<string, string[]> } | undefined;
+
+    if (data?.errors && typeof data.errors === 'object') {
+      const details = Object.values(data.errors).flat().filter((v): v is string => typeof v === 'string' && v.length > 0);
+      if (details.length > 0) {
+        return details.join(' · ');
+      }
+    }
+
+    if (data?.message) return data.message;
   }
   return fallback;
 }

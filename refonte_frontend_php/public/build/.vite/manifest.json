@@ -1,39 +1,87 @@
 {
-  "_ChipsInput-CWEQEgVT.js": {
-    "file": "assets/ChipsInput-CWEQEgVT.js",
+  "_Checkbox-Cu0yCzgP.js": {
+    "file": "assets/Checkbox-Cu0yCzgP.js",
+    "name": "Checkbox",
+    "imports": [
+      "src/main.tsx",
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_ChipsInput-YiH3edp6.js": {
+    "file": "assets/ChipsInput-YiH3edp6.js",
     "name": "ChipsInput",
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js"
+      "_apiClient-CB8rnN92.js"
     ]
   },
-  "_DeleteConfirm-B4CAAp2Y.js": {
-    "file": "assets/DeleteConfirm-B4CAAp2Y.js",
+  "_DeleteConfirm-5O18yWlZ.js": {
+    "file": "assets/DeleteConfirm-5O18yWlZ.js",
     "name": "DeleteConfirm",
     "imports": [
-      "src/main.tsx"
+      "src/main.tsx",
+      "_Checkbox-Cu0yCzgP.js"
     ]
   },
-  "_PasswordInput-CF-N93yr.js": {
-    "file": "assets/PasswordInput-CF-N93yr.js",
+  "_PasswordInput-DNyOJDAM.js": {
+    "file": "assets/PasswordInput-DNyOJDAM.js",
     "name": "PasswordInput",
     "imports": [
       "src/main.tsx"
     ]
   },
-  "_PasswordStrengthPanel-BaZhWAhj.js": {
-    "file": "assets/PasswordStrengthPanel-BaZhWAhj.js",
+  "_PasswordStrengthPanel-BQlOKXJj.js": {
+    "file": "assets/PasswordStrengthPanel-BQlOKXJj.js",
     "name": "PasswordStrengthPanel",
     "imports": [
       "src/main.tsx"
     ]
   },
-  "_apiClient-C6qa-a_A.js": {
-    "file": "assets/apiClient-C6qa-a_A.js",
+  "_apiClient-CB8rnN92.js": {
+    "file": "assets/apiClient-CB8rnN92.js",
     "name": "apiClient"
   },
-  "_createLucideIcon-BuhxcB4q.js": {
-    "file": "assets/createLucideIcon-BuhxcB4q.js",
+  "_arrow-left-C5n21swj.js": {
+    "file": "assets/arrow-left-C5n21swj.js",
+    "name": "arrow-left",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_arrow-up-right-D-CnReBP.js": {
+    "file": "assets/arrow-up-right-D-CnReBP.js",
+    "name": "arrow-up-right",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_authorUi-S8Gff2JW.js": {
+    "file": "assets/authorUi-S8Gff2JW.js",
+    "name": "authorUi"
+  },
+  "_book-open-BfOqivTy.js": {
+    "file": "assets/book-open-BfOqivTy.js",
+    "name": "book-open",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_chart-column-D4G4BpCk.js": {
+    "file": "assets/chart-column-D4G4BpCk.js",
+    "name": "chart-column",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_circle-check-DuRmiFIO.js": {
+    "file": "assets/circle-check-DuRmiFIO.js",
+    "name": "circle-check",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_createLucideIcon-DwwEV8N3.js": {
+    "file": "assets/createLucideIcon-DwwEV8N3.js",
     "name": "createLucideIcon",
     "imports": [
       "src/main.tsx"
@@ -47,44 +95,102 @@
     "file": "assets/formatPrice-JwSsmrq3.js",
     "name": "formatPrice"
   },
-  "_useRequireAuth-BgsPTbOg.js": {
-    "file": "assets/useRequireAuth-BgsPTbOg.js",
+  "_heart-txvywLLD.js": {
+    "file": "assets/heart-txvywLLD.js",
+    "name": "heart",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_menu-Bxs7PHJS.js": {
+    "file": "assets/menu-Bxs7PHJS.js",
+    "name": "menu",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_plus-CnGMq3mo.js": {
+    "file": "assets/plus-CnGMq3mo.js",
+    "name": "plus",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_shield-check-DKEhDmSZ.js": {
+    "file": "assets/shield-check-DKEhDmSZ.js",
+    "name": "shield-check",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_sparkles-CIg8ckIH.js": {
+    "file": "assets/sparkles-CIg8ckIH.js",
+    "name": "sparkles",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_star-CUIypLNa.js": {
+    "file": "assets/star-CUIypLNa.js",
+    "name": "star",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_trash-2-BTqWYc1h.js": {
+    "file": "assets/trash-2-BTqWYc1h.js",
+    "name": "trash-2",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
+    ]
+  },
+  "_useRequireAuth-BzCOk1oW.js": {
+    "file": "assets/useRequireAuth-BzCOk1oW.js",
     "name": "useRequireAuth",
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js"
+      "_apiClient-CB8rnN92.js"
+    ]
+  },
+  "_x-DByZO5ol.js": {
+    "file": "assets/x-DByZO5ol.js",
+    "name": "x",
+    "imports": [
+      "_createLucideIcon-DwwEV8N3.js"
     ]
   },
   "src/islands/AccountNav.tsx": {
-    "file": "assets/AccountNav-CTz9LIQI.js",
+    "file": "assets/AccountNav-zJaqjacM.js",
     "name": "AccountNav",
     "src": "src/islands/AccountNav.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
+      "_apiClient-CB8rnN92.js",
       "_dashboard-B2g2VDzf.js"
     ]
   },
   "src/islands/AdminPanel.tsx": {
-    "file": "assets/AdminPanel-CMm6-Vpz.js",
+    "file": "assets/AdminPanel-DMSN9w5y.js",
     "name": "AdminPanel",
     "src": "src/islands/AdminPanel.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js",
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
       "_dashboard-B2g2VDzf.js",
       "src/islands/ChangePasswordForm.tsx",
       "_formatPrice-JwSsmrq3.js",
-      "_PasswordInput-CF-N93yr.js",
-      "_PasswordStrengthPanel-BaZhWAhj.js",
-      "_createLucideIcon-BuhxcB4q.js"
+      "_PasswordInput-DNyOJDAM.js",
+      "_PasswordStrengthPanel-BQlOKXJj.js",
+      "_menu-Bxs7PHJS.js",
+      "_x-DByZO5ol.js",
+      "_createLucideIcon-DwwEV8N3.js"
     ]
   },
   "src/islands/AppDownloadBanner.tsx": {
-    "file": "assets/AppDownloadBanner-j6YHDA_Y.js",
+    "file": "assets/AppDownloadBanner-D3h8GyYk.js",
     "name": "AppDownloadBanner",
     "src": "src/islands/AppDownloadBanner.tsx",
     "isDynamicEntry": true,
@@ -93,209 +199,298 @@
     ]
   },
   "src/islands/AuthGuard.tsx": {
-    "file": "assets/AuthGuard-DRp0WDzl.js",
+    "file": "assets/AuthGuard-CbZJ1WEv.js",
     "name": "AuthGuard",
     "src": "src/islands/AuthGuard.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_useRequireAuth-BgsPTbOg.js",
+      "_useRequireAuth-BzCOk1oW.js",
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js"
+      "_apiClient-CB8rnN92.js"
     ]
   },
   "src/islands/AuthorBooksList.tsx": {
-    "file": "assets/AuthorBooksList-Cs0O9onL.js",
+    "file": "assets/AuthorBooksList-D2xwILKq.js",
     "name": "AuthorBooksList",
     "src": "src/islands/AuthorBooksList.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
+      "_apiClient-CB8rnN92.js",
       "_formatPrice-JwSsmrq3.js",
-      "_DeleteConfirm-B4CAAp2Y.js",
-      "_useRequireAuth-BgsPTbOg.js"
+      "_DeleteConfirm-5O18yWlZ.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_authorUi-S8Gff2JW.js",
+      "_plus-CnGMq3mo.js",
+      "_arrow-up-right-D-CnReBP.js",
+      "_trash-2-BTqWYc1h.js",
+      "_Checkbox-Cu0yCzgP.js",
+      "_createLucideIcon-DwwEV8N3.js"
     ]
   },
   "src/islands/AuthorOverview.tsx": {
-    "file": "assets/AuthorOverview-BvobzDZ0.js",
+    "file": "assets/AuthorOverview-DGLWCq7a.js",
     "name": "AuthorOverview",
     "src": "src/islands/AuthorOverview.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js"
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_authorUi-S8Gff2JW.js",
+      "_sparkles-CIg8ckIH.js",
+      "_arrow-up-right-D-CnReBP.js",
+      "_book-open-BfOqivTy.js",
+      "_heart-txvywLLD.js",
+      "_createLucideIcon-DwwEV8N3.js"
     ]
   },
   "src/islands/AuthorReviews.tsx": {
-    "file": "assets/AuthorReviews-BsrF-mxw.js",
+    "file": "assets/AuthorReviews-CmOkzb4Z.js",
     "name": "AuthorReviews",
     "src": "src/islands/AuthorReviews.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js"
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_authorUi-S8Gff2JW.js",
+      "_createLucideIcon-DwwEV8N3.js",
+      "_star-CUIypLNa.js"
     ]
   },
   "src/islands/AuthorSettingsForm.tsx": {
-    "file": "assets/AuthorSettingsForm-Cj9euW3v.js",
+    "file": "assets/AuthorSettingsForm-CUTV0V47.js",
     "name": "AuthorSettingsForm",
     "src": "src/islands/AuthorSettingsForm.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_useRequireAuth-BgsPTbOg.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_authorUi-S8Gff2JW.js",
       "src/islands/ChangePasswordForm.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_PasswordInput-CF-N93yr.js",
-      "_PasswordStrengthPanel-BaZhWAhj.js"
+      "_createLucideIcon-DwwEV8N3.js",
+      "_sparkles-CIg8ckIH.js",
+      "_apiClient-CB8rnN92.js",
+      "_PasswordInput-DNyOJDAM.js",
+      "_PasswordStrengthPanel-BQlOKXJj.js"
+    ]
+  },
+  "src/islands/AuthorSidebar.tsx": {
+    "file": "assets/AuthorSidebar-C7K0VW7k.js",
+    "name": "AuthorSidebar",
+    "src": "src/islands/AuthorSidebar.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_x-DByZO5ol.js",
+      "_plus-CnGMq3mo.js",
+      "_createLucideIcon-DwwEV8N3.js",
+      "_star-CUIypLNa.js",
+      "_chart-column-D4G4BpCk.js",
+      "_shield-check-DKEhDmSZ.js"
     ]
   },
   "src/islands/AuthorStats.tsx": {
-    "file": "assets/AuthorStats-yNkHk6WS.js",
+    "file": "assets/AuthorStats-CDvFwKMN.js",
     "name": "AuthorStats",
     "src": "src/islands/AuthorStats.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js"
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_authorUi-S8Gff2JW.js",
+      "_heart-txvywLLD.js",
+      "_createLucideIcon-DwwEV8N3.js",
+      "_chart-column-D4G4BpCk.js"
+    ]
+  },
+  "src/islands/AuthorTopbar.tsx": {
+    "file": "assets/AuthorTopbar-CYvDQjdj.js",
+    "name": "AuthorTopbar",
+    "src": "src/islands/AuthorTopbar.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-CB8rnN92.js",
+      "_menu-Bxs7PHJS.js",
+      "_sparkles-CIg8ckIH.js",
+      "_createLucideIcon-DwwEV8N3.js"
     ]
   },
   "src/islands/BookActions.tsx": {
-    "file": "assets/BookActions-YGhjMopq.js",
+    "file": "assets/BookActions-C6a58k4a.js",
     "name": "BookActions",
     "src": "src/islands/BookActions.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
+      "_apiClient-CB8rnN92.js",
       "_formatPrice-JwSsmrq3.js"
     ]
   },
   "src/islands/BookFilters.tsx": {
-    "file": "assets/BookFilters-BydD-lcz.js",
+    "file": "assets/BookFilters-D6ksN0Yi.js",
     "name": "BookFilters",
     "src": "src/islands/BookFilters.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js"
+      "_apiClient-CB8rnN92.js",
+      "_Checkbox-Cu0yCzgP.js",
+      "_createLucideIcon-DwwEV8N3.js"
     ]
   },
   "src/islands/BookManageDashboard.tsx": {
-    "file": "assets/BookManageDashboard-BnWWrZtW.js",
+    "file": "assets/BookManageDashboard-7_v0yN-i.js",
     "name": "BookManageDashboard",
     "src": "src/islands/BookManageDashboard.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js",
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
       "_formatPrice-JwSsmrq3.js",
-      "_ChipsInput-CWEQEgVT.js",
-      "_DeleteConfirm-B4CAAp2Y.js",
-      "_createLucideIcon-BuhxcB4q.js"
+      "_ChipsInput-YiH3edp6.js",
+      "_Checkbox-Cu0yCzgP.js",
+      "_authorUi-S8Gff2JW.js",
+      "_DeleteConfirm-5O18yWlZ.js",
+      "_arrow-left-C5n21swj.js",
+      "_createLucideIcon-DwwEV8N3.js",
+      "_trash-2-BTqWYc1h.js"
     ]
   },
   "src/islands/BookWizard.tsx": {
-    "file": "assets/BookWizard-DbgCzHNV.js",
+    "file": "assets/BookWizard-tcO7t9ha.js",
     "name": "BookWizard",
     "src": "src/islands/BookWizard.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js",
-      "_ChipsInput-CWEQEgVT.js"
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_ChipsInput-YiH3edp6.js",
+      "_Checkbox-Cu0yCzgP.js",
+      "_authorUi-S8Gff2JW.js",
+      "_createLucideIcon-DwwEV8N3.js",
+      "_sparkles-CIg8ckIH.js",
+      "_circle-check-DuRmiFIO.js",
+      "_arrow-left-C5n21swj.js"
     ]
   },
   "src/islands/ChangePasswordForm.tsx": {
-    "file": "assets/ChangePasswordForm-BjvbV09M.js",
+    "file": "assets/ChangePasswordForm-BbTIPk6a.js",
     "name": "ChangePasswordForm",
     "src": "src/islands/ChangePasswordForm.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_PasswordInput-CF-N93yr.js",
-      "_PasswordStrengthPanel-BaZhWAhj.js"
+      "_apiClient-CB8rnN92.js",
+      "_PasswordInput-DNyOJDAM.js",
+      "_PasswordStrengthPanel-BQlOKXJj.js"
+    ]
+  },
+  "src/islands/ChapterEditorPage.tsx": {
+    "file": "assets/ChapterEditorPage-DFu6YVLc.js",
+    "name": "ChapterEditorPage",
+    "src": "src/islands/ChapterEditorPage.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/main.tsx",
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_DeleteConfirm-5O18yWlZ.js",
+      "_createLucideIcon-DwwEV8N3.js",
+      "_authorUi-S8Gff2JW.js",
+      "_arrow-left-C5n21swj.js",
+      "_sparkles-CIg8ckIH.js",
+      "_book-open-BfOqivTy.js",
+      "_trash-2-BTqWYc1h.js",
+      "_Checkbox-Cu0yCzgP.js"
     ]
   },
   "src/islands/Dashboard.tsx": {
-    "file": "assets/Dashboard-Dstt9voX.js",
+    "file": "assets/Dashboard-BBwM2_mY.js",
     "name": "Dashboard",
     "src": "src/islands/Dashboard.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js",
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
       "_dashboard-B2g2VDzf.js",
       "src/islands/ChangePasswordForm.tsx",
-      "_PasswordInput-CF-N93yr.js",
-      "_PasswordStrengthPanel-BaZhWAhj.js"
+      "_PasswordInput-DNyOJDAM.js",
+      "_PasswordStrengthPanel-BQlOKXJj.js"
     ]
   },
   "src/islands/DeleteMyAccountButton.tsx": {
-    "file": "assets/DeleteMyAccountButton-BG91kBWN.js",
+    "file": "assets/DeleteMyAccountButton-I7uJuC4B.js",
     "name": "DeleteMyAccountButton",
     "src": "src/islands/DeleteMyAccountButton.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js",
-      "_DeleteConfirm-B4CAAp2Y.js"
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_DeleteConfirm-5O18yWlZ.js",
+      "_Checkbox-Cu0yCzgP.js",
+      "_createLucideIcon-DwwEV8N3.js"
     ]
   },
   "src/islands/ForgotPasswordForm.tsx": {
-    "file": "assets/ForgotPasswordForm-DY8xt2L1.js",
+    "file": "assets/ForgotPasswordForm-CgKNICk_.js",
     "name": "ForgotPasswordForm",
     "src": "src/islands/ForgotPasswordForm.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js"
+      "_apiClient-CB8rnN92.js"
     ]
   },
   "src/islands/GoogleAuthButton.tsx": {
-    "file": "assets/GoogleAuthButton-fbeCNRdd.js",
+    "file": "assets/GoogleAuthButton-DkPxzAeM.js",
     "name": "GoogleAuthButton",
     "src": "src/islands/GoogleAuthButton.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
+      "_apiClient-CB8rnN92.js",
       "_dashboard-B2g2VDzf.js"
     ]
   },
   "src/islands/KycForm.tsx": {
-    "file": "assets/KycForm-Dnexubte.js",
+    "file": "assets/KycForm-Br8pkA0U.js",
     "name": "KycForm",
     "src": "src/islands/KycForm.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_useRequireAuth-BgsPTbOg.js"
+      "_apiClient-CB8rnN92.js",
+      "_useRequireAuth-BzCOk1oW.js",
+      "_authorUi-S8Gff2JW.js",
+      "_Checkbox-Cu0yCzgP.js",
+      "_shield-check-DKEhDmSZ.js",
+      "_createLucideIcon-DwwEV8N3.js",
+      "_circle-check-DuRmiFIO.js",
+      "_x-DByZO5ol.js"
     ]
   },
   "src/islands/LoginForm.tsx": {
-    "file": "assets/LoginForm-BvmMpg5T.js",
+    "file": "assets/LoginForm-CVgG_h8h.js",
     "name": "LoginForm",
     "src": "src/islands/LoginForm.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
+      "_apiClient-CB8rnN92.js",
       "_dashboard-B2g2VDzf.js",
-      "_PasswordInput-CF-N93yr.js"
+      "_PasswordInput-DNyOJDAM.js"
     ]
   },
   "src/islands/OpenInApp.tsx": {
-    "file": "assets/OpenInApp-D222Aerm.js",
+    "file": "assets/OpenInApp-D9Q2w26r.js",
     "name": "OpenInApp",
     "src": "src/islands/OpenInApp.tsx",
     "isDynamicEntry": true,
@@ -304,42 +499,44 @@
     ]
   },
   "src/islands/RegisterForm.tsx": {
-    "file": "assets/RegisterForm-By_OuG2H.js",
+    "file": "assets/RegisterForm-CnW9lI2X.js",
     "name": "RegisterForm",
     "src": "src/islands/RegisterForm.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
+      "_apiClient-CB8rnN92.js",
       "_dashboard-B2g2VDzf.js",
-      "_PasswordInput-CF-N93yr.js",
-      "_PasswordStrengthPanel-BaZhWAhj.js"
+      "_PasswordInput-DNyOJDAM.js",
+      "_PasswordStrengthPanel-BQlOKXJj.js",
+      "_Checkbox-Cu0yCzgP.js",
+      "_createLucideIcon-DwwEV8N3.js"
     ]
   },
   "src/islands/ResetPasswordForm.tsx": {
-    "file": "assets/ResetPasswordForm-Dzfgh0V-.js",
+    "file": "assets/ResetPasswordForm-COOBkI-y.js",
     "name": "ResetPasswordForm",
     "src": "src/islands/ResetPasswordForm.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js",
-      "_PasswordInput-CF-N93yr.js",
-      "_PasswordStrengthPanel-BaZhWAhj.js"
+      "_apiClient-CB8rnN92.js",
+      "_PasswordInput-DNyOJDAM.js",
+      "_PasswordStrengthPanel-BQlOKXJj.js"
     ]
   },
   "src/islands/ReviewForm.tsx": {
-    "file": "assets/ReviewForm-BbR2EdTb.js",
+    "file": "assets/ReviewForm-BMtK-GVG.js",
     "name": "ReviewForm",
     "src": "src/islands/ReviewForm.tsx",
     "isDynamicEntry": true,
     "imports": [
       "src/main.tsx",
-      "_apiClient-C6qa-a_A.js"
+      "_apiClient-CB8rnN92.js"
     ]
   },
   "src/islands/ThemeToggle.tsx": {
-    "file": "assets/ThemeToggle-rL3O4J8-.js",
+    "file": "assets/ThemeToggle-BtFayqOO.js",
     "name": "ThemeToggle",
     "src": "src/islands/ThemeToggle.tsx",
     "isDynamicEntry": true,
@@ -348,7 +545,7 @@
     ]
   },
   "src/main.tsx": {
-    "file": "assets/main-Bdd4l4VD.js",
+    "file": "assets/main-BXkQLiEn.js",
     "name": "main",
     "src": "src/main.tsx",
     "isEntry": true,
@@ -360,6 +557,9 @@
       "src/islands/ForgotPasswordForm.tsx",
       "src/islands/ResetPasswordForm.tsx",
       "src/islands/ChangePasswordForm.tsx",
+      "src/islands/AuthorTopbar.tsx",
+      "src/islands/AuthorSidebar.tsx",
+      "src/islands/ChapterEditorPage.tsx",
       "src/islands/GoogleAuthButton.tsx",
       "src/islands/DeleteMyAccountButton.tsx",
       "src/islands/OpenInApp.tsx",
