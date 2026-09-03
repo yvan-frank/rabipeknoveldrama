@@ -17,6 +17,7 @@ use App\Modules\Chapters\ReadingProgressRoutes;
 use App\Modules\Comments\CommentsRoutes;
 use App\Modules\Epub\EpubRoutes;
 use App\Modules\Likes\LikesRoutes;
+use App\Modules\Narration\NarrationRoutes;
 use App\Modules\Notifications\NotificationsRoutes;
 use App\Modules\Points\PointsRoutes;
 use App\Modules\Stats\StatsRoutes;
@@ -42,6 +43,7 @@ final class Routes
         $router->mount('/books', ReadingProgressRoutes::register(...));
         $router->mount('/epub-editions', EpubRoutes::registerEditions(...));
         $router->mount('/chapters', ChaptersRoutes::register(...));
+        $router->mount('/chapters', NarrationRoutes::register(...));
         $router->mount('/authors', AuthorsRoutes::register(...));
         $router->mount('/categories', CategoriesRoutes::register(...));
         $router->mount('/cart', CartRoutes::register(...));

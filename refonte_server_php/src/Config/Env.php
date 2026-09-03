@@ -186,6 +186,14 @@ final class Env
         return self::required('JWT_SECRET');
     }
 
+    // API TTS Karaoké externe (Piper + WhisperX, cf. Modules/Narration) —
+    // locale en dev par défaut, une URL distincte (TTS_API_URL_PRO) peut être
+    // fournie une fois le service déployé ailleurs qu'en local.
+    public static function ttsApiUrl(): string
+    {
+        return rtrim(self::get('TTS_API_URL', 'http://localhost:8000') ?? '', '/');
+    }
+
     /** @return array{host:string,port:int,user:string,password:string,secure:bool,fromAddress:string,fromName:string} */
     public static function smtp(): array
     {

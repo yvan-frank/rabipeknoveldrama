@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Chapters;
 
 use App\Lib\Database;
+use App\Modules\Narration\NarrationAudioStorage;
 use App\Utils\ApiError;
 use App\Utils\ChapterContentEncryption;
 use App\Utils\Ownership;
@@ -357,7 +358,18 @@ final class ChaptersService
         $chapter = self::getChapterById($id);
         Ownership::assertAuthorOwnership($actingUser, $chapter['book']['authorId']);
 
+        $narrationStmt = self::db()->prepare('SELECT audio_url FROM chapter_narrations WHERE chapter_id = :id');
+        $narrationStmt->execute(['id' => $id]);
+        $audioUrl = $narrationStmt->fetchColumn();
+
+        // chapter_narrations est supprimée en cascade (FK ON DELETE CASCADE),
+        // mais pas le fichier audio local sur disque qu'elle référençait —
+        // sans quoi il resterait orphelin dans public/uploads/narrations.
         self::db()->prepare('DELETE FROM chapters WHERE id_chapter = :id')->execute(['id' => $id]);
+
+        if ($audioUrl !== false) {
+            NarrationAudioStorage::deleteIfLocal($audioUrl);
+        }
     }
 
     /** @param array{introduction:?string} $extension */

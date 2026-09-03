@@ -1,10 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, BookOpen, Hash, Layers, Save, Trash2, FileText, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { ArrowLeft, BookOpen, Hash, Layers, Save, Trash2, FileText, Sparkles, Volume2, Loader2, AlertCircle } from 'lucide-react';
 import { apiClient, extractApiErrorMessage } from '../lib/apiClient';
 import { useRequireAuth } from '../lib/useRequireAuth';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { DeleteConfirm } from '../components/DeleteConfirm';
-import { glassPanel, glassInset, inputBase, labelBase, btnPrimary, btnSecondary, btnDanger, errorText, skeletonPulse } from '../lib/authorUi';
+import { glassPanel, glassInset, inputBase, labelBase, btnPrimary, btnSecondary, btnGhost, btnDanger, errorText, skeletonPulse } from '../lib/authorUi';
 
 interface Props {
   bookId: string;
@@ -76,6 +76,96 @@ function clearDraft(key: string) {
   }
 }
 
+interface NarrationWord {
+  word: string;
+  start: number;
+  end: number;
+  // Position du mot dans `NarrationState.text` — permet de surligner sur le
+  // texte source tel quel (tirets de dialogue, sauts de ligne d'origine)
+  // plutôt que de le reconstruire en concaténant les mots avec des espaces.
+  // Absents sur une narration générée avant cet ajout côté API TTS.
+  charStart?: number | null;
+  charEnd?: number | null;
+}
+
+interface NarrationState {
+  status: 'none' | 'pending' | 'processing' | 'done' | 'error' | 'cancelled';
+  // Étape en cours côté service TTS (ex. "synthese_audio (2/5)",
+  // "alignement_mots") — transitoire, présent seulement pendant pending/processing.
+  progress: string | null;
+  voice: string | null;
+  speed: number | null;
+  audioUrl: string | null;
+  text: string | null;
+  words: NarrationWord[] | null;
+  errorMessage: string | null;
+  updatedAt: string | null;
+}
+
+// Découpe `text` (préservé tel quel par l'API TTS — tirets de dialogue,
+// sauts de ligne d'origine) en segments autour de charStart/charEnd de
+// chaque mot, pour surligner le mot en cours sans reconstruire le texte à
+// partir des seuls tokens (perdrait la ponctuation/mise en forme d'origine).
+// Sans texte source (narration générée avant l'ajout de `text` côté API
+// TTS), on retombe entièrement sur la concaténation des tokens. Avec texte
+// source, l'alignement peut malgré tout échouer mot par mot côté WhisperX
+// (transcription divergente) : charStart/charEnd valent alors null pour CE
+// mot seulement — on ne l'insère juste pas, son texte apparaît quand même
+// (non surligné) via le flush du prochain mot positionné.
+function renderKaraokeText(text: string | null, words: NarrationWord[], currentWordIndex: number) {
+  const highlightClass = 'rounded bg-gradient-to-br from-brand-amber to-brand-pink px-0.5 text-neutral-950';
+
+  if (text === null) {
+    return words.map((w, i) => (
+      <span key={i} className={i === currentWordIndex ? highlightClass : undefined}>
+        {w.word}{' '}
+      </span>
+    ));
+  }
+
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+
+  words.forEach((w, i) => {
+    const hasOffsets = typeof w.charStart === 'number' && typeof w.charEnd === 'number';
+    if (hasOffsets) {
+      const start = w.charStart as number;
+      const end = w.charEnd as number;
+      if (start > cursor) nodes.push(text.slice(cursor, start));
+      nodes.push(
+        <span key={i} className={i === currentWordIndex ? highlightClass : undefined}>
+          {text.slice(start, end)}
+        </span>,
+      );
+      cursor = end;
+    }
+    // Sans position, on ne peut pas surligner ce mot précisément : on le
+    // laisse au texte source environnant (flush par le prochain mot
+    // positionné, ou en fin de boucle) plutôt que d'insérer son propre token
+    // en double à côté du texte source qui le contient déjà.
+  });
+
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes;
+}
+
+// Traduit le code d'étape brut renvoyé par le service TTS (cf. son OpenAPI,
+// champ StatusResponse.progress) en libellé lisible pour l'auteur.
+const PROGRESS_LABELS: Record<string, string> = {
+  synthese_audio: 'Synthèse audio…',
+  chargement_modele_whisper: 'Chargement du modèle de reconnaissance vocale…',
+  transcription: "Transcription de l'audio…",
+  chargement_modele_alignement: "Chargement du modèle d'alignement…",
+  alignement_mots: 'Alignement des mots…',
+};
+
+function describeNarrationProgress(progress: string | null): string {
+  if (progress === null) return 'Génération en cours…';
+  const synthesisMatch = progress.match(/^synthese_audio \((\d+)\/(\d+)\)$/);
+  if (synthesisMatch) return `Synthèse audio (${synthesisMatch[1]}/${synthesisMatch[2]})…`;
+  return PROGRESS_LABELS[progress] ?? 'Génération en cours…';
+}
+
 function wordCount(html: string): number {
   const text = html.replace(/<[^>]*>/g, ' ').trim();
   return text ? text.split(/\s+/).length : 0;
@@ -100,6 +190,13 @@ export default function ChapterEditorPage({ bookId, chapterId }: Props) {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const [narration, setNarration] = useState<NarrationState | null>(null);
+  const [isStartingNarration, setIsStartingNarration] = useState(false);
+  const [isCancellingNarration, setIsCancellingNarration] = useState(false);
+  const [narrationError, setNarrationError] = useState<string | null>(null);
+  const [currentWordIndex, setCurrentWordIndex] = useState(-1);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Livre (titre pour le fil d'ariane + parties disponibles pour l'assignation).
   useEffect(() => {
@@ -146,7 +243,83 @@ export default function ChapterEditorPage({ bookId, chapterId }: Props) {
     if (form.title || form.content) saveDraft(draftKeyFor(bookId), form);
   }, [isEditMode, bookId, form]);
 
+  // Narration audio : uniquement en édition (il faut un chapterId existant
+  // côté API TTS pour rattacher le job). État initial au montage.
+  useEffect(() => {
+    if (!isEditMode || !chapterId || !user) return;
+    let cancelled = false;
+    apiClient
+      .get(`/chapters/${chapterId}/narration`)
+      .then((res) => {
+        if (!cancelled) setNarration(res.data?.data ?? null);
+      })
+      .catch(() => {
+        // Silencieux : l'absence de narration ne doit jamais casser l'édition du chapitre.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditMode, chapterId, user]);
+
+  // Poll tant que le job est en cours côté service TTS (pending/processing) —
+  // se ré-arme à chaque changement de `narration` et se coupe dès que l'état
+  // n'est plus transitoire, cf. cleanup ci-dessous.
+  useEffect(() => {
+    if (!isEditMode || !chapterId) return;
+    if (narration?.status !== 'pending' && narration?.status !== 'processing') return;
+
+    const timer = window.setTimeout(() => {
+      apiClient
+        .get(`/chapters/${chapterId}/narration`)
+        .then((res) => setNarration(res.data?.data ?? null))
+        .catch(() => {});
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [isEditMode, chapterId, narration]);
+
   if (!user) return null;
+
+  async function handleGenerateNarration() {
+    if (!chapterId) return;
+    setIsStartingNarration(true);
+    setNarrationError(null);
+    try {
+      const res = await apiClient.post(`/chapters/${chapterId}/narration`, {});
+      setNarration(res.data?.data ?? null);
+      setCurrentWordIndex(-1);
+    } catch (err) {
+      setNarrationError(extractApiErrorMessage(err, "Impossible de lancer la génération audio."));
+    } finally {
+      setIsStartingNarration(false);
+    }
+  }
+
+  async function handleCancelNarration() {
+    if (!chapterId) return;
+    setIsCancellingNarration(true);
+    try {
+      const res = await apiClient.post(`/chapters/${chapterId}/narration/cancel`, {});
+      setNarration(res.data?.data ?? null);
+    } catch (err) {
+      setNarrationError(extractApiErrorMessage(err, "Impossible d'annuler la génération."));
+    } finally {
+      setIsCancellingNarration(false);
+    }
+  }
+
+  function handleAudioTimeUpdate() {
+    const audio = audioRef.current;
+    const words = narration?.words;
+    if (!audio || !words || words.length === 0) return;
+    const t = audio.currentTime;
+    setCurrentWordIndex((prev) => {
+      let i = prev >= 0 ? prev : 0;
+      while (i < words.length - 1 && words[i + 1].start <= t) i++;
+      while (i > 0 && words[i].start > t) i--;
+      return i;
+    });
+  }
 
   function set<K extends keyof ChapterFormState>(key: K, value: ChapterFormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -265,6 +438,83 @@ export default function ChapterEditorPage({ bookId, chapterId }: Props) {
 
           {submitError && <p className={errorText}>{submitError}</p>}
         </form>
+
+        {isEditMode && (
+          <div className={`${glassPanel} mt-6 p-6 sm:p-7`}>
+            <div className="mb-4 flex items-center gap-2">
+              <Volume2 size={15} className="text-brand-amber" />
+              <h2 className="text-[0.9rem] font-semibold text-white">Narration audio</h2>
+            </div>
+
+            {(narration === null || narration.status === 'none') && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-[0.85rem] text-white/50">Générez une version audio narrée de ce chapitre, avec surlignage mot à mot.</p>
+                <button type="button" onClick={handleGenerateNarration} disabled={isStartingNarration} className={btnSecondary}>
+                  {isStartingNarration ? <Loader2 size={15} className="animate-spin" /> : <Volume2 size={15} />}
+                  {isStartingNarration ? 'Lancement…' : "Générer l'audio"}
+                </button>
+              </div>
+            )}
+
+            {narration && (narration.status === 'pending' || narration.status === 'processing') && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="flex items-center gap-2.5 text-[0.85rem] text-white/60">
+                  <Loader2 size={15} className="animate-spin text-brand-amber" />
+                  {describeNarrationProgress(narration.progress)}
+                </span>
+                <button type="button" onClick={handleCancelNarration} disabled={isCancellingNarration} className={btnGhost}>
+                  {isCancellingNarration ? <Loader2 size={14} className="animate-spin" /> : 'Annuler'}
+                </button>
+              </div>
+            )}
+
+            {narration && narration.status === 'cancelled' && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-[0.85rem] text-white/50">Génération annulée.</p>
+                <button type="button" onClick={handleGenerateNarration} disabled={isStartingNarration} className={btnSecondary}>
+                  {isStartingNarration ? <Loader2 size={15} className="animate-spin" /> : <Volume2 size={15} />}
+                  {isStartingNarration ? 'Lancement…' : 'Relancer'}
+                </button>
+              </div>
+            )}
+
+            {narration && narration.status === 'error' && (
+              <div className="flex flex-col gap-3">
+                <p className={`${errorText} flex items-center gap-1.5`}>
+                  <AlertCircle size={14} /> {narration.errorMessage ?? "La génération audio a échoué."}
+                </p>
+                <button type="button" onClick={handleGenerateNarration} disabled={isStartingNarration} className={`${btnSecondary} w-fit`}>
+                  Réessayer
+                </button>
+              </div>
+            )}
+
+            {narration && narration.status === 'done' && narration.audioUrl && (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <audio
+                    ref={audioRef}
+                    src={narration.audioUrl}
+                    controls
+                    onTimeUpdate={handleAudioTimeUpdate}
+                    className="h-10 min-w-0 flex-1"
+                  />
+                  <button type="button" onClick={handleGenerateNarration} disabled={isStartingNarration} className={btnGhost}>
+                    {isStartingNarration ? <Loader2 size={14} className="animate-spin" /> : 'Régénérer'}
+                  </button>
+                </div>
+
+                {narration.words && narration.words.length > 0 && (
+                  <div className={`${glassInset} max-h-64 overflow-y-auto p-4 text-[0.9rem] leading-[1.9] whitespace-pre-wrap text-white/60`}>
+                    {renderKaraokeText(narration.text, narration.words, currentWordIndex)}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {narrationError && <p className={`${errorText} mt-3`}>{narrationError}</p>}
+          </div>
+        )}
       </div>
 
       <aside className="flex w-full shrink-0 flex-col gap-4 lg:sticky lg:top-6 lg:w-80">
