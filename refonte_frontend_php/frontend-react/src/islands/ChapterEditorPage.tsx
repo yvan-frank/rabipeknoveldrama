@@ -93,6 +93,9 @@ interface NarrationState {
   // Étape en cours côté service TTS (ex. "synthese_audio (2/5)",
   // "alignement_mots") — transitoire, présent seulement pendant pending/processing.
   progress: string | null;
+  // Temps restant estimé (secondes) — absent tant que le service TTS n'a pas
+  // assez d'historique pour calibrer une estimation (dès le 2e job).
+  etaSeconds: number | null;
   voice: string | null;
   speed: number | null;
   audioUrl: string | null;
@@ -164,6 +167,14 @@ function describeNarrationProgress(progress: string | null): string {
   const synthesisMatch = progress.match(/^synthese_audio \((\d+)\/(\d+)\)$/);
   if (synthesisMatch) return `Synthèse audio (${synthesisMatch[1]}/${synthesisMatch[2]})…`;
   return PROGRESS_LABELS[progress] ?? 'Génération en cours…';
+}
+
+// Absent tant que le service TTS n'a pas assez d'historique pour estimer
+// (cf. StatusResponse.eta_seconds) — approximatif par nature.
+function formatEtaSeconds(etaSeconds: number | null): string | null {
+  if (etaSeconds === null || etaSeconds < 0) return null;
+  if (etaSeconds < 60) return `~${Math.max(1, Math.round(etaSeconds))} s restantes`;
+  return `~${Math.round(etaSeconds / 60)} min restantes`;
 }
 
 function wordCount(html: string): number {
@@ -263,19 +274,29 @@ export default function ChapterEditorPage({ bookId, chapterId }: Props) {
 
   // Poll tant que le job est en cours côté service TTS (pending/processing) —
   // se ré-arme à chaque changement de `narration` et se coupe dès que l'état
-  // n'est plus transitoire, cf. cleanup ci-dessous.
+  // n'est plus transitoire, cf. cleanup ci-dessous. `ignore` couvre aussi la
+  // requête déjà en vol (pas seulement le timer) : sur un chapitre long,
+  // annuler pendant qu'un poll est en cours de résolution faisait sinon
+  // écraser l'état "cancelled" tout juste posé par le résultat pending/
+  // processing périmé de ce poll, relançant le cycle indéfiniment.
   useEffect(() => {
     if (!isEditMode || !chapterId) return;
     if (narration?.status !== 'pending' && narration?.status !== 'processing') return;
 
+    let ignore = false;
     const timer = window.setTimeout(() => {
       apiClient
         .get(`/chapters/${chapterId}/narration`)
-        .then((res) => setNarration(res.data?.data ?? null))
+        .then((res) => {
+          if (!ignore) setNarration(res.data?.data ?? null);
+        })
         .catch(() => {});
     }, 3000);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
   }, [isEditMode, chapterId, narration]);
 
   if (!user) return null;
@@ -461,6 +482,9 @@ export default function ChapterEditorPage({ bookId, chapterId }: Props) {
                 <span className="flex items-center gap-2.5 text-[0.85rem] text-white/60">
                   <Loader2 size={15} className="animate-spin text-brand-amber" />
                   {describeNarrationProgress(narration.progress)}
+                  {formatEtaSeconds(narration.etaSeconds) && (
+                    <span className="text-white/35">· {formatEtaSeconds(narration.etaSeconds)}</span>
+                  )}
                 </span>
                 <button type="button" onClick={handleCancelNarration} disabled={isCancellingNarration} className={btnGhost}>
                   {isCancellingNarration ? <Loader2 size={14} className="animate-spin" /> : 'Annuler'}

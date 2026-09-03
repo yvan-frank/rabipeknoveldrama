@@ -123,34 +123,37 @@ final class NarrationService
 
         // Tant que le job n'est pas terminé côté TTS, on interroge son statut
         // à chaque appel (poll relayé depuis le front) plutôt que de renvoyer
-        // un état potentiellement périmé. `progress` n'est pas persisté en
-        // base (valeur transitoire, ré-interrogée à chaque poll) : on le
-        // fait juste transiter jusqu'à la réponse de cet appel.
-        $progress = null;
+        // un état potentiellement périmé. progress/etaSeconds ne sont pas
+        // persistés en base (valeurs transitoires, ré-interrogées à chaque
+        // poll) : on les fait juste transiter jusqu'à la réponse de cet appel.
+        $liveInfo = ['progress' => null, 'etaSeconds' => null];
         if (in_array($row['status'], ['pending', 'processing'], true) && $row['tts_job_id'] !== null) {
-            $progress = self::refreshFromExternal($chapterId, $row['tts_job_id']);
+            $liveInfo = self::refreshFromExternal($chapterId, $row['tts_job_id']);
             $row = self::fetchRow($chapterId) ?? $row;
         }
 
-        return self::mapRow($row, $progress);
+        return self::mapRow($row, $liveInfo['progress'], $liveInfo['etaSeconds']);
     }
 
-    // @return string|null l'étape en cours côté TTS (ex. "synthese_audio
-    //   (2/5)", "alignement_mots") quand le job est encore pending/processing.
-    private static function refreshFromExternal(int $chapterId, string $jobId): ?string
+    // @return array{progress:?string,etaSeconds:?float} état transitoire côté
+    //   TTS (ex. progress="alignement_mots", etaSeconds=42.5) tant que le job
+    //   est pending/processing — absents une fois le job terminé.
+    private static function refreshFromExternal(int $chapterId, string $jobId): array
     {
+        $empty = ['progress' => null, 'etaSeconds' => null];
+
         try {
             $status = TtsApiClient::status($jobId);
         } catch (Throwable) {
             // Le service TTS peut être temporairement indisponible : on
             // laisse l'état local tel quel, le prochain poll réessaiera.
-            return null;
+            return $empty;
         }
 
         $mapped = self::mapExternalStatus($status['status'] ?? 'pending');
         if ($mapped === 'done') {
             self::pullResult($chapterId, $jobId);
-            return null;
+            return $empty;
         }
         if ($mapped === 'error') {
             self::db()->prepare(
@@ -160,13 +163,16 @@ final class NarrationService
                 'error' => $status['error'] ?? 'La génération audio a échoué',
                 'chapterId' => $chapterId,
             ]);
-            return null;
+            return $empty;
         }
 
         self::db()->prepare('UPDATE chapter_narrations SET status = :status, updated_at = NOW() WHERE chapter_id = :chapterId')
             ->execute(['status' => $mapped, 'chapterId' => $chapterId]);
 
-        return is_string($status['progress'] ?? null) ? $status['progress'] : null;
+        return [
+            'progress' => is_string($status['progress'] ?? null) ? $status['progress'] : null,
+            'etaSeconds' => is_numeric($status['eta_seconds'] ?? null) ? (float) $status['eta_seconds'] : null,
+        ];
     }
 
     private static function pullResult(int $chapterId, string $jobId): void
@@ -221,7 +227,7 @@ final class NarrationService
         return $row === false ? null : $row;
     }
 
-    private static function mapRow(array $row, ?string $progress = null): array
+    private static function mapRow(array $row, ?string $progress = null, ?float $etaSeconds = null): array
     {
         $words = null;
         if ($row['words_json'] !== null) {
@@ -232,6 +238,7 @@ final class NarrationService
         return [
             'status' => $row['status'],
             'progress' => $progress,
+            'etaSeconds' => $etaSeconds,
             'voice' => $row['voice'],
             'speed' => $row['speed'] !== null ? (float) $row['speed'] : null,
             'audioUrl' => $row['audio_url'],

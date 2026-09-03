@@ -33,8 +33,9 @@ final class TtsApiClient
     }
 
     /**
-     * GET /status/{job_id}.
-     * @return array{job_id:string,status:string,progress:?string,error:?string}
+     * GET /status/{job_id}. `eta_seconds` absent tant que le service n'a pas
+     * assez d'historique pour calibrer une estimation (dès le 2e job).
+     * @return array{job_id:string,status:string,progress:?string,error:?string,eta_seconds:?float}
      */
     public static function status(string $jobId): array
     {
