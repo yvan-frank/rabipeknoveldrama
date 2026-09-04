@@ -52,6 +52,8 @@ final class BooksController
             'description' => $data !== null ? self::metaDescription($data) : null,
             'ogImage' => $data['cover'] ?? null,
             'jsonLd' => $data !== null ? self::bookJsonLd($data) : null,
+            'playStoreUrl' => Env::playStoreUrl(),
+            'appStoreUrl' => Env::appStoreUrl(),
         ], ($data['title'] ?? 'Livre') . ' | RabipekNovel');
     }
 
