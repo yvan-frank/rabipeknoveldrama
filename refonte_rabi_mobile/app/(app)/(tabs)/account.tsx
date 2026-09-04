@@ -49,10 +49,14 @@ function showComingSoon(label: string) {
   showAlert('Bientôt disponible', `${label} arrive prochainement sur Rabipek.`);
 }
 
-// L'inscription auteur (register-author) n'existe toujours pas côté mobile
-// (ni côté API d'ailleurs, cf. AuthRoutes.php côté serveur) — un compte déjà
-// role==='author' a maintenant son espace en natif (cf. app/(app)/author),
-// mais un lecteur qui voudrait LE DEVENIR est encore renvoyé vers le site web.
+// L'espace auteur (gestion de livres/chapitres, KYC) n'existe plus côté
+// mobile — retiré au profit du site web, seul endroit où il vit désormais,
+// pour un compte déjà role==='author' comme pour un lecteur qui voudrait le
+// devenir. Raison : l'upload de couverture/pièce d'identité (ImagePicker +
+// requestMediaLibraryPermissionsAsync) faisait remonter READ_MEDIA_IMAGES/
+// READ_MEDIA_VIDEO dans le manifeste Android, rejeté par la politique Play
+// Store (sélecteurs système requis, pas de permission de bibliothèque large)
+// pour un usage jugé plus simple à couvrir correctement côté web.
 const AUTHOR_CENTER_URL = 'https://rabipeknovel.com/connexion';
 
 function openAuthorCenter() {
@@ -99,11 +103,6 @@ export default function AccountScreen() {
 
   const displayName = isGuest ? 'Visiteur' : (user?.email ?? 'Mon compte');
   const displayId = isGuest ? guestId : `#${user?.id ?? ''}`;
-
-  function handleAuthorCenterPress() {
-    if (user?.role === 'author') router.push('/author');
-    else openAuthorCenter();
-  }
 
   async function copyId() {
     if (!displayId) return;
@@ -203,11 +202,7 @@ export default function AccountScreen() {
               valueLabel={unreadSupportCount > 0 ? String(unreadSupportCount) : undefined}
               onPress={() => router.push('/inbox')}
             />
-            <MenuRow
-              icon="create-outline"
-              label={user?.role === 'author' ? 'Espace auteur' : 'Centre des auteurs'}
-              onPress={handleAuthorCenterPress}
-            />
+            <MenuRow icon="create-outline" label="Centre des auteurs" onPress={openAuthorCenter} />
             <MenuRow icon="gift-outline" label="Gagner des bonus" trailingEmoji="🎁" onPress={() => router.push('/bonus')} />
             <MenuRow icon="time-outline" label="Vu" onPress={() => router.push('/history')} />
             <MenuRow icon="settings-outline" label="Paramètres" onPress={() => router.push('/settings')} />

@@ -1,4 +1,20 @@
 import type { ExpoConfig } from 'expo/config';
+import { AndroidConfig, type ConfigPlugin } from 'expo/config-plugins';
+
+// expo-screen-capture (utilisé uniquement pour usePreventScreenCapture sur les
+// chapitres payants, cf. app/(app)/book/[slug]/chapter/[chapterId].tsx —
+// jamais pour lire la galerie) déclare READ_MEDIA_IMAGES dans son manifeste
+// natif pour une fonctionnalité de DÉTECTION de capture (isCaptured/listener)
+// que cette app n'utilise pas. Play Console rejette toute appli ciblant
+// Android 13+ qui déclare READ_MEDIA_IMAGES/READ_MEDIA_VIDEO sans utiliser le
+// sélecteur système à la place — on bloque donc ces deux permissions, jamais
+// nécessaires ici (l'espace auteur, seul autre usage de la galerie, a été
+// retiré du mobile au profit du web — cf. account.tsx).
+const withBlockedMediaPermissions: ConfigPlugin = (config) =>
+  AndroidConfig.Permissions.withBlockedPermissions(config, [
+    'android.permission.READ_MEDIA_IMAGES',
+    'android.permission.READ_MEDIA_VIDEO',
+  ]);
 
 // APP_ENV distingue les profils de build EAS (dev/staging/prod) — chacun
 // pointe vers une API différente. `expo start` local retombe sur `dev`.
@@ -28,7 +44,12 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.frank00.rabipek",
-      versionCode: 18,
+    // appVersionSource "local" (cf. eas.json) : EAS ne gère plus ce compteur
+    // à distance (désynchronisé à 11 alors que le Play Store est à 16) — la
+    // valeur ci-dessous EST la source de vérité désormais. À incrémenter
+    // manuellement ici avant chaque build suivant (config dynamique .ts, pas
+    // app.json statique, donc autoIncrement ne peut pas la réécrire seul).
+    versionCode: 22,
     // Requis pour les notifications push (FCM v1) depuis qu'Expo route les
     // push Android via Firebase Cloud Messaging plutôt que son propre relais
     // — sans ce fichier, getExpoPushTokenAsync() échoue avec "Default
@@ -64,16 +85,6 @@ const config: ExpoConfig = {
     ],
     'expo-sharing',
     [
-      // Requis pour ImagePicker.launchImageLibraryAsync (couverture de livre,
-      // pièce d'identité KYC — cf. src/api/authors.ts) : sans ce plugin, iOS
-      // n'a pas de texte de permission (NSPhotoLibraryUsageDescription) et
-      // rejette l'accès à la photothèque plutôt que de simplement demander.
-      'expo-image-picker',
-      {
-        photosPermission: "Rabipek a besoin d'accéder à vos photos pour choisir une couverture ou une pièce d'identité.",
-      },
-    ],
-    [
       'expo-notifications',
       {
         // Icône monochrome dédiée (obligatoire Android 13+, sinon l'icône
@@ -96,6 +107,10 @@ const config: ExpoConfig = {
     // sur l'App Store, cf. APP_STORE_URL vide), Google Sign-In reste donc
     // Android-only tant qu'il n'existe pas.
     '@react-native-google-signin/google-signin',
+    // @ts-expect-error — le typage d'ExpoConfig['plugins'] ne connaît que les
+    // formes "nom de module" ; une ConfigPlugin passée directement en
+    // fonction est pourtant bien supportée à l'exécution par le résolveur.
+    withBlockedMediaPermissions,
   ],
   extra: {
     appEnv: APP_ENV,

@@ -59,11 +59,6 @@ export default function AppLayout() {
           ),
         }}
       />
-      <Stack.Screen name="author/index" options={{ title: 'Espace auteur' }} />
-      <Stack.Screen name="author/new-book" options={{ title: 'Nouveau livre' }} />
-      <Stack.Screen name="author/book/[id]" options={{ title: '' }} />
-      <Stack.Screen name="author/book/[id]/chapter/[chapterId]" options={{ title: '' }} />
-      <Stack.Screen name="author/kyc" options={{ title: "Vérification d'identité" }} />
       <Stack.Screen name="mentions-legales" options={{ title: 'Mentions légales' }} />
       <Stack.Screen name="cgv" options={{ title: 'CGV' }} />
       <Stack.Screen name="cgu" options={{ title: 'CGU' }} />
