@@ -19,17 +19,14 @@ final class NarrationSchema
 
     /**
      * @param array<string,mixed> $body
-     * @return array{voice:?string,speed:?float}
+     * @return array{voice:?string,dialogueVoice:?string,speed:?float}
      */
     public static function generate(array $body): array
     {
         $errors = [];
 
-        $voice = $body['voice'] ?? null;
-        if ($voice !== null && (!is_string($voice) || trim($voice) === '')) {
-            $errors['voice'][] = 'Doit être une chaîne non vide';
-            $voice = null;
-        }
+        $voice = self::optionalNonEmptyString($body, 'voice', $errors);
+        $dialogueVoice = self::optionalNonEmptyString($body, 'dialogueVoice', $errors);
 
         $speed = null;
         if (array_key_exists('speed', $body) && $body['speed'] !== null) {
@@ -44,6 +41,20 @@ final class NarrationSchema
             throw new ValidationException($errors);
         }
 
-        return ['voice' => $voice, 'speed' => $speed];
+        return ['voice' => $voice, 'dialogueVoice' => $dialogueVoice, 'speed' => $speed];
+    }
+
+    /** @param array<string,mixed> $body */
+    private static function optionalNonEmptyString(array $body, string $field, array &$errors): ?string
+    {
+        $value = $body[$field] ?? null;
+        if ($value === null) {
+            return null;
+        }
+        if (!is_string($value) || trim($value) === '') {
+            $errors[$field][] = 'Doit être une chaîne non vide';
+            return null;
+        }
+        return $value;
     }
 }

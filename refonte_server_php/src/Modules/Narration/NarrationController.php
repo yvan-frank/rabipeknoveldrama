@@ -13,7 +13,7 @@ final class NarrationController
     {
         $chapterId = NarrationSchema::idParam($request->params['id']);
         $input = NarrationSchema::generate($request->body);
-        $narration = NarrationService::requestNarration($chapterId, $request->user ?? [], $input['voice'], $input['speed']);
+        $narration = NarrationService::requestNarration($chapterId, $request->user ?? [], $input['voice'], $input['dialogueVoice'], $input['speed']);
         Response::success($narration, 202);
     }
 

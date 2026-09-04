@@ -32,7 +32,7 @@ final class NarrationService
     }
 
     /** @param array<string,mixed> $actingUser */
-    public static function requestNarration(int $chapterId, array $actingUser, ?string $voice, ?float $speed): array
+    public static function requestNarration(int $chapterId, array $actingUser, ?string $voice, ?string $dialogueVoice, ?float $speed): array
     {
         $chapter = ChaptersService::getChapterById($chapterId);
         Ownership::assertAuthorOwnership($actingUser, $chapter['book']['authorId']);
@@ -43,7 +43,7 @@ final class NarrationService
             throw ApiError::badRequest('Ce chapitre est vide, impossible de générer une narration');
         }
 
-        $response = TtsApiClient::generate($text, (string) $chapter['bookId'], (string) $chapterId, $voice, $speed);
+        $response = TtsApiClient::generate($text, (string) $chapter['bookId'], (string) $chapterId, $voice, $dialogueVoice, $speed);
         $status = self::mapExternalStatus($response['status'] ?? 'pending');
 
         // audio_url/words_json/source_text de la ligne précédente sont
@@ -54,16 +54,18 @@ final class NarrationService
         // (cf. NarrationAudioStorage::deleteIfLocal).
         $db = self::db();
         $db->prepare(
-            'INSERT INTO chapter_narrations (chapter_id, status, tts_job_id, voice, speed, error_message, updated_at)
-             VALUES (:chapterId, :status, :jobId, :voice, :speed, NULL, NOW())
+            'INSERT INTO chapter_narrations (chapter_id, status, tts_job_id, voice, dialogue_voice, speed, error_message, updated_at)
+             VALUES (:chapterId, :status, :jobId, :voice, :dialogueVoice, :speed, NULL, NOW())
              ON DUPLICATE KEY UPDATE
-                status = VALUES(status), tts_job_id = VALUES(tts_job_id), voice = VALUES(voice), speed = VALUES(speed),
+                status = VALUES(status), tts_job_id = VALUES(tts_job_id), voice = VALUES(voice),
+                dialogue_voice = VALUES(dialogue_voice), speed = VALUES(speed),
                 error_message = NULL, updated_at = NOW()',
         )->execute([
             'chapterId' => $chapterId,
             'status' => $status,
             'jobId' => $response['job_id'],
             'voice' => $voice,
+            'dialogueVoice' => $dialogueVoice,
             'speed' => $speed,
         ]);
 
@@ -240,6 +242,7 @@ final class NarrationService
             'progress' => $progress,
             'etaSeconds' => $etaSeconds,
             'voice' => $row['voice'],
+            'dialogueVoice' => $row['dialogue_voice'],
             'speed' => $row['speed'] !== null ? (float) $row['speed'] : null,
             'audioUrl' => $row['audio_url'],
             'text' => $row['source_text'],

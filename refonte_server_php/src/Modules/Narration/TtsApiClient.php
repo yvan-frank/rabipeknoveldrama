@@ -17,15 +17,19 @@ final class TtsApiClient
 {
     /**
      * POST /generate — lance un job de génération pour un texte brut.
+     * $dialogueVoice : voix distincte pour les répliques de dialogue
+     * (paragraphes commençant par un tiret cadratin) — null = pas de
+     * distinction narration/dialogue (défaut serveur DIALOGUE_VOICE_PATH).
      * @return array{job_id:string,status:string,cached:bool}
      */
-    public static function generate(string $text, string $bookId, string $chapterId, ?string $voice, ?float $speed): array
+    public static function generate(string $text, string $bookId, string $chapterId, ?string $voice, ?string $dialogueVoice, ?float $speed): array
     {
         $payload = array_filter([
             'text' => $text,
             'book_id' => $bookId,
             'chapter_id' => $chapterId,
             'voice' => $voice,
+            'dialogue_voice' => $dialogueVoice,
             'speed' => $speed,
         ], static fn (mixed $v): bool => $v !== null);
 
