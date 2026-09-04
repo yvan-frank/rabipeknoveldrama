@@ -97,6 +97,7 @@ interface NarrationState {
   // assez d'historique pour calibrer une estimation (dès le 2e job).
   etaSeconds: number | null;
   voice: string | null;
+  dialogueVoice: string | null;
   speed: number | null;
   audioUrl: string | null;
   text: string | null;

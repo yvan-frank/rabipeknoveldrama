@@ -1,1 +1,0 @@
-import{r as n}from"./main--Wg6yFmB.js";import{g as u}from"./apiClient-C9xNWX7j.js";function c(o){const[t,r]=n.useState(void 0);return n.useEffect(()=>{let e=!1;return u().then(s=>{e||r(s)}),()=>{e=!0}},[]),n.useEffect(()=>{if(t!==null)return;const e=o??window.location.pathname;window.location.href=`/connexion?redirect=${encodeURIComponent(e)}`},[t,o]),t}export{c as u};

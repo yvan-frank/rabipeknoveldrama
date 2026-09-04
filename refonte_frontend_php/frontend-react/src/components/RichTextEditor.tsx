@@ -3,6 +3,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
+import Typography from '@tiptap/extension-typography';
 import { AlignCenter, AlignLeft, AlignRight, Bold, Heading2, Highlighter, Italic, List, ListOrdered } from 'lucide-react';
 
 interface Props {
@@ -27,7 +28,11 @@ const wrapperClass =
 // glyphes texte) — le contenu d'un chapitre est stocké en HTML.
 export function RichTextEditor({ content, onChange }: Props) {
   const editor = useEditor({
-    extensions: [StarterKit, TextAlign.configure({ types: ['heading', 'paragraph'] }), Highlight],
+    // Typography : remplacements typographiques à la frappe, notamment
+    // "--" -> "—" (tiret cadratin) — utile pour les dialogues ("— Bonjour"),
+    // convention reconnue par l'API TTS pour distinguer narration/dialogue
+    // (dialogue_voice, cf. NarrationService côté serveur).
+    extensions: [StarterKit, TextAlign.configure({ types: ['heading', 'paragraph'] }), Highlight, Typography],
     content,
     // Évite le rendu initial avant hydratation de l'îlot React (même raison
     // que côté Next.js, même si ici il n'y a pas de SSR React à proprement
